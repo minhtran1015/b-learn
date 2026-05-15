@@ -1,0 +1,4 @@
+pyspark==3.5.1
+# Apache Iceberg 1.5.0 with Spark 3.5 runtime (Maven coordinate: iceberg-spark-runtime-3.5_2.12:1.5.0)
+# Configured via spark.jars.packages in ingest.py build_spark() function
+# Uses Iceberg Catalog (hadoop type) for ACID, schema evolution, and time travel on ADLS Gen2

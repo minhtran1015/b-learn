@@ -90,3 +90,8 @@ resource "azurerm_kubernetes_cluster" "aks" {
     dns_service_ip     = "10.1.0.10"     # IP của dịch vụ DNS nội bộ (phải nằm trong service_cidr)
   }
 }
+
+output "storage_account_key" {
+  value     = azurerm_storage_account.data_storage.primary_access_key
+  sensitive = true
+}

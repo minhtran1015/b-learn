@@ -1,0 +1,137 @@
+{
+  "ok": true,
+  "rows": [
+    {
+      "bronze_count": 35,
+      "match": true,
+      "source_count": 35,
+      "table": "content_documents"
+    },
+    {
+      "bronze_count": 1,
+      "match": true,
+      "source_count": 1,
+      "table": "content_lecture_bank"
+    },
+    {
+      "bronze_count": 296,
+      "match": true,
+      "source_count": 296,
+      "table": "content_question_bank"
+    },
+    {
+      "bronze_count": 91,
+      "match": true,
+      "source_count": 91,
+      "table": "ednet_coupons"
+    },
+    {
+      "bronze_count": 1131,
+      "match": true,
+      "source_count": 1131,
+      "table": "ednet_kt1_events"
+    },
+    {
+      "bronze_count": 1690,
+      "match": true,
+      "source_count": 1690,
+      "table": "ednet_kt2_events"
+    },
+    {
+      "bronze_count": 2882,
+      "match": true,
+      "source_count": 2882,
+      "table": "ednet_kt3_events"
+    },
+    {
+      "bronze_count": 4141,
+      "match": true,
+      "source_count": 4141,
+      "table": "ednet_kt4_events"
+    },
+    {
+      "bronze_count": 1021,
+      "match": true,
+      "source_count": 1021,
+      "table": "ednet_lectures"
+    },
+    {
+      "bronze_count": 190,
+      "match": true,
+      "source_count": 190,
+      "table": "ednet_payments"
+    },
+    {
+      "bronze_count": 13169,
+      "match": true,
+      "source_count": 13169,
+      "table": "ednet_questions"
+    },
+    {
+      "bronze_count": 200,
+      "match": true,
+      "source_count": 200,
+      "table": "oulad_assessments"
+    },
+    {
+      "bronze_count": 22,
+      "match": true,
+      "source_count": 22,
+      "table": "oulad_courses"
+    },
+    {
+      "bronze_count": 200,
+      "match": true,
+      "source_count": 200,
+      "table": "oulad_studentassessment"
+    },
+    {
+      "bronze_count": 200,
+      "match": true,
+      "source_count": 200,
+      "table": "oulad_studentinfo"
+    },
+    {
+      "bronze_count": 200,
+      "match": true,
+      "source_count": 200,
+      "table": "oulad_studentregistration"
+    },
+    {
+      "bronze_count": 500,
+      "match": true,
+      "source_count": 500,
+      "table": "oulad_studentvle"
+    },
+    {
+      "bronze_count": 200,
+      "match": true,
+      "source_count": 200,
+      "table": "oulad_vle"
+    },
+    {
+      "bronze_count": 200,
+      "match": true,
+      "source_count": 200,
+      "table": "sed_student_activity_summary"
+    },
+    {
+      "bronze_count": 200,
+      "match": true,
+      "source_count": 200,
+      "table": "sed_student_grade_aggregated"
+    },
+    {
+      "bronze_count": 200,
+      "match": true,
+      "source_count": 200,
+      "table": "sed_student_grade_detailed"
+    },
+    {
+      "bronze_count": 500,
+      "match": true,
+      "source_count": 500,
+      "table": "sed_student_log"
+    }
+  ]
+}

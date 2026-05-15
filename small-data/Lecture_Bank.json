@@ -1,0 +1,244 @@
+{
+	"CourseID": "big-data-course",
+	"Name": "Big Data",
+	"Description": "Structured lecture bank for the Big Data overview content split into chapter and lesson markdown files.",
+	"Chapters": [
+		{
+			"ChapterID": "C1",
+			"Name": "Foundations of Big Data",
+			"Description": "Core concepts, characteristics, system view, and roles in Big Data.",
+			"Order": 1,
+			"Lectures": [
+				{
+					"LecID": "C1-L1",
+					"Name": "Concepts: From Data to Intelligence",
+					"Type": "Markdown",
+					"Content": "Data/01_Foundations_of_Big_Data/Bai_01_Concepts_From_Data_to_Intelligence.md",
+					"Order": 1
+				},
+				{
+					"LecID": "C1-L2",
+					"Name": "When Does Data Become Big?",
+					"Type": "Markdown",
+					"Content": "Data/01_Foundations_of_Big_Data/Bai_02_When_Does_Data_Become_Big.md",
+					"Order": 2
+				},
+				{
+					"LecID": "C1-L3",
+					"Name": "Big Data Characteristics",
+					"Type": "Markdown",
+					"Content": "Data/01_Foundations_of_Big_Data/Bai_03_Big_Data_Characteristics.md",
+					"Order": 3
+				},
+				{
+					"LecID": "C1-L4",
+					"Name": "The Big Data System",
+					"Type": "Markdown",
+					"Content": "Data/01_Foundations_of_Big_Data/Bai_04_The_Big_Data_System.md",
+					"Order": 4
+				},
+				{
+					"LecID": "C1-L5",
+					"Name": "Big Data Jobs",
+					"Type": "Markdown",
+					"Content": "Data/01_Foundations_of_Big_Data/Bai_05_Big_Data_Jobs.md",
+					"Order": 5
+				}
+			]
+		},
+		{
+			"ChapterID": "C2",
+			"Name": "Big Data Ecosystems",
+			"Description": "Data modeling, modern stacks, platforms, analytics, and applications.",
+			"Order": 2,
+			"Lectures": [
+				{
+					"LecID": "C2-L1",
+					"Name": "Data Modeling in Big Data Systems",
+					"Type": "Markdown",
+					"Content": "Data/02_Big_Data_Ecosystems/Bai_01_Data_Modeling_in_Big_Data_Systems.md",
+					"Order": 1
+				},
+				{
+					"LecID": "C2-L2",
+					"Name": "Modern Big Data Stack",
+					"Type": "Markdown",
+					"Content": "Data/02_Big_Data_Ecosystems/Bai_02_Modern_Big_Data_Stack.md",
+					"Order": 2
+				},
+				{
+					"LecID": "C2-L3",
+					"Name": "Modern Data Platform",
+					"Type": "Markdown",
+					"Content": "Data/02_Big_Data_Ecosystems/Bai_03_Modern_Data_Platform.md",
+					"Order": 3
+				},
+				{
+					"LecID": "C2-L4",
+					"Name": "Big Data Analysis",
+					"Type": "Markdown",
+					"Content": "Data/02_Big_Data_Ecosystems/Bai_04_Big_Data_Analysis.md",
+					"Order": 4
+				},
+				{
+					"LecID": "C2-L5",
+					"Name": "Big Data Applications & Landscape",
+					"Type": "Markdown",
+					"Content": "Data/02_Big_Data_Ecosystems/Bai_05_Big_Data_Applications_and_Landscape.md",
+					"Order": 5
+				}
+			]
+		},
+		{
+			"ChapterID": "C3",
+			"Name": "Big Data Storage",
+			"Description": "Storage foundations, design principles, and common storage solutions.",
+			"Order": 3,
+			"Lectures": [
+				{
+					"LecID": "C3-L1",
+					"Name": "Introduction Big Data Storage",
+					"Type": "Markdown",
+					"Content": "Data/03_Big_Data_Storage/Bai_01_Introduction_Big_Data_Storage.md",
+					"Order": 1
+				},
+				{
+					"LecID": "C3-L2",
+					"Name": "Decisive Principles",
+					"Type": "Markdown",
+					"Content": "Data/03_Big_Data_Storage/Bai_02_Decisive_Principles.md",
+					"Order": 2
+				},
+				{
+					"LecID": "C3-L3",
+					"Name": "Big Data Storage Solutions",
+					"Type": "Markdown",
+					"Content": "Data/03_Big_Data_Storage/Bai_03_Big_Data_Storage_Solutions.md",
+					"Order": 3
+				}
+			]
+		},
+		{
+			"ChapterID": "C4",
+			"Name": "Big Data Paradigms",
+			"Description": "Processing paradigms, MapReduce fundamentals, execution, and API details.",
+			"Order": 4,
+			"Lectures": [
+				{
+					"LecID": "C4-L1",
+					"Name": "Big Data Processing Paradigms",
+					"Type": "Markdown",
+					"Content": "Data/04_Big_Data_Paradigms/Bai_01_Big_Data_Processing_Paradigms.md",
+					"Order": 1
+				},
+				{
+					"LecID": "C4-L2",
+					"Name": "MapReduce Fundamentals",
+					"Type": "Markdown",
+					"Content": "Data/04_Big_Data_Paradigms/Bai_02_MapReduce_Fundamentals.md",
+					"Order": 2
+				},
+				{
+					"LecID": "C4-L3",
+					"Name": "MapReduce Execution & Optimization",
+					"Type": "Markdown",
+					"Content": "Data/04_Big_Data_Paradigms/Bai_03_MapReduce_Execution_and_Optimization.md",
+					"Order": 3
+				},
+				{
+					"LecID": "C4-L4",
+					"Name": "Anatomy of a Job",
+					"Type": "Markdown",
+					"Content": "Data/04_Big_Data_Paradigms/Bai_04_Anatomy_of_a_Job.md",
+					"Order": 4
+				},
+				{
+					"LecID": "C4-L5",
+					"Name": "Deep Dive into MapReduce API",
+					"Type": "Markdown",
+					"Content": "Data/04_Big_Data_Paradigms/Bai_05_Deep_Dive_into_MapReduce_API.md",
+					"Order": 5
+				}
+			]
+		},
+		{
+			"ChapterID": "C5",
+			"Name": "Spark",
+			"Description": "Motivation, programming model, execution model, and architecture of Spark.",
+			"Order": 5,
+			"Lectures": [
+				{
+					"LecID": "C5-L1",
+					"Name": "From MapReduce to Spark",
+					"Type": "Markdown",
+					"Content": "Data/05_Spark/Bai_01_From_MapReduce_to_Spark.md",
+					"Order": 1
+				},
+				{
+					"LecID": "C5-L2",
+					"Name": "Programming Model",
+					"Type": "Markdown",
+					"Content": "Data/05_Spark/Bai_02_Programming_Model.md",
+					"Order": 2
+				},
+				{
+					"LecID": "C5-L3",
+					"Name": "Execution Model",
+					"Type": "Markdown",
+					"Content": "Data/05_Spark/Bai_03_Execution_Model.md",
+					"Order": 3
+				},
+				{
+					"LecID": "C5-L4",
+					"Name": "Architecture & System Design",
+					"Type": "Markdown",
+					"Content": "Data/05_Spark/Bai_04_Architecture_and_System_Design.md",
+					"Order": 4
+				}
+			]
+		},
+		{
+			"ChapterID": "C6",
+			"Name": "Spark Dataframe",
+			"Description": "DataFrame concepts, column expressions, optimizer, I/O, and UDFs.",
+			"Order": 6,
+			"Lectures": [
+				{
+					"LecID": "C6-L1",
+					"Name": "Dataframe Concept",
+					"Type": "Markdown",
+					"Content": "Data/06_Spark_Dataframe/Bai_01_Dataframe_Concept.md",
+					"Order": 1
+				},
+				{
+					"LecID": "C6-L2",
+					"Name": "Column Expression",
+					"Type": "Markdown",
+					"Content": "Data/06_Spark_Dataframe/Bai_02_Column_Expression.md",
+					"Order": 2
+				},
+				{
+					"LecID": "C6-L3",
+					"Name": "The Optimizer",
+					"Type": "Markdown",
+					"Content": "Data/06_Spark_Dataframe/Bai_03_The_Optimizer.md",
+					"Order": 3
+				},
+				{
+					"LecID": "C6-L4",
+					"Name": "Input/Output",
+					"Type": "Markdown",
+					"Content": "Data/06_Spark_Dataframe/Bai_04_Input_Output.md",
+					"Order": 4
+				},
+				{
+					"LecID": "C6-L5",
+					"Name": "User Defined Functions (UDFs)",
+					"Type": "Markdown",
+					"Content": "Data/06_Spark_Dataframe/Bai_05_User_Defined_Functions_UDFs.md",
+					"Order": 5
+				}
+			]
+		}
+	]
+}
