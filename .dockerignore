@@ -1,0 +1,27 @@
+# Exclude large zip files and data sets
+*.zip
+*.tar.gz
+*.tgz
+large-data/
+small-data/
+abfss/
+
+# Exclude git directories
+.git
+.github
+
+# Exclude python virtual environment and caches
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Exclude local build artifacts and Terraform states
+.terraform/
+terraform.tfstate*
+*.tfstate*
+tfplan
+
+# Exclude macOS system files
+.DS_Store

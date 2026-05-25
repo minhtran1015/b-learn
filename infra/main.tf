@@ -126,6 +126,21 @@ resource "azurerm_kubernetes_cluster" "aks" {
   }
 }
 
+resource "azurerm_container_registry" "acr" {
+  name                = "acrblearnminh2026"
+  resource_group_name = azurerm_resource_group.compute.name
+  location            = azurerm_resource_group.compute.location
+  sku                 = "Basic"
+  admin_enabled       = true
+}
+
+resource "azurerm_role_assignment" "aks_acr" {
+  principal_id                     = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
+  role_definition_name             = "AcrPull"
+  scope                            = azurerm_container_registry.acr.id
+  skip_service_principal_aad_check = true
+}
+
 provider "kubernetes" {
   host                   = azurerm_kubernetes_cluster.aks.kube_config[0].host
   client_certificate     = base64decode(azurerm_kubernetes_cluster.aks.kube_config[0].client_certificate)
