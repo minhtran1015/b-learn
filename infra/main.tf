@@ -203,8 +203,10 @@ resource "kubernetes_cron_job_v1" "oulad_medallion" {
                 export SPARK_DRIVER_MEMORY=4g
 
                 apt-get update
-                apt-get install -y --no-install-recommends git ca-certificates
+                apt-get install -y --no-install-recommends git ca-certificates default-jdk-headless
                 rm -rf /var/lib/apt/lists/*
+
+                export JAVA_HOME=/usr/lib/jvm/default-java
 
                 rm -rf /tmp/b-learn
                 git clone --depth 1 --branch "$OULAD_GIT_REF" "https://x-access-token:$${GITHUB_TOKEN}@github.com/minhtran1015/b-learn.git" /tmp/b-learn
