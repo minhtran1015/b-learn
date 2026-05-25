@@ -52,15 +52,26 @@ def main():
             print(f"Error during catalog diagnosis: {diag_err}")
 
         print("📥 Loading cleansed tables from Silver Layer...")
-        try:
-            silver_assessments = spark.read.table("silver_catalog.silver.oulad_assessments").toPandas()
-            silver_student_assess = spark.read.table("silver_catalog.silver.oulad_student_assessment").toPandas()
-            print("Loaded tables from silver_catalog.silver namespace.")
-        except Exception as e:
-            print(f"Failed to load from 'silver' namespace: {e}. Trying 'silver_db'...")
-            silver_assessments = spark.read.table("silver_catalog.silver_db.oulad_assessments").toPandas()
-            silver_student_assess = spark.read.table("silver_catalog.silver_db.oulad_student_assessment").toPandas()
-            print("Loaded tables from silver_catalog.silver_db namespace.")
+        silver_assessments = None
+        silver_student_assess = None
+        
+        for namespace in ["silver_db", "silver"]:
+            if silver_assessments is not None and silver_student_assess is not None:
+                break
+            for table_suffix in ["oulad_studentassessment", "oulad_student_assessment"]:
+                try:
+                    table_name_assessments = f"silver_catalog.{namespace}.oulad_assessments"
+                    table_name_student_assess = f"silver_catalog.{namespace}.{table_suffix}"
+                    print(f"Trying to load {table_name_assessments} and {table_name_student_assess}...")
+                    silver_assessments = spark.read.table(table_name_assessments).toPandas()
+                    silver_student_assess = spark.read.table(table_name_student_assess).toPandas()
+                    print(f"Successfully loaded tables from {namespace} namespace using {table_suffix} suffix.")
+                    break
+                except Exception as ex:
+                    print(f"Failed to load using {namespace} and {table_suffix}: {ex}")
+                    
+        if silver_assessments is None or silver_student_assess is None:
+            raise ValueError("Failed to load OULAD silver tables from any expected namespace/table name combination.")
         
         # ─── 2. PIPELINE DATA ENGINEERING (Giữ nguyên logic của BKT.ipynb) ───
         print("⚙️ Engineering hybrid skill tracks...")
