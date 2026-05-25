@@ -126,8 +126,8 @@ def _build_assessment_features(studentassessment: DataFrame, assessments: DataFr
 
     agg = assess_joined.groupBy(
         F.col("id_student"),
-        F.col("sa.code_module"),
-        F.col("sa.code_presentation"),
+        F.col("a.code_module"),
+        F.col("a.code_presentation"),
     ).agg(
         F.avg("score").alias("avg_score"),
         F.min("score").alias("min_score"),
