@@ -39,8 +39,15 @@ def main():
         # ─── 1. ĐỌC DỮ LIỆU TỪ SILVER LAYER (ICEBERG) ─────────────────────
         # Đọc dữ liệu sạch từ tầng Silver thay vì đọc file CSV thô
         print("📥 Loading cleansed tables from Silver Layer...")
-        silver_assessments = spark.read.table("silver_catalog.silver_db.oulad_assessments").toPandas()
-        silver_student_assess = spark.read.table("silver_catalog.silver_db.oulad_student_assessment").toPandas()
+        try:
+            silver_assessments = spark.read.table("silver_catalog.silver.oulad_assessments").toPandas()
+            silver_student_assess = spark.read.table("silver_catalog.silver.oulad_student_assessment").toPandas()
+            print("Loaded tables from silver_catalog.silver namespace.")
+        except Exception as e:
+            print(f"Failed to load from 'silver' namespace: {e}. Trying 'silver_db'...")
+            silver_assessments = spark.read.table("silver_catalog.silver_db.oulad_assessments").toPandas()
+            silver_student_assess = spark.read.table("silver_catalog.silver_db.oulad_student_assessment").toPandas()
+            print("Loaded tables from silver_catalog.silver_db namespace.")
         
         # ─── 2. PIPELINE DATA ENGINEERING (Giữ nguyên logic của BKT.ipynb) ───
         print("⚙️ Engineering hybrid skill tracks...")
@@ -58,15 +65,19 @@ def main():
         # Tạo định danh kỹ năng kết hợp (Skill Name)
         df['skill_name'] = df['code_module'] + '_' + df['assessment_type']
         
-        # Nhị phân hóa độ thành thục (Chính sách bảo mật: Sử dụng student_id_hash từ tầng Silver)
+        # Nhị phân hóa độ thành thục
         df['correct'] = (df['score'] >= 50).astype(int)
         
+        # Xác định cột id sinh viên thích hợp
+        student_id_col = 'student_id_hash' if 'student_id_hash' in df.columns else 'id_student'
+        print(f"Using student ID column: {student_id_col}")
+
         # Sắp xếp theo dòng thời gian của từng sinh viên bảo toàn tính chất chuỗi Markov
-        df = df.sort_values(by=['student_id_hash', 'date_submitted']).reset_index(drop=True)
+        df = df.sort_values(by=[student_id_col, 'date_submitted']).reset_index(drop=True)
         
         # Ép về schema nghiêm ngặt pyBKT yêu cầu
         bkt_df = pd.DataFrame({
-            'user_id': df['student_id_hash'].astype(str), # Dùng mã hash bảo mật danh tính
+            'user_id': df[student_id_col].astype(str), # Dùng mã hash bảo mật danh tính
             'skill_name': df['skill_name'],
             'correct': df['correct'],
             'order_id': df.index 
