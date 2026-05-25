@@ -73,98 +73,126 @@ def main():
         if silver_assessments is None or silver_student_assess is None:
             raise ValueError("Failed to load OULAD silver tables from any expected namespace/table name combination.")
         
-        # CHIẾN LƯỢC KIỂM THỬ NHANH: Lọc riêng 1 môn học để bảo toàn chuỗi thời gian
-        silver_assessments = silver_assessments[silver_assessments['code_module'] == 'AAA']
+        # ─── 2. PIPELINE DATA ENGINEERING & SEQUENTIAL COURSE ITERATOR ──────
+        # Lấy danh sách tất cả các môn học độc lập có trong dữ liệu
+        unique_courses = silver_assessments['code_module'].unique()
+        print(f"Found {len(unique_courses)} distinct courses to process: {unique_courses}")
         
-        # ─── 2. PIPELINE DATA ENGINEERING (Giữ nguyên logic của BKT.ipynb) ───
-        print("⚙️ Engineering hybrid skill tracks...")
-        print("silver_assessments columns:", silver_assessments.columns.tolist())
-        print("silver_student_assess columns:", silver_student_assess.columns.tolist())
-        
-        # Xử lý missing values
-        silver_student_assess = silver_student_assess.dropna(subset=['score', 'id_assessment'])
-        
-        # Safely dropna on assessments
-        assess_drop_cols = [c for c in ['code_module', 'assessment_type'] if c in silver_assessments.columns]
-        silver_assessments = silver_assessments.dropna(subset=assess_drop_cols)
-        
-        # Merge thông tin định nghĩa bài học
-        if 'code_module' in silver_student_assess.columns:
-            silver_student_assess = silver_student_assess.drop(columns=['code_module'])
-        df = silver_student_assess.merge(silver_assessments, on='id_assessment', how='left')
-        df = df.dropna(subset=['code_module', 'assessment_type'])
-        
-        # Loại bỏ bài kiểm tra cuối kỳ (Exam) theo thiết kế chuỗi tuần tự của BKT
-        df = df[df['assessment_type'] != 'Exam']
-        
-        # Tạo định danh kỹ năng kết hợp (Skill Name)
-        df['skill_name'] = df['code_module'] + '_' + df['assessment_type']
-        
-        # Nhị phân hóa độ thành thục
-        df['correct'] = (df['score'] >= 50).astype(int)
-        
-        # Xác định cột id sinh viên thích hợp
-        student_id_col = 'student_id_hash' if 'student_id_hash' in df.columns else 'id_student'
-        print(f"Using student ID column: {student_id_col}")
+        all_course_predictions = []
+        silver_assessments_raw = silver_assessments.copy()
+        silver_student_assess_raw = silver_student_assess.copy()
 
-        # Sắp xếp theo dòng thời gian của từng sinh viên bảo toàn tính chất chuỗi Markov
-        df = df.sort_values(by=[student_id_col, 'date_submitted']).reset_index(drop=True)
-        
-        # Ép về schema nghiêm ngặt pyBKT yêu cầu
-        bkt_df = pd.DataFrame({
-            'user_id': df[student_id_col].astype(str), # Dùng mã hash bảo mật danh tính
-            'skill_name': df['skill_name'],
-            'correct': df['correct'],
-            'order_id': df.index 
-        })
-        
-        unique_skills = bkt_df['skill_name'].unique()
-        print(f"✅ Engineered {len(unique_skills)} unique sequential skill tracks.")
-        
-        # ─── 3. TRAIN/TEST SPLIT TRÁNH RÒ RỈ DỮ LIỆU (Leakage-Free) ────────
-        unique_students = bkt_df['user_id'].unique()
-        train_students, test_students = train_test_split(
-            unique_students, test_size=0.20, random_state=42
-        )
-        train_df = bkt_df[bkt_df['user_id'].isin(train_students)].copy()
-        test_df = bkt_df[bkt_df['user_id'].isin(test_students)].copy()
-        
-        # ─── 4. KHỞI TẠO VÀ HUẤN LUYỆN MÔ HÌNH BKT ─────────────────────────
-        print("🏋️ Fitting pyBKT Model on training cohort...")
-        bkt_model = Model(seed=42, num_fits=1, parallel=False)
-        
-        # Cấu hình Seed Parameters để tối ưu hóa thuật toán Expectation-Maximization (EM)
-        bkt_model.coef_ = {
-            skill: {
-                'prior': 0.40,
-                'learns': np.array([0.15]),
-                'guesses': np.array([0.20]),
-                'slips': np.array([0.10]),
-                'forgets': np.array([0.0])
+        for course in unique_courses:
+            print(f"\n📖 Processing Course Chunk: {course}...")
+            
+            # Lọc dữ liệu riêng cho môn học hiện tại
+            silver_assessments_course = silver_assessments_raw[silver_assessments_raw['code_module'] == course].copy()
+            silver_student_assess_course = silver_student_assess_raw[
+                silver_student_assess_raw['id_assessment'].isin(silver_assessments_course['id_assessment'])
+            ].copy()
+            
+            if silver_student_assess_course.empty or silver_assessments_course.empty:
+                print(f"⚠️ Empty dataset for course {course}. Skipping.")
+                continue
+                
+            # Xử lý missing values
+            silver_student_assess_course = silver_student_assess_course.dropna(subset=['score', 'id_assessment'])
+            assess_drop_cols = [c for c in ['code_module', 'assessment_type'] if c in silver_assessments_course.columns]
+            silver_assessments_course = silver_assessments_course.dropna(subset=assess_drop_cols)
+            
+            # Merge thông tin định nghĩa bài học
+            if 'code_module' in silver_student_assess_course.columns:
+                silver_student_assess_course = silver_student_assess_course.drop(columns=['code_module'])
+            df = silver_student_assess_course.merge(silver_assessments_course, on='id_assessment', how='left')
+            df = df.dropna(subset=['code_module', 'assessment_type'])
+            
+            # Loại bỏ bài kiểm tra cuối kỳ (Exam) theo thiết kế chuỗi tuần tự của BKT
+            df = df[df['assessment_type'] != 'Exam']
+            if df.empty:
+                print(f"⚠️ No non-exam assessment data for course {course}. Skipping.")
+                continue
+            
+            # Tạo định danh kỹ năng kết hợp (Skill Name)
+            df['skill_name'] = df['code_module'] + '_' + df['assessment_type']
+            
+            # Nhị phân hóa độ thành thục
+            df['correct'] = (df['score'] >= 50).astype(int)
+            
+            # Xác định cột id sinh viên thích hợp
+            student_id_col = 'student_id_hash' if 'student_id_hash' in df.columns else 'id_student'
+            
+            # Sắp xếp theo dòng thời gian của từng sinh viên bảo toàn tính chất chuỗi Markov
+            df = df.sort_values(by=[student_id_col, 'date_submitted']).reset_index(drop=True)
+            
+            # Ép về schema nghiêm ngặt pyBKT yêu cầu
+            bkt_df = pd.DataFrame({
+                'user_id': df[student_id_col].astype(str),
+                'skill_name': df['skill_name'],
+                'correct': df['correct'],
+                'order_id': df.index 
+            })
+            
+            unique_skills = bkt_df['skill_name'].unique()
+            print(f"⚙️ Engineered {len(unique_skills)} unique sequential skill tracks for course {course}: {unique_skills}")
+            
+            # Train/Test split để đánh giá
+            unique_students = bkt_df['user_id'].unique()
+            if len(unique_students) >= 5:
+                train_students, test_students = train_test_split(
+                    unique_students, test_size=0.20, random_state=42
+                )
+                train_df = bkt_df[bkt_df['user_id'].isin(train_students)].copy()
+                test_df = bkt_df[bkt_df['user_id'].isin(test_students)].copy()
+            else:
+                train_df = bkt_df
+                test_df = None
+                print(f"⚠️ Insufficient students ({len(unique_students)}) for train/test split. Training on all data.")
+            
+            # ─── KHỞI TẠO VÀ HUẤN LUYỆN MÔ HÌNH BKT ─────────────────────────
+            print(f"🏋️ Fitting pyBKT Model on {course}...")
+            bkt_model = Model(seed=42, num_fits=1, parallel=False)
+            
+            # Cấu hình Seed Parameters để tối ưu hóa thuật toán Expectation-Maximization (EM)
+            bkt_model.coef_ = {
+                skill: {
+                    'prior': 0.40,
+                    'learns': np.array([0.15]),
+                    'guesses': np.array([0.20]),
+                    'slips': np.array([0.10]),
+                    'forgets': np.array([0.0])
+                }
+                for skill in unique_skills
             }
-            for skill in unique_skills
-        }
-        
-        bkt_model.fit(data=train_df)
-        
-        # ─── 5. ĐÁNH GIÁ HIỆU NĂNG ────────────────────────────────────────
-        auc_test = bkt_model.evaluate(data=test_df, metric='auc')
-        print(f"🏁 Held-Out Test Set Metrics -> ROC-AUC: {auc_test:.4f}")
-        
-        # ─── 6. DỰ ĐOÁN VÀ GHI NGƯỢC KẾT QUẢ LÊN GOLD ICEBERG CATALOG ─────
-        print("📤 Writing BKT mastery predictions back to Gold Layer Cloud...")
-        predictions_df = bkt_model.predict(data=bkt_df)
-        
-        # Chuyển đổi Pandas DataFrame kết quả ngược lại thành Spark DataFrame
-        spark_bkt_preds = spark.createDataFrame(predictions_df)
-        
-        # Thêm Audit Metadata quy chuẩn hệ thống
-        spark_bkt_preds = spark_bkt_preds.withColumn("_gold_updated_at", current_timestamp())
-        
-        # Lưu trữ trực tiếp vào bảng Iceberg tại tầng Gold
-        (spark_bkt_preds.writeTo("gold_catalog.gold_db.oulad_bkt_mastery")
-            .tableProperty("write.format.default", "parquet")
-            .createOrReplace())
+            
+            bkt_model.fit(data=train_df)
+            
+            # ─── ĐÁNH GIÁ HIỆU NĂNG ────────────────────────────────────────
+            if test_df is not None and not test_df.empty:
+                try:
+                    auc_test = bkt_model.evaluate(data=test_df, metric='auc')
+                    print(f"🏁 Held-Out Test Set Metrics for {course} -> ROC-AUC: {auc_test:.4f}")
+                except Exception as eval_ex:
+                    print(f"⚠️ Failed to evaluate metrics for {course}: {eval_ex}")
+            
+            # ─── DỰ ĐOÁN ──────────────────────────────────────────────────
+            predictions_df = bkt_model.predict(data=bkt_df)
+            all_course_predictions.append(predictions_df)
+            
+        # ─── 3. TỔNG HỢP VÀ GHI NGƯỢC KẾT QUẢ LÊN GOLD ICEBERG CATALOG ─────
+        if all_course_predictions:
+            final_predictions_df = pd.concat(all_course_predictions, ignore_index=True)
+            print(f"\n📤 Writing total {len(final_predictions_df)} BKT mastery predictions back to Gold Layer Cloud...")
+            
+            # Chuyển đổi Pandas DataFrame kết quả ngược lại thành Spark DataFrame
+            spark_bkt_preds = spark.createDataFrame(final_predictions_df)
+            
+            # Thêm Audit Metadata quy chuẩn hệ thống
+            spark_bkt_preds = spark_bkt_preds.withColumn("_gold_updated_at", current_timestamp())
+            
+            # Lưu trữ trực tiếp vào bảng Iceberg tại tầng Gold
+            (spark_bkt_preds.writeTo("gold_catalog.gold_db.oulad_bkt_mastery")
+                .tableProperty("write.format.default", "parquet")
+                .createOrReplace())
         
         print("🎉 Gold BKT Pipeline integrated successfully!")
         
