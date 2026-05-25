@@ -13,8 +13,8 @@ spec:
         command: ["python", "-m", "data_pipeline.jobs.gold_bkt_pipeline"]
         resources:
           requests:
-            cpu: "1.0"
-            memory: "4Gi"
+            cpu: "1.8"
+            memory: "8Gi"
           limits:
             cpu: "1.8"
             memory: "8Gi"
@@ -30,8 +30,6 @@ spec:
               name: oulad-runtime
               key: AZURE_STORAGE_KEY
         - name: SPARK_DRIVER_MEMORY
-          value: "8g"
-        - name: BKT_MAX_TRAIN_ROWS
-          value: "30000"
+          value: "6g"
       restartPolicy: Never
   backoffLimit: 0

@@ -73,6 +73,9 @@ def main():
         if silver_assessments is None or silver_student_assess is None:
             raise ValueError("Failed to load OULAD silver tables from any expected namespace/table name combination.")
         
+        # CHIẾN LƯỢC KIỂM THỬ NHANH: Lọc riêng 1 môn học để bảo toàn chuỗi thời gian
+        silver_assessments = silver_assessments[silver_assessments['code_module'] == 'AAA']
+        
         # ─── 2. PIPELINE DATA ENGINEERING (Giữ nguyên logic của BKT.ipynb) ───
         print("⚙️ Engineering hybrid skill tracks...")
         print("silver_assessments columns:", silver_assessments.columns.tolist())
@@ -125,20 +128,10 @@ def main():
         )
         train_df = bkt_df[bkt_df['user_id'].isin(train_students)].copy()
         test_df = bkt_df[bkt_df['user_id'].isin(test_students)].copy()
-
-        # Speed-control knob for integration runs on constrained clusters.
-        max_train_rows = int(os.getenv("BKT_MAX_TRAIN_ROWS", "30000"))
-        if len(train_df) > max_train_rows:
-            train_df = (
-                train_df.sample(n=max_train_rows, random_state=42)
-                .sort_values(by=['user_id', 'order_id'])
-                .reset_index(drop=True)
-            )
-            print(f"⚙️ Downsampled training events to {max_train_rows} rows for faster convergence.")
         
         # ─── 4. KHỞI TẠO VÀ HUẤN LUYỆN MÔ HÌNH BKT ─────────────────────────
         print("🏋️ Fitting pyBKT Model on training cohort...")
-        bkt_model = Model(seed=42, parallel=False)
+        bkt_model = Model(seed=42, num_fits=1, parallel=False)
         
         # Cấu hình Seed Parameters để tối ưu hóa thuật toán Expectation-Maximization (EM)
         bkt_model.coef_ = {
@@ -152,7 +145,7 @@ def main():
             for skill in unique_skills
         }
         
-        bkt_model.fit(data=train_df, num_fits=1)
+        bkt_model.fit(data=train_df)
         
         # ─── 5. ĐÁNH GIÁ HIỆU NĂNG ────────────────────────────────────────
         auc_test = bkt_model.evaluate(data=test_df, metric='auc')
