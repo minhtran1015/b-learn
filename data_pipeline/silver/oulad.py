@@ -22,7 +22,7 @@ from jobs.oulad import SOURCE_TABLES
 DEFAULT_INPUT_CATALOG = "bronze_catalog"
 DEFAULT_INPUT_NAMESPACE = "full_db"
 DEFAULT_OUTPUT_CATALOG = "silver_catalog"
-DEFAULT_OUTPUT_NAMESPACE = "silver_db"
+DEFAULT_OUTPUT_NAMESPACE = "silver"
 DEFAULT_OUTPUT_ROOT = (
     f"abfss://silver@{os.getenv('AZURE_STORAGE_ACCOUNT', 'stblearnminhdata2026')}"
     ".dfs.core.windows.net/iceberg_warehouse/silver/"

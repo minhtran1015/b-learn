@@ -113,7 +113,7 @@ silver-oulad-transform:
 		--input-catalog bronze_catalog \
 		--input-namespace full_db \
 		--output-catalog silver_catalog \
-		--output-namespace silver_db \
+		--output-namespace silver \
 		--output-root "$(SILVER_OUTPUT_ROOT)"
 
 gold-oulad-train:
@@ -121,7 +121,7 @@ gold-oulad-train:
 		--input-catalog silver_catalog \
 		--input-namespace silver_db \
 		--output-catalog gold_catalog \
-		--output-namespace gold_db \
+		--output-namespace gold \
 		--output-root "$(GOLD_OUTPUT_ROOT)"
 
 medallion-oulad-flow: silver-oulad-transform gold-oulad-train

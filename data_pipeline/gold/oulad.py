@@ -37,7 +37,7 @@ from jobs.oulad import CUTOFF_DAY, GOLD_FEATURE_COLUMNS, SOURCE_TABLES
 DEFAULT_INPUT_CATALOG = "silver_catalog"
 DEFAULT_INPUT_NAMESPACE = "silver_db"
 DEFAULT_OUTPUT_CATALOG = "gold_catalog"
-DEFAULT_OUTPUT_NAMESPACE = "gold_db"
+DEFAULT_OUTPUT_NAMESPACE = "gold"
 DEFAULT_OUTPUT_ROOT = (
     f"abfss://gold@{os.getenv('AZURE_STORAGE_ACCOUNT', 'stblearnminhdata2026')}"
     ".dfs.core.windows.net/iceberg_warehouse/gold/"

@@ -219,7 +219,7 @@ resource "kubernetes_cron_job_v1" "oulad_medallion" {
                   --input-catalog bronze_catalog \
                   --input-namespace full_db \
                   --output-catalog silver_catalog \
-                  --output-namespace silver_db \
+                  --output-namespace silver \
                   --output-root "abfss://silver@$AZURE_STORAGE_ACCOUNT.dfs.core.windows.net/iceberg_warehouse/silver/" \
                   --input-container bronze \
                   --output-container silver
@@ -228,7 +228,7 @@ resource "kubernetes_cron_job_v1" "oulad_medallion" {
                   --input-catalog silver_catalog \
                   --input-namespace silver_db \
                   --output-catalog gold_catalog \
-                  --output-namespace gold_db \
+                  --output-namespace gold \
                   --output-root "abfss://gold@$AZURE_STORAGE_ACCOUNT.dfs.core.windows.net/iceberg_warehouse/gold/" \
                   --input-container silver \
                   --output-container gold
