@@ -128,7 +128,7 @@ def main():
         
         # ─── 4. KHỞI TẠO VÀ HUẤN LUYỆN MÔ HÌNH BKT ─────────────────────────
         print("🏋️ Fitting pyBKT Model on training cohort...")
-        bkt_model = Model(seed=42, parallel=False)
+        bkt_model = Model(seed=42, parallel=True)
         
         # Cấu hình Seed Parameters để tối ưu hóa thuật toán Expectation-Maximization (EM)
         bkt_model.coef_ = {
