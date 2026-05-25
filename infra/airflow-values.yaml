@@ -1,0 +1,33 @@
+# infra/airflow-values.yaml
+images:
+  airflow:
+    repository: apache/airflow
+    tag: 2.8.1-python3.11
+
+# Sử dụng kiến trúc Executor đơn giản để tiết kiệm RAM/CPU trên AKS
+core:
+  executor: LocalExecutor
+
+# Cấu hình Webserver công khai để bạn mở giao diện trên trình duyệt khi Demo
+webserver:
+  service:
+    type: LoadBalancer
+    ports:
+      - name: airflow-ui
+        port: 8080
+        targetPort: 8080
+
+# Hạ cấu hình tài nguyên xuống mức tối thiểu cho môi trường Học sinh
+workers:
+  enabled: false # LocalExecutor không cần worker pod riêng
+
+scheduler:
+  replicas: 1
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+
+postgresql:
+  enabled: true
+  architecture: standalone

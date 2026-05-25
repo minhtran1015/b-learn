@@ -23,6 +23,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy the data_pipeline package
 COPY data_pipeline/ /app/data_pipeline/
 
+# Copy manifest files
+COPY *manifest.json /app/
+
 # Set Python path to ensure module imports resolve correctly
 ENV PYTHONPATH=/app
 

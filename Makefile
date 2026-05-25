@@ -134,3 +134,29 @@ infra-terraform-plan:
 
 infra-terraform-apply:
 	cd $(INFRA_DIR) && $(TERRAFORM) apply
+
+# --- AIRFLOW MANAGEMENT ---
+
+# 1. Deploy/upgrade Airflow on AKS cluster using Helm
+airflow-deploy:
+	helm repo add apache-airflow https://airflow.apache.org/
+	helm repo update
+	helm upgrade --install airflow apache-airflow/airflow \
+		--namespace blearn-medallion \
+		--create-namespace \
+		-f infra/airflow-values.yaml
+
+# 2. Hibernate Airflow: scale replicas to 0 to save Azure student credits
+airflow-stop:
+	kubectl scale deployment/airflow-webserver --replicas=0 -n blearn-medallion
+	kubectl scale deployment/airflow-scheduler --replicas=0 -n blearn-medallion
+	@echo "Airflow scaled to 0. No CPU/RAM consumed in AKS."
+
+# 3. Wake up Airflow: scale replicas back to 1
+airflow-start:
+	kubectl scale deployment/airflow-webserver --replicas=1 -n blearn-medallion
+	kubectl scale deployment/airflow-scheduler --replicas=1 -n blearn-medallion
+
+# 4. Uninstall Airflow from AKS
+airflow-destroy:
+	helm uninstall airflow -n blearn-medallion
