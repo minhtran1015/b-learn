@@ -13,10 +13,10 @@ spec:
         command: ["python", "-m", "data_pipeline.jobs.gold_bkt_pipeline"]
         resources:
           requests:
-            cpu: "4"
+            cpu: "1.8"
             memory: "8Gi"
           limits:
-            cpu: "4"
+            cpu: "1.8"
             memory: "8Gi"
         env:
         - name: AZURE_STORAGE_ACCOUNT
