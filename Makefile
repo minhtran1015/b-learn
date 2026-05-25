@@ -17,7 +17,7 @@ export SPARK_DRIVER_MEMORY
 export AZURE_STORAGE_ACCOUNT
 export AZURE_STORAGE_KEY
 
-.PHONY: help bronze-discover-full bronze-consolidate-ednet bronze-full-manifest bronze-full-ingest bronze-full-verify bronze-full-audit bronze-full-flow silver-oulad-transform gold-oulad-train medallion-oulad-flow infra-terraform-init infra-terraform-plan infra-terraform-apply
+.PHONY: help bronze-discover-full bronze-consolidate-ednet bronze-full-manifest bronze-full-ingest bronze-full-verify bronze-full-audit bronze-full-flow silver-oulad-transform gold-oulad-train gold-bkt-run medallion-oulad-flow infra-terraform-init infra-terraform-plan infra-terraform-apply
 
 help:
 	@printf '%s\n' \
@@ -125,6 +125,9 @@ gold-oulad-train:
 		--output-root "$(GOLD_OUTPUT_ROOT)"
 
 medallion-oulad-flow: silver-oulad-transform gold-oulad-train
+
+gold-bkt-run:
+	$(PYTHON) -m data_pipeline.jobs.gold_bkt_pipeline
 
 infra-terraform-init:
 	cd $(INFRA_DIR) && $(TERRAFORM) init
