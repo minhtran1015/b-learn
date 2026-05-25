@@ -371,7 +371,8 @@ def run_gold_pipeline(
         catalog_name=output_catalog,
     )
 
-    pandas_gold = gold.select(*(GOLD_FEATURE_COLUMNS + ["target_class", "code_module", "code_presentation", "id_student"])).toPandas()
+    _select_cols = list(dict.fromkeys(GOLD_FEATURE_COLUMNS + ["target_class", "code_module", "code_presentation", "id_student"]))
+    pandas_gold = gold.select(*_select_cols).toPandas()
     pipeline, metrics, label_encoder, test_df, y_test, preds = _train_lgbm(pandas_gold)
 
     scored = pipeline.predict_proba(pandas_gold[GOLD_FEATURE_COLUMNS])
