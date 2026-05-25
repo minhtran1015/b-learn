@@ -17,10 +17,6 @@ webserver:
         port: 8080
         targetPort: 8080
 
-# Hạ cấu hình tài nguyên xuống mức tối thiểu cho môi trường Học sinh
-workers:
-  enabled: false # LocalExecutor không cần worker pod riêng
-
 scheduler:
   replicas: 1
   resources:
@@ -31,3 +27,11 @@ scheduler:
 postgresql:
   enabled: true
   architecture: standalone
+
+# Mount file DAG từ ConfigMap để không cần GitHub auth
+extraConfigmapMounts:
+  - name: oulad-medallion-dag
+    mountPath: /opt/airflow/dags/oulad_medallion_dag.py
+    configMap: oulad-medallion-dag
+    subPath: oulad_medallion_dag.py
+    readOnly: true

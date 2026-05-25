@@ -44,8 +44,8 @@ variable "oulad_cron_schedule" {
 
 variable "oulad_runner_image" {
   type        = string
-  default     = "python:3.12-bookworm"
-  description = "Base image used by the AKS job to run the pipeline."
+  default     = "acrblearnminh2026.azurecr.io/oulad-medallion:latest"
+  description = "Container image used by the AKS job to run the pipeline."
 }
 
 variable "github_token" {
@@ -165,9 +165,6 @@ resource "kubernetes_secret_v1" "oulad_runtime" {
   data = {
     AZURE_STORAGE_ACCOUNT = azurerm_storage_account.data_storage.name
     AZURE_STORAGE_KEY     = azurerm_storage_account.data_storage.primary_access_key
-    OULAD_REPO_URL        = var.oulad_repo_url
-    OULAD_GIT_REF         = var.oulad_git_ref
-    GITHUB_TOKEN          = var.github_token
   }
 }
 
@@ -209,26 +206,12 @@ resource "kubernetes_cron_job_v1" "oulad_medallion" {
             container {
               name              = "runner"
               image             = var.oulad_runner_image
-              image_pull_policy = "IfNotPresent"
+              image_pull_policy = "Always"
 
-              command = ["/bin/bash", "-lc"]
+              command = ["/bin/bash", "-c"]
               args = [<<-EOT
                 set -euo pipefail
-                export DEBIAN_FRONTEND=noninteractive
                 export SPARK_DRIVER_MEMORY=4g
-
-                apt-get update
-                apt-get install -y --no-install-recommends git ca-certificates default-jdk-headless
-                rm -rf /var/lib/apt/lists/*
-
-                export JAVA_HOME=/usr/lib/jvm/default-java
-
-                rm -rf /tmp/b-learn
-                git clone --depth 1 --branch "$OULAD_GIT_REF" "https://x-access-token:$${GITHUB_TOKEN}@github.com/minhtran1015/b-learn.git" /tmp/b-learn
-
-                cd /tmp/b-learn
-                python -m pip install --no-cache-dir --upgrade pip
-                python -m pip install --no-cache-dir -r data_pipeline/requirements.txt
 
                 python -m data_pipeline.silver.oulad \
                   --input-catalog bronze_catalog \
@@ -266,36 +249,6 @@ EOT
                   secret_key_ref {
                     name = kubernetes_secret_v1.oulad_runtime.metadata[0].name
                     key  = "AZURE_STORAGE_KEY"
-                  }
-                }
-              }
-
-              env {
-                name = "OULAD_REPO_URL"
-                value_from {
-                  secret_key_ref {
-                    name = kubernetes_secret_v1.oulad_runtime.metadata[0].name
-                    key  = "OULAD_REPO_URL"
-                  }
-                }
-              }
-
-              env {
-                name = "OULAD_GIT_REF"
-                value_from {
-                  secret_key_ref {
-                    name = kubernetes_secret_v1.oulad_runtime.metadata[0].name
-                    key  = "OULAD_GIT_REF"
-                  }
-                }
-              }
-
-              env {
-                name = "GITHUB_TOKEN"
-                value_from {
-                  secret_key_ref {
-                    name = kubernetes_secret_v1.oulad_runtime.metadata[0].name
-                    key  = "GITHUB_TOKEN"
                   }
                 }
               }

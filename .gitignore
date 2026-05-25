@@ -14,3 +14,18 @@ override.tf.json
 # OS
 .DS_Store
 Thumbs.db
+*.zip
+/Data
+/Ednet
+/Ednet_2
+/OULAD
+/SED
+/large-data
+/.venv
+*.pyc
+*.jar
+*.parquet
+*.crc
+*.pdf
+*.md
+full_data_manifest.json
