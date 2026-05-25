@@ -128,7 +128,7 @@ def main():
         
         # ─── 4. KHỞI TẠO VÀ HUẤN LUYỆN MÔ HÌNH BKT ─────────────────────────
         print("🏋️ Fitting pyBKT Model on training cohort...")
-        bkt_model = Model(seed=42, parallel=True)
+        bkt_model = Model(seed=42, parallel=False)
         
         # Cấu hình Seed Parameters để tối ưu hóa thuật toán Expectation-Maximization (EM)
         bkt_model.coef_ = {
@@ -142,7 +142,7 @@ def main():
             for skill in unique_skills
         }
         
-        bkt_model.fit(data=train_df)
+        bkt_model.fit(data=train_df, num_iter=20)
         
         # ─── 5. ĐÁNH GIÁ HIỆU NĂNG ────────────────────────────────────────
         auc_test = bkt_model.evaluate(data=test_df, metric='auc')
