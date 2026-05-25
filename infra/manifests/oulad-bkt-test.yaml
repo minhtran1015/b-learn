@@ -31,5 +31,7 @@ spec:
               key: AZURE_STORAGE_KEY
         - name: SPARK_DRIVER_MEMORY
           value: "8g"
+        - name: BKT_MAX_TRAIN_ROWS
+          value: "30000"
       restartPolicy: Never
   backoffLimit: 0

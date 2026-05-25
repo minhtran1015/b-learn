@@ -125,6 +125,16 @@ def main():
         )
         train_df = bkt_df[bkt_df['user_id'].isin(train_students)].copy()
         test_df = bkt_df[bkt_df['user_id'].isin(test_students)].copy()
+
+        # Speed-control knob for integration runs on constrained clusters.
+        max_train_rows = int(os.getenv("BKT_MAX_TRAIN_ROWS", "30000"))
+        if len(train_df) > max_train_rows:
+            train_df = (
+                train_df.sample(n=max_train_rows, random_state=42)
+                .sort_values(by=['user_id', 'order_id'])
+                .reset_index(drop=True)
+            )
+            print(f"⚙️ Downsampled training events to {max_train_rows} rows for faster convergence.")
         
         # ─── 4. KHỞI TẠO VÀ HUẤN LUYỆN MÔ HÌNH BKT ─────────────────────────
         print("🏋️ Fitting pyBKT Model on training cohort...")
