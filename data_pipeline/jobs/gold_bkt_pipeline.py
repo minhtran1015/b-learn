@@ -142,7 +142,7 @@ def main():
             for skill in unique_skills
         }
         
-        bkt_model.fit(data=train_df, num_iter=20)
+        bkt_model.fit(data=train_df, num_fits=1)
         
         # ─── 5. ĐÁNH GIÁ HIỆU NĂNG ────────────────────────────────────────
         auc_test = bkt_model.evaluate(data=test_df, metric='auc')
