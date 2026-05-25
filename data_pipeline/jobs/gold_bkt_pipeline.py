@@ -1,4 +1,9 @@
 import os
+import random
+# Monkeypatch random.randint to handle float arguments (e.g. 1e8) for compatibility with Python 3.12+
+_orig_randint = random.randint
+random.randint = lambda a, b: _orig_randint(int(a), int(b))
+
 import numpy as np
 import pandas as pd
 from pathlib import Path
