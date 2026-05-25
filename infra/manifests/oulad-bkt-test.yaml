@@ -13,7 +13,7 @@ spec:
         command: ["python", "-m", "data_pipeline.jobs.gold_bkt_pipeline"]
         resources:
           requests:
-            cpu: "1.5"
+            cpu: "1.0"
             memory: "4Gi"
           limits:
             cpu: "1.8"
