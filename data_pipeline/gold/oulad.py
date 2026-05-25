@@ -124,7 +124,11 @@ def _build_assessment_features(studentassessment: DataFrame, assessments: DataFr
         .where(F.col("date").isNull() | (F.col("date") <= F.lit(CUTOFF_DAY)))
     )
 
-    agg = assess_joined.groupBy("id_student", "code_module", "code_presentation").agg(
+    agg = assess_joined.groupBy(
+        F.col("id_student"),
+        F.col("sa.code_module"),
+        F.col("sa.code_presentation"),
+    ).agg(
         F.avg("score").alias("avg_score"),
         F.min("score").alias("min_score"),
         F.count("id_assessment").alias("submission_count"),
