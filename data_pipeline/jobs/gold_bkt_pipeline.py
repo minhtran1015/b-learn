@@ -38,6 +38,19 @@ def main():
     try:
         # ─── 1. ĐỌC DỮ LIỆU TỪ SILVER LAYER (ICEBERG) ─────────────────────
         # Đọc dữ liệu sạch từ tầng Silver thay vì đọc file CSV thô
+        print("📥 Diagnosing available namespaces and tables in silver_catalog...")
+        try:
+            spark.sql("SHOW DATABASES IN silver_catalog").show()
+            spark.sql("SHOW SCHEMAS IN silver_catalog").show()
+            for db in ["silver", "silver_db", "default", "demo_db", "full_db"]:
+                try:
+                    print(f"Tables in silver_catalog.{db}:")
+                    spark.sql(f"SHOW TABLES IN silver_catalog.{db}").show(truncate=False)
+                except Exception as e_db:
+                    print(f"Could not list tables in silver_catalog.{db}: {e_db}")
+        except Exception as diag_err:
+            print(f"Error during catalog diagnosis: {diag_err}")
+
         print("📥 Loading cleansed tables from Silver Layer...")
         try:
             silver_assessments = spark.read.table("silver_catalog.silver.oulad_assessments").toPandas()
