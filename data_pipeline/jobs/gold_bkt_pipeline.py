@@ -75,9 +75,15 @@ def main():
         
         # ─── 2. PIPELINE DATA ENGINEERING (Giữ nguyên logic của BKT.ipynb) ───
         print("⚙️ Engineering hybrid skill tracks...")
+        print("silver_assessments columns:", silver_assessments.columns.tolist())
+        print("silver_student_assess columns:", silver_student_assess.columns.tolist())
+        
         # Xử lý missing values
         silver_student_assess = silver_student_assess.dropna(subset=['score', 'id_assessment'])
-        silver_assessments = silver_assessments.dropna(subset=['code_module', 'assessment_type'])
+        
+        # Safely dropna on assessments
+        assess_drop_cols = [c for c in ['code_module', 'assessment_type'] if c in silver_assessments.columns]
+        silver_assessments = silver_assessments.dropna(subset=assess_drop_cols)
         
         # Merge thông tin định nghĩa bài học
         df = silver_student_assess.merge(silver_assessments, on='id_assessment', how='left')
