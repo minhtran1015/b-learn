@@ -86,10 +86,9 @@ def main():
         silver_assessments = silver_assessments.dropna(subset=assess_drop_cols)
         
         # Merge thông tin định nghĩa bài học
-        merge_keys = ['id_assessment']
-        if 'code_module' in silver_student_assess.columns and 'code_module' in silver_assessments.columns:
-            merge_keys.append('code_module')
-        df = silver_student_assess.merge(silver_assessments, on=merge_keys, how='left')
+        if 'code_module' in silver_student_assess.columns:
+            silver_student_assess = silver_student_assess.drop(columns=['code_module'])
+        df = silver_student_assess.merge(silver_assessments, on='id_assessment', how='left')
         df = df.dropna(subset=['code_module', 'assessment_type'])
         
         # Loại bỏ bài kiểm tra cuối kỳ (Exam) theo thiết kế chuỗi tuần tự của BKT
