@@ -1,24 +1,35 @@
 import os
+import sys
 import random
+from pathlib import Path
+
+# Add data_pipeline to sys.path to resolve imports cleanly
+PIPELINE_ROOT = Path(__file__).resolve().parents[1]
+if str(PIPELINE_ROOT) not in sys.path:
+    sys.path.insert(0, str(PIPELINE_ROOT))
+
 # Monkeypatch random.randint to handle float arguments (e.g. 1e8) for compatibility with Python 3.12+
 _orig_randint = random.randint
 random.randint = lambda a, b: _orig_randint(int(a), int(b))
 
 import numpy as np
 import pandas as pd
-from pathlib import Path
 from sklearn.model_selection import train_test_split
 from pyBKT.models import Model
 
-from pyspark.sql import SparkSession
 from pyspark.sql.functions import current_timestamp
+from ingestion.ingest import build_spark
 
 def build_spark_session(app_name="B-Learn_Gold_BKT_Pipeline"):
     """Khởi tạo Spark Session hỗ trợ Iceberg Catalog trên Azure ADLS Gen2"""
-    # Spark sẽ tự động kế thừa cấu hình từ môi trường (giống các job trước của bạn)
-    return SparkSession.builder \
-        .appName(app_name) \
-        .getOrCreate()
+    storage_account = os.getenv("AZURE_STORAGE_ACCOUNT", "stblearnminhdata2026")
+    output_root = f"abfss://gold@{storage_account}.dfs.core.windows.net/iceberg_warehouse/gold/"
+    return build_spark(
+        app_name,
+        output_root,
+        iceberg_catalogs={"silver_catalog": "silver", "gold_catalog": "gold"},
+        default_catalog_name="gold_catalog"
+    )
 
 def main():
     print("⚡ Starting Automated Cloud BKT Pipeline for OULAD...")
