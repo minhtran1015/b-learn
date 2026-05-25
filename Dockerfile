@@ -17,6 +17,7 @@ WORKDIR /app
 
 # Install requirements first to utilize Docker build cache
 COPY data_pipeline/requirements.txt /app/data_pipeline/requirements.txt
+ENV SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL=True
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r /app/data_pipeline/requirements.txt
 
