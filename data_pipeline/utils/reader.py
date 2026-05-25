@@ -41,8 +41,13 @@ def read_json_bronze_df(spark: SparkSession, file_path: Path) -> DataFrame:
 
 
 def read_markdown_bronze_df(spark: SparkSession, file_path: Path, source_root: Path) -> DataFrame:
-    relative = file_path.relative_to(source_root)
-    chapter = relative.parts[1] if len(relative.parts) > 1 else relative.parts[0]
+    try:
+        relative = file_path.relative_to(source_root)
+        parts = relative.parts
+    except ValueError:
+        parts = file_path.parts
+
+    chapter = parts[1] if len(parts) > 1 else parts[0]
     content = file_path.read_text(encoding="utf-8")
     rows = [
         Row(

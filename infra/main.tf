@@ -5,6 +5,10 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 3.0"
     }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.30"
+    }
   }
 
   # Cấu hình lưu trữ state trên Azure Storage vừa tạo ở Bước 3
@@ -18,6 +22,37 @@ terraform {
 
 provider "azurerm" {
   features {}
+}
+
+variable "oulad_repo_url" {
+  type        = string
+  default     = "https://github.com/minhtran1015/b-learn.git"
+  description = "Git repository that the AKS pipeline job clones at runtime."
+}
+
+variable "oulad_git_ref" {
+  type        = string
+  default     = "main"
+  description = "Git ref used by the AKS pipeline job."
+}
+
+variable "oulad_cron_schedule" {
+  type        = string
+  default     = "0 3 * * *"
+  description = "UTC cron schedule for the OULAD medallion job."
+}
+
+variable "oulad_runner_image" {
+  type        = string
+  default     = "python:3.12-bookworm"
+  description = "Base image used by the AKS job to run the pipeline."
+}
+
+variable "github_token" {
+  type        = string
+  default     = ""
+  sensitive   = true
+  description = "GitHub token used by the AKS job to clone the private repository."
 }
 
 # Tạo Resource Group đầu tiên cho Compute (AKS)
@@ -88,6 +123,181 @@ resource "azurerm_kubernetes_cluster" "aks" {
     # THÊM 3 DÒNG NÀY ĐỂ TRÁNH TRÙNG LẶP:
     service_cidr       = "10.1.0.0/16"    # Dải IP cho các Service (ClusterIP)
     dns_service_ip     = "10.1.0.10"     # IP của dịch vụ DNS nội bộ (phải nằm trong service_cidr)
+  }
+}
+
+provider "kubernetes" {
+  host                   = azurerm_kubernetes_cluster.aks.kube_config[0].host
+  client_certificate     = base64decode(azurerm_kubernetes_cluster.aks.kube_config[0].client_certificate)
+  client_key             = base64decode(azurerm_kubernetes_cluster.aks.kube_config[0].client_key)
+  cluster_ca_certificate = base64decode(azurerm_kubernetes_cluster.aks.kube_config[0].cluster_ca_certificate)
+}
+
+resource "kubernetes_namespace_v1" "medallion" {
+  metadata {
+    name = "blearn-medallion"
+  }
+}
+
+resource "kubernetes_secret_v1" "oulad_runtime" {
+  metadata {
+    name      = "oulad-runtime"
+    namespace = kubernetes_namespace_v1.medallion.metadata[0].name
+  }
+
+  type = "Opaque"
+
+  data = {
+    AZURE_STORAGE_ACCOUNT = azurerm_storage_account.data_storage.name
+    AZURE_STORAGE_KEY     = azurerm_storage_account.data_storage.primary_access_key
+    OULAD_REPO_URL        = var.oulad_repo_url
+    OULAD_GIT_REF         = var.oulad_git_ref
+    GITHUB_TOKEN          = var.github_token
+  }
+}
+
+resource "kubernetes_cron_job_v1" "oulad_medallion" {
+  metadata {
+    name      = "oulad-medallion-pipeline"
+    namespace = kubernetes_namespace_v1.medallion.metadata[0].name
+    labels = {
+      app = "oulad-medallion"
+    }
+  }
+
+  spec {
+    schedule                      = var.oulad_cron_schedule
+    concurrency_policy            = "Forbid"
+    successful_jobs_history_limit = 1
+    failed_jobs_history_limit      = 1
+
+    job_template {
+      metadata {
+        labels = {
+          app = "oulad-medallion"
+        }
+      }
+
+      spec {
+        backoff_limit = 1
+
+        template {
+          metadata {
+            labels = {
+              app = "oulad-medallion"
+            }
+          }
+
+          spec {
+            restart_policy = "Never"
+
+            container {
+              name              = "runner"
+              image             = var.oulad_runner_image
+              image_pull_policy = "IfNotPresent"
+
+              command = ["/bin/bash", "-lc"]
+              args = [<<-EOT
+                set -euo pipefail
+                export DEBIAN_FRONTEND=noninteractive
+                export SPARK_DRIVER_MEMORY=4g
+
+                apt-get update
+                apt-get install -y --no-install-recommends git ca-certificates
+                rm -rf /var/lib/apt/lists/*
+
+                rm -rf /tmp/b-learn
+                git clone --depth 1 --branch "$OULAD_GIT_REF" "https://x-access-token:$${GITHUB_TOKEN}@github.com/minhtran1015/b-learn.git" /tmp/b-learn
+
+                cd /tmp/b-learn
+                python -m pip install --no-cache-dir --upgrade pip
+                python -m pip install --no-cache-dir -r data_pipeline/requirements.txt
+
+                python -m data_pipeline.silver.oulad \
+                  --input-catalog bronze_catalog \
+                  --input-namespace full_db \
+                  --output-catalog silver_catalog \
+                  --output-namespace silver_db \
+                  --output-root "abfss://silver@$AZURE_STORAGE_ACCOUNT.dfs.core.windows.net/iceberg_warehouse/silver/" \
+                  --input-container bronze \
+                  --output-container silver
+
+                python -m data_pipeline.gold.oulad \
+                  --input-catalog silver_catalog \
+                  --input-namespace silver_db \
+                  --output-catalog gold_catalog \
+                  --output-namespace gold_db \
+                  --output-root "abfss://gold@$AZURE_STORAGE_ACCOUNT.dfs.core.windows.net/iceberg_warehouse/gold/" \
+                  --input-container silver \
+                  --output-container gold
+EOT
+              ]
+
+              env {
+                name = "AZURE_STORAGE_ACCOUNT"
+                value_from {
+                  secret_key_ref {
+                    name = kubernetes_secret_v1.oulad_runtime.metadata[0].name
+                    key  = "AZURE_STORAGE_ACCOUNT"
+                  }
+                }
+              }
+
+              env {
+                name = "AZURE_STORAGE_KEY"
+                value_from {
+                  secret_key_ref {
+                    name = kubernetes_secret_v1.oulad_runtime.metadata[0].name
+                    key  = "AZURE_STORAGE_KEY"
+                  }
+                }
+              }
+
+              env {
+                name = "OULAD_REPO_URL"
+                value_from {
+                  secret_key_ref {
+                    name = kubernetes_secret_v1.oulad_runtime.metadata[0].name
+                    key  = "OULAD_REPO_URL"
+                  }
+                }
+              }
+
+              env {
+                name = "OULAD_GIT_REF"
+                value_from {
+                  secret_key_ref {
+                    name = kubernetes_secret_v1.oulad_runtime.metadata[0].name
+                    key  = "OULAD_GIT_REF"
+                  }
+                }
+              }
+
+              env {
+                name = "GITHUB_TOKEN"
+                value_from {
+                  secret_key_ref {
+                    name = kubernetes_secret_v1.oulad_runtime.metadata[0].name
+                    key  = "GITHUB_TOKEN"
+                  }
+                }
+              }
+
+              resources {
+                limits = {
+                  cpu    = "2"
+                  memory = "6Gi"
+                }
+                requests = {
+                  cpu    = "500m"
+                  memory = "2Gi"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 

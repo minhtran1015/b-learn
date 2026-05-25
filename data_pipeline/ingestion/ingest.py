@@ -36,6 +36,7 @@ from functools import reduce
 from itertools import islice
 from pathlib import Path
 from typing import Dict
+from urllib.parse import urlparse
 
 os.environ.setdefault("SPARK_LOCAL_HOSTNAME", "localhost")
 os.environ.setdefault("PYSPARK_PYTHON", sys.executable)
@@ -47,6 +48,8 @@ if str(PIPELINE_ROOT) not in sys.path:
 
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
+import shutil
+import tempfile
 
 from utils.manifest import discover_files, load_manifest, normalize_table_name, write_manifest
 from utils.reader import (
@@ -75,12 +78,24 @@ def require_azure_storage_key() -> str:
     return storage_account_key
 
 
+def _abfss_container(path_value: Path | str | None) -> str | None:
+    if path_value is None:
+        return None
+    parsed = urlparse(str(path_value))
+    if parsed.scheme != "abfss":
+        return None
+    container_name = parsed.netloc.split("@", 1)[0].strip()
+    return container_name or None
+
+
 def build_spark(
     app_name: str,
     output_root: Path | str | None = None,
     *,
     heavy_local_job: bool = False,
     shuffle_partitions: int = 4,
+    iceberg_catalogs: dict[str, str] | None = None,
+    default_catalog_name: str = "bronze_catalog",
 ) -> SparkSession:
     local_master = "local[4]" if heavy_local_job else "local[*]"
     builder = (
@@ -91,11 +106,18 @@ def build_spark(
         .config("spark.sql.session.timeZone", "UTC")
     )
 
+    driver_memory = os.getenv("SPARK_DRIVER_MEMORY")
+    executor_memory = os.getenv("SPARK_EXECUTOR_MEMORY")
+
+    if driver_memory:
+        builder = builder.config("spark.driver.memory", driver_memory)
+
+    if executor_memory:
+        builder = builder.config("spark.executor.memory", executor_memory)
+
     if heavy_local_job:
         builder = (
             builder
-            .config("spark.driver.memory", "8g")
-            .config("spark.executor.memory", "8g")
             .config("spark.memory.fraction", "0.6")
             .config("spark.memory.storageFraction", "0.3")
             .config("spark.default.parallelism", "8")
@@ -104,11 +126,11 @@ def build_spark(
     if output_root is not None and is_cloud_path(output_root):
         storage_account_name = os.getenv("AZURE_STORAGE_ACCOUNT", DEFAULT_AZURE_STORAGE_ACCOUNT)
         storage_account_key = require_azure_storage_key()
-        
-        # Iceberg warehouse path on Azure ADLS Gen2
-        warehouse_path = f"abfss://bronze@{storage_account_name}.dfs.core.windows.net/iceberg_warehouse"
-        
-        # Iceberg 1.5.0 with Spark 3.5 runtime (Scala 2.12)
+
+        catalog_mapping = iceberg_catalogs or {
+            default_catalog_name: _abfss_container(output_root) or "bronze",
+        }
+
         builder = (
             builder
             .config(
@@ -121,14 +143,25 @@ def build_spark(
                 f"spark.hadoop.fs.azure.account.key.{storage_account_name}.dfs.core.windows.net",
                 storage_account_key,
             )
-            # Iceberg SQL Extensions and Catalog configuration
             .config("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions")
-            .config("spark.sql.catalog.bronze_catalog", "org.apache.iceberg.spark.SparkCatalog")
-            .config("spark.sql.catalog.bronze_catalog.type", "hadoop")
-            .config("spark.sql.catalog.bronze_catalog.warehouse", warehouse_path)
-            # Optimization for small files (EdNet: 1.7M files) - auto-compact to 128MB
-            .config("spark.sql.catalog.bronze_catalog.write.target-file-size-bytes", "134217728")  # 128MB
         )
+
+        for catalog_name, container_name in catalog_mapping.items():
+            warehouse_path = (
+                f"abfss://{container_name}@{storage_account_name}.dfs.core.windows.net/iceberg_warehouse"
+            )
+            builder = (
+                builder
+                .config(f"spark.sql.catalog.{catalog_name}", "org.apache.iceberg.spark.SparkCatalog")
+                .config(f"spark.sql.catalog.{catalog_name}.type", "hadoop")
+                .config(f"spark.sql.catalog.{catalog_name}.warehouse", warehouse_path)
+                .config(f"spark.sql.catalog.{catalog_name}.write.target-file-size-bytes", "134217728")
+            )
+
+    # Honor user-provided SPARK_DRIVER_MEMORY env var to avoid OOM on large local jobs
+    spark_driver_memory = os.getenv("SPARK_DRIVER_MEMORY")
+    if spark_driver_memory:
+        builder = builder.config("spark.driver.memory", spark_driver_memory)
 
     return builder.getOrCreate()
 
@@ -138,7 +171,14 @@ def bronze_output_path(output_root: Path | str, table_name: str) -> str:
     return f"{root}/{table_name}"
 
 
-def write_table(df, output_root: Path | str, table_name: str, partition_hint: str, namespace: str = "demo") -> None:
+def write_table(
+    df,
+    output_root: Path | str,
+    table_name: str,
+    partition_hint: str,
+    namespace: str = "demo",
+    catalog_name: str = "bronze_catalog",
+) -> None:
     """Write Bronze table using Iceberg Catalog (hadoop type) on Azure ADLS Gen2.
     
     Args:
@@ -146,22 +186,19 @@ def write_table(df, output_root: Path | str, table_name: str, partition_hint: st
     """
     if is_cloud_path(output_root):
         # Cloud: Use Iceberg Catalog with hadoop type for ACID guarantees and metadata management
-        # Table identifier: bronze_catalog.{demo_db|full_db}.{table}
         db_name = f"{namespace}_db"
-        table_identifier = f"bronze_catalog.{db_name}.{table_name}"
-        
-        # Write using writeTo() with createOrReplace for Iceberg table management
+        table_identifier = f"{catalog_name}.{db_name}.{table_name}"
+
         writer = df.writeTo(table_identifier).tableProperty("write.format.default", "parquet")
-        
+
         if partition_hint and partition_hint in df.columns:
             writer = writer.partitionedBy(partition_hint)
-        
+
         writer.createOrReplace()
     else:
-        # Local: Use Parquet format with snappy compression
         output_path = bronze_output_path(output_root, table_name)
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-        
+
         writer = df.write.format("parquet").option("compression", "snappy").mode("overwrite")
         if partition_hint and partition_hint in df.columns:
             writer = writer.partitionBy(partition_hint)
@@ -183,6 +220,31 @@ def ingest_manifest(spark: SparkSession, manifest_path: Path, output_root: Path 
 
         for record in records:
             file_path = Path(record["source_path"])
+            # Allow manifest to contain paths relative to the provided source_root.
+            # Avoid duplicating source_root when manifest entries already include it
+            if not file_path.is_absolute():
+                parts = file_path.parts
+                repo_root = PIPELINE_ROOT.parent
+                try:
+                    # Case 1: manifest used 'large-data/...' (starts with source_root name)
+                    if parts and parts[0] == source_root.name:
+                        file_path = source_root.joinpath(*parts[1:]).resolve()
+                    # Case 2: manifest used repo-relative path like 'infra/...' or similar
+                    elif (repo_root / file_path).exists():
+                        file_path = (repo_root / file_path).resolve()
+                    # Case 3: file_path is relative to source_root
+                    elif (source_root / file_path).exists():
+                        file_path = (source_root / file_path).resolve()
+                    else:
+                        # Best-effort: try repo_root first, then source_root, then resolve raw
+                        if (repo_root / file_path).exists():
+                            file_path = (repo_root / file_path).resolve()
+                        elif (source_root / file_path).exists():
+                            file_path = (source_root / file_path).resolve()
+                        else:
+                            file_path = file_path.resolve()
+                except Exception:
+                    file_path = file_path.resolve()
 
             if file_type == "csv":
                 bronze_df = read_csv_as_bronze_df(spark, file_path)
@@ -197,6 +259,13 @@ def ingest_manifest(spark: SparkSession, manifest_path: Path, output_root: Path 
                 if dataset == "oulad" and "code_module" not in bronze_df.columns:
                     bronze_df = bronze_df.withColumn("code_module", F.lit(None).cast("string"))
 
+                bronze_df = add_bronze_metadata(bronze_df, dataset, str(file_path))
+                dataframes.append(bronze_df)
+                continue
+
+            if file_type == "parquet":
+                # consolidated EdNet parquet outputs or other parquet sources
+                bronze_df = spark.read.parquet(str(file_path))
                 bronze_df = add_bronze_metadata(bronze_df, dataset, str(file_path))
                 dataframes.append(bronze_df)
                 continue
@@ -269,7 +338,10 @@ def run_ingest(args: argparse.Namespace) -> None:
     
     This is NOT just copying files; it's light processing to enable fast queries.
     """
-    spark = build_spark("B-Learn_Bronze_Ingest", args.output_root)
+    namespace = getattr(args, 'namespace', 'demo')
+    # enable heavy_local_job for full namespace to increase driver/executor memory
+    heavy = True if namespace == 'full' else False
+    spark = build_spark("B-Learn_Bronze_Ingest", args.output_root, heavy_local_job=heavy)
     try:
         source_root = Path(args.source_root).resolve()
         manifest_path = Path(args.manifest_path).resolve()
@@ -309,6 +381,8 @@ def run_verify(args: argparse.Namespace) -> None:
                 source_counts[table] = source_counts.get(table, 0) + (len(parsed) if isinstance(parsed, list) else 1)
             elif file_type == "markdown":
                 source_counts[table] = source_counts.get(table, 0) + 1
+            elif file_type == "parquet":
+                source_counts[table] = source_counts.get(table, 0) + spark.read.parquet(str(file_path)).count()
 
         rows = []
         all_tables = sorted(set(source_counts) | set(bronze_counts))
@@ -400,16 +474,39 @@ def consolidate_ednet_group(
     batch_size: int,
 ) -> int:
     total_rows = 0
+    staging_dir = f"{output_path.rstrip('/')}_staging"
+    staging_path = Path(staging_dir)
+    # ensure staging dir is clean
+    if staging_path.exists():
+        shutil.rmtree(staging_path)
+    staging_path.mkdir(parents=True, exist_ok=True)
+
     for batch_index, file_batch in enumerate(chunk_files(source_files, batch_size)):
         batch_paths = [str(path) for path in file_batch]
         df = spark.read.option("header", "true").csv(batch_paths)
         batch_rows = df.count()
         total_rows += batch_rows
+        batch_out = str(staging_path / f"batch_{batch_index}")
+        # write each batch to its own folder; we'll compact after all batches
+        df.repartition(min(target_partitions, max(1, df.rdd.getNumPartitions())))
         (
-            df.repartition(target_partitions)
-            .write.mode("overwrite" if batch_index == 0 else "append")
-            .parquet(output_path)
+            df.write.mode("overwrite").parquet(batch_out)
         )
+
+    # Compact all batch outputs into final output with target_partitions
+    all_df = spark.read.option("mergeSchema", "true").parquet(str(staging_path))
+    (
+        all_df.repartition(target_partitions)
+        .write.mode("overwrite")
+        .parquet(output_path)
+    )
+
+    # cleanup staging
+    try:
+        shutil.rmtree(staging_path)
+    except Exception:
+        pass
+
     return total_rows
 
 
