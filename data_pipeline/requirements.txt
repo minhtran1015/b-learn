@@ -8,6 +8,8 @@ azure-storage-blob>=12.20
 setuptools
 pyBKT==1.3.0
 torch==2.2.0 --extra-index-url https://download.pytorch.org/whl/cpu
+streamlit==1.32.0
+adlfs==2024.4.0
 
 # Apache Iceberg 1.5.0 with Spark 3.5 runtime (Maven coordinate: iceberg-spark-runtime-3.5_2.12:1.5.0)
 # Configured via spark.jars.packages in ingest.py build_spark() function
