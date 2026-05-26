@@ -17,7 +17,7 @@ export SPARK_DRIVER_MEMORY
 export AZURE_STORAGE_ACCOUNT
 export AZURE_STORAGE_KEY
 
-.PHONY: help bronze-discover-full bronze-consolidate-ednet bronze-full-manifest bronze-full-ingest bronze-full-verify bronze-full-audit bronze-full-flow silver-oulad-transform gold-oulad-train gold-bkt-run medallion-oulad-flow infra-terraform-init infra-terraform-plan infra-terraform-apply
+.PHONY: help bronze-discover-full bronze-consolidate-ednet bronze-full-manifest bronze-full-ingest bronze-full-verify bronze-full-audit bronze-full-flow silver-oulad-transform gold-oulad-train gold-bkt-run medallion-oulad-flow infra-terraform-init infra-terraform-plan infra-terraform-apply nrt-inference-run k8s-deploy-nrt k8s-nrt-trigger-once k8s-activate-failover-schedule k8s-deactivate-failover-schedule k8s-failover-status airflow-upgrade-ha
 
 help:
 	@printf '%s\n' \
@@ -248,3 +248,73 @@ k8s-clean-test:
 # Chạy toàn bộ chu trình Medallion cục bộ từ Bronze -> Silver -> Toàn bộ các mô hình Gold
 pipeline-full-local: bronze-run silver-run gold-lgbm-run gold-bkt-run
 	@echo "🎉 [SUCCESS] Toàn bộ hệ thống định hình dữ liệu lớn đã hoàn thành cục bộ!"
+
+# ====================================================================
+# ⚡ NRT INFERENCE (NEAR-REAL-TIME MICRO-BATCH — MỖI 15 PHÚT)
+# ====================================================================
+
+# Chạy NRT Inference thủ công cục bộ (test nhanh)
+nrt-inference-run:
+	python -m data_pipeline.jobs.nrt_gold_inference
+
+# Triển khai K8s CronJob NRT lên AKS (mỗi 15 phút tự động)
+k8s-deploy-nrt:
+	kubectl apply -f infra/manifests/oulad-nrt-cronjob.yaml
+	@echo "✅ NRT CronJob deployed: chạy mỗi 15 phút tự động."
+	kubectl get cronjob oulad-nrt-inference-cronjob -n blearn-medallion
+
+# Kích hoạt NRT Job ngay lập tức (manual trigger để test)
+k8s-nrt-trigger-once:
+	kubectl create job --from=cronjob/oulad-nrt-inference-cronjob nrt-manual-$$(date +%s) -n blearn-medallion
+	@echo "⚡ NRT job triggered manually. Check logs:"
+	@echo "  kubectl get jobs -n blearn-medallion | grep nrt-manual"
+
+# ====================================================================
+# 🛡️ FAILOVER: K8s NATIVE CRONJOBS (DỰ PHÒNG KHI AIRFLOW LỖI)
+# ====================================================================
+# Kiến trúc Active-Passive: Airflow là Primary, K8s CronJobs là Passive.
+# Khi Airflow xảy ra sự cố, chạy 'make k8s-activate-failover-schedule'
+# để kích hoạt lịch K8s thay thế. Chạy 'deactivate' khi Airflow phục hồi.
+
+# Kích hoạt toàn bộ lịch Failover K8s (khi Airflow lỗi)
+k8s-activate-failover-schedule:
+	@echo "🚨 [FAILOVER] Activating K8s Native CronJob schedules..."
+	kubectl apply -f infra/manifests/oulad-bronze-cronjob.yaml
+	kubectl apply -f infra/manifests/oulad-silver-cronjob.yaml
+	kubectl apply -f infra/manifests/oulad-nrt-cronjob.yaml
+	@echo "✅ [FAILOVER] Lịch dự phòng đã kích hoạt:"
+	@echo "   • oulad-bronze-cronjob    → 02:00 UTC hàng ngày"
+	@echo "   • oulad-silver-gold-cronjob → 03:00 UTC hàng ngày"
+	@echo "   • oulad-nrt-cronjob       → mỗi 15 phút"
+	kubectl get cronjobs -n blearn-medallion
+
+# Tắt lịch Failover K8s (khi Airflow đã phục hồi)
+k8s-deactivate-failover-schedule:
+	@echo "✅ [FAILOVER] Deactivating K8s CronJobs (Airflow back online)..."
+	kubectl delete cronjob oulad-bronze-cronjob -n blearn-medallion --ignore-not-found=true
+	kubectl delete cronjob oulad-silver-gold-cronjob -n blearn-medallion --ignore-not-found=true
+	@echo "   NRT CronJob giữ nguyên — chạy song song với Airflow là an toàn."
+	kubectl get cronjobs -n blearn-medallion
+
+# Kiểm tra trạng thái tất cả CronJobs và Jobs đang chạy
+k8s-failover-status:
+	@echo "📊 CronJob status:"
+	kubectl get cronjobs -n blearn-medallion
+	@echo "\n📋 Recent Jobs:"
+	kubectl get jobs -n blearn-medallion --sort-by=.metadata.creationTimestamp | tail -10
+
+# ====================================================================
+# 🏗️ AIRFLOW HA: NÂNG CẤP LÊN KUBERNETES EXECUTOR + 2 SCHEDULERS
+# ====================================================================
+
+# Nâng cấp Airflow lên cấu hình HA (KubernetesExecutor + 2 Schedulers)
+# Yêu cầu: Helm đã cài sẵn và đang có kết nối tới AKS cluster
+airflow-upgrade-ha:
+	@echo "🔧 Upgrading Airflow to HA (KubernetesExecutor + 2 Schedulers)..."
+	helm upgrade blearn-airflow apache-airflow/airflow \
+		--namespace blearn-medallion \
+		--values infra/airflow-values.yaml \
+		--atomic \
+		--timeout 10m
+	@echo "✅ Airflow HA upgrade complete. Check scheduler pods:"
+	kubectl get pods -n blearn-medallion -l component=scheduler

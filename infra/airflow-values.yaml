@@ -1,37 +1,87 @@
 # infra/airflow-values.yaml
-images:
-  airflow:
-    repository: apache/airflow
-    tag: 2.8.1-python3.11
+# ══════════════════════════════════════════════════════════════════════════════
+# Cấu hình Airflow High-Availability (HA) với KubernetesExecutor
+# ── Chiến lược: 2 Schedulers song song (Active-Active từ Airflow 2.0+)
+#    Nếu 1 Pod chết, Pod còn lại tiếp tục điều phối không gián đoạn.
+# ── KubernetesExecutor: mỗi Task chạy trong Pod K8s riêng biệt → cô lập lỗi.
+# ══════════════════════════════════════════════════════════════════════════════
 
-# Sử dụng kiến trúc Executor đơn giản để tiết kiệm RAM/CPU trên AKS
-core:
-  executor: LocalExecutor
+executor: "KubernetesExecutor"
 
-# Cấu hình Webserver công khai để bạn mở giao diện trên trình duyệt khi Demo
-webserver:
+# Tắt Redis — KubernetesExecutor không cần message broker
+redis:
+  enabled: false
+
+# ── Scheduler HA: 2 Replicas chạy song song (Active-Active) ──────────────────
+scheduler:
+  replicas: 2
+  resources:
+    requests:
+      cpu: "300m"
+      memory: "512Mi"
+    limits:
+      cpu: "700m"
+      memory: "1Gi"
+  extraVolumes:
+    - name: oulad-medallion-dag-vol
+      configMap:
+        name: oulad-medallion-dag
+  extraVolumeMounts:
+    - name: oulad-medallion-dag-vol
+      mountPath: /opt/airflow/dags/oulad_medallion_dag.py
+      subPath: oulad_medallion_dag.py
+      readOnly: true
+
+# ── API Server / UI (Load Balancer public) ───────────────────────────────────
+apiServer:
   service:
     type: LoadBalancer
     ports:
       - name: airflow-ui
         port: 8080
         targetPort: 8080
+  extraVolumes:
+    - name: oulad-medallion-dag-vol
+      configMap:
+        name: oulad-medallion-dag
+  extraVolumeMounts:
+    - name: oulad-medallion-dag-vol
+      mountPath: /opt/airflow/dags/oulad_medallion_dag.py
+      subPath: oulad_medallion_dag.py
+      readOnly: true
 
-scheduler:
-  replicas: 1
-  resources:
-    requests:
-      cpu: "500m"
-      memory: "512Mi"
+# ── DAG Processor ─────────────────────────────────────────────────────────────
+dagProcessor:
+  extraVolumes:
+    - name: oulad-medallion-dag-vol
+      configMap:
+        name: oulad-medallion-dag
+  extraVolumeMounts:
+    - name: oulad-medallion-dag-vol
+      mountPath: /opt/airflow/dags/oulad_medallion_dag.py
+      subPath: oulad_medallion_dag.py
+      readOnly: true
 
+# ── PostgreSQL (Metadata DB): dùng nội bộ Helm để đơn giản hóa ──────────────
+# Khi chuyển sang Production thật, trỏ ra Azure Database for PostgreSQL:
+#   postgresql:
+#     enabled: false
+#   externalDatabase:
+#     type: "postgres"
+#     host: "db-blearn-prod.postgres.database.azure.com"
+#     port: 5432
+#     database: "airflow_metadata"
+#     user: "airflow"
+#     passwordSecret: "airflow-db-secret"
+#     passwordSecretKey: "password"
 postgresql:
   enabled: true
   architecture: standalone
 
-# Mount file DAG từ ConfigMap để không cần GitHub auth
-extraConfigmapMounts:
-  - name: oulad-medallion-dag
-    mountPath: /opt/airflow/dags/oulad_medallion_dag.py
-    configMap: oulad-medallion-dag
-    subPath: oulad_medallion_dag.py
-    readOnly: true
+# ── KubernetesExecutor: cấu hình Pod template cho mỗi Task ──────────────────
+config:
+  kubernetes_executor:
+    # Namespace nơi các Task Pod sẽ được tạo ra
+    namespace: blearn-medallion
+    # Giới hạn tài nguyên tối đa cho Task Pod
+    worker_pods_creation_batch_size: "4"

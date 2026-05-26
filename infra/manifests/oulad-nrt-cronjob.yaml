@@ -1,0 +1,51 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: oulad-nrt-inference-cronjob
+  namespace: blearn-medallion
+  labels:
+    app: blearn-nrt-inference
+    tier: gold-serving
+spec:
+  # Chạy mỗi 15 phút — đây là tần suất micro-batch tối ưu (NRT Inference)
+  schedule: "*/15 * * * *"
+  # Nếu job trước chưa xong thì BỎ QUA lần mới (tránh queue tắc nghẽn)
+  concurrencyPolicy: Forbid
+  # Giữ lại 3 log lần thành công gần nhất để debug
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      # Không retry — nếu lỗi thì đợi lần chạy tiếp theo (15 phút sau)
+      backoffLimit: 0
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: nrt-inference
+            image: acrblearnminh2026.azurecr.io/oulad-medallion:latest
+            imagePullPolicy: Always
+            command: ["python", "-m", "data_pipeline.jobs.nrt_gold_inference"]
+            # ── Tài nguyên cực kỳ tiết kiệm cho cụm AKS giá rẻ ──
+            resources:
+              requests:
+                cpu: "200m"
+                memory: "1Gi"
+              limits:
+                cpu: "500m"
+                memory: "2Gi"
+            env:
+            - name: NRT_WINDOW_MINUTES
+              value: "15"
+            - name: SPARK_DRIVER_MEMORY
+              value: "1g"
+            - name: AZURE_STORAGE_ACCOUNT
+              valueFrom:
+                secretKeyRef:
+                  name: oulad-runtime
+                  key: AZURE_STORAGE_ACCOUNT
+            - name: AZURE_STORAGE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: oulad-runtime
+                  key: AZURE_STORAGE_KEY

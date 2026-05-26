@@ -1,0 +1,46 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: oulad-bronze-cronjob
+  namespace: blearn-medallion
+  labels:
+    app: blearn-bronze-pipeline
+    tier: bronze
+    role: failover
+spec:
+  # Chạy lúc 2 giờ sáng hàng ngày — Offline ingestion (Failover schedule)
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: bronze-pipeline
+            image: acrblearnminh2026.azurecr.io/oulad-medallion:latest
+            imagePullPolicy: Always
+            command: ["python", "-m", "data_pipeline.silver.oulad"]
+            resources:
+              requests:
+                cpu: "800m"
+                memory: "3Gi"
+              limits:
+                cpu: "1.5"
+                memory: "6Gi"
+            env:
+            - name: SPARK_DRIVER_MEMORY
+              value: "3g"
+            - name: AZURE_STORAGE_ACCOUNT
+              valueFrom:
+                secretKeyRef:
+                  name: oulad-runtime
+                  key: AZURE_STORAGE_ACCOUNT
+            - name: AZURE_STORAGE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: oulad-runtime
+                  key: AZURE_STORAGE_KEY

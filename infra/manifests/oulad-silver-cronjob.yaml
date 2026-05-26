@@ -1,0 +1,54 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: oulad-silver-gold-cronjob
+  namespace: blearn-medallion
+  labels:
+    app: blearn-silver-gold-pipeline
+    tier: silver-gold
+    role: failover
+spec:
+  # Chạy lúc 3 giờ sáng hàng ngày — sau khi Bronze xong (Failover schedule)
+  # Bao gồm cả Silver transform + toàn bộ Gold training (LightGBM + BKT + RecSys)
+  schedule: "0 3 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: silver-gold-pipeline
+            image: acrblearnminh2026.azurecr.io/oulad-medallion:latest
+            imagePullPolicy: Always
+            # Chạy toàn bộ medallion pipeline: Silver → Gold (LGBM + BKT + RecSys) → Serving Export
+            command: ["/bin/sh", "-c",
+              "python -m data_pipeline.silver.oulad &&
+               python -m data_pipeline.gold.oulad --input-catalog silver_catalog --input-namespace silver_db --output-catalog gold_catalog --output-namespace gold --output-root abfss://gold@$(AZURE_STORAGE_ACCOUNT).dfs.core.windows.net/iceberg_warehouse/gold/ &&
+               python -m data_pipeline.jobs.gold_bkt_pipeline &&
+               python -m data_pipeline.jobs.gold_recsys_pipeline &&
+               python -m data_pipeline.jobs.export_to_serving"
+            ]
+            resources:
+              requests:
+                cpu: "800m"
+                memory: "6Gi"
+              limits:
+                cpu: "1.5"
+                memory: "8Gi"
+            env:
+            - name: SPARK_DRIVER_MEMORY
+              value: "5g"
+            - name: AZURE_STORAGE_ACCOUNT
+              valueFrom:
+                secretKeyRef:
+                  name: oulad-runtime
+                  key: AZURE_STORAGE_ACCOUNT
+            - name: AZURE_STORAGE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: oulad-runtime
+                  key: AZURE_STORAGE_KEY
