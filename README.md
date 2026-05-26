@@ -522,28 +522,20 @@ kubectl create configmap oulad-medallion-dag \
 
 **File**: [`dashboard/app.py`](dashboard/app.py)
 
-### Tính Năng UI
+### Cấu Trúc 3 Phân Hệ (Tabs)
 
-| Panel | Mô tả |
-|-------|-------|
-| **Sidebar** | Dropdown chọn sinh viên với format `👤 Học viên #X (hash...)` thay vì SHA-256 thô |
-| **Profile Card** | Hiển thị index và Secure ID (`SHA-256 Cloud ID`) của sinh viên được chọn |
-| **Panel 1 — LightGBM** | Xác suất bỏ học (%), trạng thái rủi ro, kết quả dự đoán cuối kỳ |
-| **Panel 2 — pyBKT** | Bảng 7 kỹ năng học tập + độ thành thục (Mastery %) |
-| **Panel 3 — LightGCN** | Top 5 tài liệu VLE được gợi ý + điểm tương đồng cá nhân hóa |
+| Phân hệ (Tab) | Mô tả | Chi tiết kỹ thuật |
+|---|---|---|
+| **Tab 1: 📈 Tổng Quan (Cohort Analytics)** | Giao diện quản lý học đường (BI) của toàn trường học | - KPI Cards: Tổng số học viên, tỷ lệ rủi ro trung bình, kỹ năng gây kẹt nhất (pyBKT).<br>- Plotly Pie Chart: Phân phối giới tính.<br>- Plotly Bar Chart: Trình độ học vấn & Top 8 vùng miền.<br>- Plotly Line Chart: Xu hướng click chuột trung bình theo tuần học. |
+| **Tab 2: 👤 Hồ Sơ Cá Nhân (Student Deep-Dive)** | Phân tích chi tiết rủi ro và học tập của từng học viên được chọn ở Sidebar | - Cảnh báo rủi ro bỏ học (LightGBM).<br>- Trạng thái thành thục 7 kỹ năng (pyBKT).<br>- Đề xuất top 5 tài liệu học tập phù hợp (LightGCN). |
+| **Tab 3: 🎮 Giả Lập LMS (External App Integration)** | Mô phỏng tương tác của sinh viên trên nền tảng học trực tuyến | - Cho phép bấm nút học tập các tài liệu đề xuất.<br>- Cập nhật Vector nhúng thời gian thực (in-memory embedding update) dịch chuyển vector học viên hướng tới tài liệu đã học: $u_{new} = u_{old} + 0.3 \cdot i_{clicked}$.<br>- Tự động re-calculate gợi ý mới tức thì (Real-time Adaptive Learning).<br>- Hiện thị console logs luồng xử lý NRT (Bronze → Silver → Gold NRT → Serving). |
 
-### Design System
+### Design System & Performance
 
-- **Font**: Google Fonts Outfit (300/400/600/700)
-- **Theme**: Glassmorphism dark mode (`backdrop-filter: blur(12px)`)
-- **Animation**: Hover `translateY(-4px)` trên mỗi card
-- **Color**: Gradient `#FF6B6B → #4D96FF` cho tiêu đề; `#2ed573` (an toàn) và `#ff4757` (rủi ro) cho badges
+- **Font & Theme**: Google Fonts Outfit (300/400/600/700) + Glassmorphism dark mode (`rgba(255, 255, 255, 0.05)`, `backdrop-filter: blur(12px)`).
+- **Trực quan hóa**: Sử dụng thư viện Plotly Express cho các biểu đồ tương tác mượt mà, bóng bẩy.
+- **Hiệu suất**: Đọc trực tiếp các tệp Parquet từ Azure ADLS Gen2 (`cohort_stats.parquet`, `lms_simulator.parquet`, `risk_predictions.parquet`, `bkt_mastery.parquet`, `user_embeddings.parquet`, `item_embeddings.parquet`) bằng `@st.cache_data`. Gợi ý dot-product chạy bằng NumPy trên CPU chỉ mất **< 1ms**.
 
-### Caching & Performance
-
-- `@st.cache_data(ttl=3600)` — Cache dữ liệu Parquet trong 1 giờ
-- `numpy.dot()` — Tính toán dot-product trực tiếp trên RAM (< 1ms/sinh viên)
-- Không cần database kết nối khi runtime; chỉ cần đọc Parquet từ Azure Blob
 
 ---
 
