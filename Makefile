@@ -126,9 +126,6 @@ gold-oulad-train:
 
 medallion-oulad-flow: silver-oulad-transform gold-oulad-train
 
-gold-bkt-run:
-	$(PYTHON) -m data_pipeline.jobs.gold_bkt_pipeline
-
 infra-terraform-init:
 	cd $(INFRA_DIR) && $(TERRAFORM) init
 
@@ -163,3 +160,67 @@ airflow-start:
 # 4. Uninstall Airflow from AKS
 airflow-destroy:
 	helm uninstall airflow -n blearn-medallion
+
+# ====================================================================
+# 🌐 AZURE INFRASTRUCTURE CONTROLS (QUẢN LÝ HẠ TẦNG CHUYÊN NGHIỆP)
+# ====================================================================
+
+# Bật nhanh cụm AKS để làm việc
+aks-start:
+	az aks start --name aks-blearn-dev --resource-group RG-BLEarn-Compute
+
+# Tắt cụm AKS ngay lập tức sau khi xong việc để đóng băng chi phí
+aks-stop:
+	az aks stop --name aks-blearn-dev --resource-group RG-BLEarn-Compute
+
+# Kiểm tra nhanh trạng thái tất cả các Pod đang chạy trên namespace
+k8s-status:
+	kubectl get jobs,pods -n blearn-medallion
+
+# ====================================================================
+# ⚡ LOCAL / DEV PIPELINE EXECUTIONS (CHẠY TEST ĐỘC LẬP TỪNG TẦNG)
+# ====================================================================
+
+# 1. Chạy tầng Bronze: Nạp dữ liệu thô OULAD lên Cloud Iceberg
+bronze-run:
+	python -m data_pipeline.ingestion.ingest --manifest-path full_data_manifest.json --output-root abfss://bronze@stblearnminhdata2026.dfs.core.windows.net/iceberg_warehouse/full/ ingest --namespace full
+
+# 2. Chạy tầng Silver: Xử lý làm sạch, băm bảo mật SHA256 dữ liệu
+silver-run:
+	python -m data_pipeline.jobs.silver_transform
+
+# 3. Chạy tầng Gold - Phân hệ Mô hình Rủi ro (LightGBM)
+gold-lgbm-run:
+	python -m data_pipeline.jobs.gold_transform_and_train
+
+# 4. Chạy tầng Gold - Phân hệ Đo lường Kiến thức (pyBKT tuần tự)
+gold-bkt-run:
+	python -m data_pipeline.jobs.gold_bkt_pipeline
+
+# 5. Chạy tầng Gold - Phân hệ Hệ gợi ý Tài liệu (LightGCN PyTorch)
+gold-recsys-run:
+	python -m data_pipeline.jobs.gold_recsys_pipeline
+
+# ====================================================================
+# 🔄 KUBERNETES ONE-SHOT TEST JOBS (KÍCH HOẠT CHẠY TRÊN AKS)
+# ====================================================================
+
+# Kích hoạt test job BKT trên cụm Cloud
+k8s-test-bkt:
+	kubectl delete job oulad-gold-bkt-test -n blearn-medallion --ignore-not-found=true
+	kubectl apply -f infra/manifests/oulad-bkt-test.yaml
+	@echo "Chờ 5s để Pod khởi tạo rồi theo dõi log..."
+	sleep 5
+	kubectl logs -f $$(kubectl get pods -n blearn-medallion -l job-name=oulad-gold-bkt-test -o jsonpath='{.items[0].metadata.name}') -n blearn-medallion
+
+# Xóa toàn bộ các job test tạm thời để làm sạch cụm
+k8s-clean-test:
+	kubectl delete jobs --all -n blearn-medallion
+
+# ====================================================================
+# 🚀 END-TO-END AUTOMATION FLOW (LUỒNG CHẠY LIÊN HOÀN TOÀN DIỆN)
+# ====================================================================
+
+# Chạy toàn bộ chu trình Medallion cục bộ từ Bronze -> Silver -> Toàn bộ các mô hình Gold
+pipeline-full-local: bronze-run silver-run gold-lgbm-run gold-bkt-run
+	@echo "🎉 [SUCCESS] Toàn bộ hệ thống định hình dữ liệu lớn đã hoàn thành cục bộ!"
