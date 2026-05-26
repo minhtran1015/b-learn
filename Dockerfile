@@ -24,6 +24,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy the data_pipeline package
 COPY data_pipeline/ /app/data_pipeline/
 
+# Copy the Streamlit dashboard
+COPY dashboard/ /app/dashboard/
+
 # Copy manifest files
 COPY *manifest.json /app/
 

@@ -17,7 +17,7 @@ spec:
       - name: streamlit-container
         image: acrblearnminh2026.azurecr.io/oulad-medallion:latest
         imagePullPolicy: Always
-        command: ["streamlit", "run", "dashboard/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+        command: ["streamlit", "run", "/app/dashboard/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
         resources:
           requests:
             cpu: "200m"
