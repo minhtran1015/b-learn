@@ -52,9 +52,117 @@ def main():
         df_item_emb = spark.read.table("gold_catalog.gold_db.oulad_recsys_item_embeddings")
         df_item_emb.write.mode("overwrite").parquet(f"{serving_path}/item_embeddings.parquet")
             
+        # 4. Đọc từ Silver để làm thống kê tổng quan (Cohort Analytics)
+        print("➡️ Exporting cohort statistics...")
+        # Load oulad_studentinfo
+        df_info = None
+        for namespace in ["silver_db", "silver"]:
+            if df_info is not None:
+                break
+            for table_name in ["oulad_studentinfo", "oulad_student_info"]:
+                try:
+                    full_table = f"silver_catalog.{namespace}.{table_name}"
+                    print(f"Trying to load {full_table}...")
+                    df_info = spark.read.table(full_table)
+                    print(f"Successfully loaded {full_table}.")
+                    break
+                except Exception as e:
+                    print(f"Failed to load {full_table}: {e}")
+
+        # Load oulad_studentvle
+        df_vle = None
+        for namespace in ["silver_db", "silver"]:
+            if df_vle is not None:
+                break
+            for table_name in ["oulad_studentvle", "oulad_student_vle"]:
+                try:
+                    full_table = f"silver_catalog.{namespace}.{table_name}"
+                    print(f"Trying to load {full_table}...")
+                    df_vle = spark.read.table(full_table)
+                    print(f"Successfully loaded {full_table}.")
+                    break
+                except Exception as e:
+                    print(f"Failed to load {full_table}: {e}")
+
+        # Load oulad_vle
+        df_vle_meta = None
+        for namespace in ["silver_db", "silver"]:
+            if df_vle_meta is not None:
+                break
+            for table_name in ["oulad_vle"]:
+                try:
+                    full_table = f"silver_catalog.{namespace}.{table_name}"
+                    print(f"Trying to load {full_table}...")
+                    df_vle_meta = spark.read.table(full_table)
+                    print(f"Successfully loaded {full_table}.")
+                    break
+                except Exception as e:
+                    print(f"Failed to load {full_table}: {e}")
+
+        if df_info is not None and df_vle is not None:
+            # Spark SQL functions
+            from pyspark.sql import functions as F
+            
+            # Use id_student or student_id_hash
+            info_student_id_col = "id_student" if "id_student" in df_info.columns else "student_id_hash"
+            vle_student_id_col = "id_student" if "id_student" in df_vle.columns else "student_id_hash"
+
+            df_gender = df_info.groupBy("gender").count().select(
+                F.lit("gender").alias("metric_name"),
+                F.col("gender").cast("string").alias("category"),
+                F.lit(None).cast("double").alias("value"),
+                F.col("count").cast("long").alias("count")
+            )
+
+            df_region = df_info.groupBy("region").count().select(
+                F.lit("region").alias("metric_name"),
+                F.col("region").cast("string").alias("category"),
+                F.lit(None).cast("double").alias("value"),
+                F.col("count").cast("long").alias("count")
+            )
+
+            df_edu = df_info.groupBy("highest_education").count().select(
+                F.lit("highest_education").alias("metric_name"),
+                F.col("highest_education").cast("string").alias("category"),
+                F.lit(None).cast("double").alias("value"),
+                F.col("count").cast("long").alias("count")
+            )
+
+            # Thống kê tương tác (Engagement Trend)
+            df_student_daily = df_vle.groupBy(vle_student_id_col, "date").agg(F.sum("sum_click").alias("daily_clicks"))
+            df_daily_baseline = df_student_daily.groupBy("date").agg(F.avg("daily_clicks").alias("avg_clicks"))
+            df_engagement = df_daily_baseline.select(
+                F.lit("engagement_daily").alias("metric_name"),
+                F.col("date").cast("string").alias("category"),
+                F.col("avg_clicks").cast("double").alias("value"),
+                F.lit(None).cast("long").alias("count")
+            )
+
+            df_student_weekly = df_vle.withColumn("week", (F.col("date") / 7).cast("int")).groupBy(vle_student_id_col, "week").agg(F.sum("sum_click").alias("weekly_clicks"))
+            df_weekly_baseline = df_student_weekly.groupBy("week").agg(F.avg("weekly_clicks").alias("avg_clicks"))
+            df_engagement_weekly = df_weekly_baseline.select(
+                F.lit("engagement_weekly").alias("metric_name"),
+                F.col("week").cast("string").alias("category"),
+                F.col("avg_clicks").cast("double").alias("value"),
+                F.lit(None).cast("long").alias("count")
+            )
+
+            df_cohort_stats = df_gender.union(df_region).union(df_edu).union(df_engagement).union(df_engagement_weekly)
+            df_cohort_stats.write.mode("overwrite").parquet(f"{serving_path}/cohort_stats.parquet")
+            print("🎉 Cohort stats exported successfully!")
+        else:
+            print("⚠️ Skipping cohort stats export: df_info or df_vle was None")
+
+        if df_vle_meta is not None:
+            df_vle_meta.write.mode("overwrite").parquet(f"{serving_path}/lms_simulator.parquet")
+            print("🎉 LMS simulator metadata exported successfully!")
+        else:
+            print("⚠️ Skipping LMS simulator export: df_vle_meta was None")
+
         print("🎉 Serving layer files exported successfully!")
     finally:
         spark.stop()
 
 if __name__ == "__main__":
     main()
+

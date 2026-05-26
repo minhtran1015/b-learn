@@ -15,7 +15,7 @@ default_args = {
 with DAG(
     'oulad_medallion_pipeline',
     default_args=default_args,
-    schedule_interval=None, # Chỉ chạy khi bấm nút Demo
+    schedule=None, # Chỉ chạy khi bấm nút Demo
     catchup=False,
     tags=['b-learn', 'oulad'],
 ) as dag:
