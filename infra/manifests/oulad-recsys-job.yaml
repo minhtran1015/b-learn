@@ -19,11 +19,16 @@ spec:
             cpu: "1.5"
             memory: "8Gi"
         env:
+        - name: AZURE_STORAGE_ACCOUNT
+          valueFrom:
+            secretKeyRef:
+              name: oulad-runtime
+              key: AZURE_STORAGE_ACCOUNT
         - name: AZURE_STORAGE_KEY
           valueFrom:
             secretKeyRef:
-              name: azure-storage-secret
-              key: storage-key
+              name: oulad-runtime
+              key: AZURE_STORAGE_KEY
         - name: SPARK_DRIVER_MEMORY
           value: "5g"
       restartPolicy: Never

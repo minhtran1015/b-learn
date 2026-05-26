@@ -77,33 +77,48 @@ def main():
     try:
         # ─── 2. ĐỌC DỮ LIỆU TỪ SILVER LAYER (ICEBERG) ─────────────────────
         print("📥 Loading student interaction footprints from Silver...")
-        student_vle = None
+        student_vle_df = None
         for namespace in ["silver_db", "silver"]:
-            if student_vle is not None:
+            if student_vle_df is not None:
                 break
             for table_name in ["oulad_studentvle", "oulad_student_vle"]:
                 try:
                     full_table_name = f"silver_catalog.{namespace}.{table_name}"
                     print(f"Trying to load {full_table_name}...")
-                    student_vle = spark.read.table(full_table_name).toPandas()
+                    student_vle_df = spark.read.table(full_table_name)
                     print(f"Successfully loaded {full_table_name}.")
                     break
                 except Exception as e:
                     print(f"Failed to load {full_table_name}: {e}")
                     
-        if student_vle is None:
+        if student_vle_df is None:
             raise ValueError("Failed to load oulad student vle table from any expected namespace/table name combination.")
         
         # Sắp xếp và đổi tên cột định danh nếu cần thiết
-        student_id_col = 'student_id_hash' if 'student_id_hash' in student_vle.columns else 'id_student'
+        student_id_col = 'student_id_hash' if 'student_id_hash' in student_vle_df.columns else 'id_student'
         if student_id_col == 'id_student':
-            student_vle = student_vle.rename(columns={'id_student': 'student_id_hash'})
+            student_vle_df = student_vle_df.withColumnRenamed('id_student', 'student_id_hash')
         
-        # Tiền xử lý tính tổng số lượt click chuột theo cặp (Sinh viên - Tài liệu)
-        pairs = student_vle.groupby(['student_id_hash', 'id_site'])['sum_click'].sum().reset_index()
-        item_medians = pairs.groupby('id_site')['sum_click'].median().reset_index().rename(columns={'sum_click': 'median_clicks'})
-        pairs = pairs.merge(item_medians, on='id_site', how='left')
-        denoised_pairs = pairs[pairs['sum_click'] >= pairs['median_clicks']].copy()
+        print("⚡ Running high-engagement denoising SQL query in Spark...")
+        student_vle_df.createOrReplaceTempView("raw_student_vle")
+        query = """
+            WITH user_item_clicks AS (
+                SELECT student_id_hash, id_site, SUM(sum_click) AS sum_click
+                FROM raw_student_vle
+                GROUP BY student_id_hash, id_site
+            ),
+            item_medians AS (
+                SELECT id_site, percentile_approx(sum_click, 0.5) AS median_clicks
+                FROM user_item_clicks
+                GROUP BY id_site
+            )
+            SELECT u.student_id_hash, u.id_site, u.sum_click
+            FROM user_item_clicks u
+            JOIN item_medians m ON u.id_site = m.id_site
+            WHERE u.sum_click >= m.median_clicks
+        """
+        denoised_pairs = spark.sql(query).toPandas()
+        print(f"📉 Denoising Complete: Loaded {len(denoised_pairs)} high-fidelity edges into Pandas.")
         
         # Đánh chỉ mục ma trận kề liên tục
         unique_users = denoised_pairs['student_id_hash'].unique()
