@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: oulad-gold-recsys-job
+  namespace: blearn-medallion
+spec:
+  template:
+    spec:
+      containers:
+      - name: recsys-pipeline
+        image: acrblearnminh2026.azurecr.io/oulad-medallion:latest
+        imagePullPolicy: Always
+        command: ["python", "-m", "data_pipeline.jobs.gold_recsys_pipeline"]
+        resources:
+          requests:
+            cpu: "1.2"
+            memory: "6Gi"
+          limits:
+            cpu: "1.5"
+            memory: "8Gi"
+        env:
+        - name: AZURE_STORAGE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: azure-storage-secret
+              key: storage-key
+        - name: SPARK_DRIVER_MEMORY
+          value: "5g"
+      restartPolicy: Never
+  backoffLimit: 0
