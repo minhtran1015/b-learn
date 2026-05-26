@@ -17,7 +17,7 @@ export SPARK_DRIVER_MEMORY
 export AZURE_STORAGE_ACCOUNT
 export AZURE_STORAGE_KEY
 
-.PHONY: help bronze-discover-full bronze-consolidate-ednet bronze-full-manifest bronze-full-ingest bronze-full-verify bronze-full-audit bronze-full-flow silver-oulad-transform gold-oulad-train gold-bkt-run medallion-oulad-flow infra-terraform-init infra-terraform-plan infra-terraform-apply nrt-inference-run k8s-deploy-nrt k8s-nrt-trigger-once k8s-activate-failover-schedule k8s-deactivate-failover-schedule k8s-failover-status airflow-upgrade-ha
+.PHONY: help bronze-discover-full bronze-consolidate-ednet bronze-full-manifest bronze-full-ingest bronze-full-verify bronze-full-audit bronze-full-flow silver-oulad-transform gold-oulad-train gold-bkt-run medallion-oulad-flow infra-terraform-init infra-terraform-plan infra-terraform-apply nrt-inference-run k8s-deploy-nrt k8s-nrt-trigger-once k8s-activate-failover-schedule k8s-deactivate-failover-schedule k8s-failover-status airflow-upgrade-ha api-local-run k8s-deploy-api k8s-api-status
 
 help:
 	@printf '%s\n' \
@@ -208,6 +208,19 @@ serving-export-run:
 # Chạy Dashboard Streamlit cục bộ
 streamlit-local-run:
 	streamlit run dashboard/app.py
+
+# Chạy Serving API FastAPI cục bộ
+api-local-run:
+	uvicorn dashboard.api_server:app --reload
+
+# Triển khai FastAPI API Serving lên AKS
+k8s-deploy-api:
+	kubectl apply -f infra/manifests/api-serving.yaml
+
+# Theo dõi IP LoadBalancer của API Serving
+k8s-api-status:
+	kubectl get svc blearn-api-service -n blearn-medallion
+
 
 # ====================================================================
 # 🔄 KUBERNETES ONE-SHOT TEST JOBS (KÍCH HOẠT CHẠY TRÊN AKS)

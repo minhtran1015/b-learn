@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blearn-api-serving
+  namespace: blearn-medallion
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-serving
+  template:
+    metadata:
+      labels:
+        app: api-serving
+    spec:
+      containers:
+      - name: api-container
+        image: acrblearnminh2026.azurecr.io/oulad-medallion:latest
+        imagePullPolicy: Always
+        command: ["uvicorn", "dashboard.api_server:app", "--host", "0.0.0.0", "--port", "8000"]
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "512Mi"
+          limits:
+            cpu: "500m"
+            memory: "1Gi"
+        env:
+        - name: AZURE_STORAGE_ACCOUNT
+          valueFrom:
+            secretKeyRef:
+              name: oulad-runtime
+              key: AZURE_STORAGE_ACCOUNT
+        - name: AZURE_STORAGE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: oulad-runtime
+              key: AZURE_STORAGE_KEY
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blearn-api-service
+  namespace: blearn-medallion
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8000
+  selector:
+    app: api-serving

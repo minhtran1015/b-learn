@@ -11,6 +11,9 @@ torch==2.2.0 --extra-index-url https://download.pytorch.org/whl/cpu
 streamlit==1.32.0
 adlfs==2024.4.0
 plotly>=5.20
+fastapi>=0.110.0
+uvicorn>=0.28.0
+
 
 
 # Apache Iceberg 1.5.0 with Spark 3.5 runtime (Maven coordinate: iceberg-spark-runtime-3.5_2.12:1.5.0)
