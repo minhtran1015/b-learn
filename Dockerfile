@@ -35,3 +35,5 @@ ENV PYTHONPATH=/app
 
 # Default command (can be overridden in AKS Job)
 CMD ["python", "-m", "data_pipeline.silver.oulad"]
+# Trigger GHA rebuild: 1
+
