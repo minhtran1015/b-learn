@@ -101,7 +101,7 @@ with st.spinner("⏳ Loading serving data vectors from Azure Cloud..."):
         st.error(f"Lỗi nạp dữ liệu từ Serving Layer Cloud: {e}")
         st.stop()
 
-# ─── SIDEBAR: BỘ LỌC TÌM KIẾM ───
+# ─── SIDEBAR: BỘ LỌC TÌM KIẾM ĐÃ ĐƯỢC LÀM ĐẸP ───
 st.sidebar.markdown(
     """
     <div style="text-align: center; margin-bottom: 2rem;">
@@ -111,9 +111,21 @@ st.sidebar.markdown(
     """,
     unsafe_allow_html=True
 )
-st.sidebar.header("🔍 Bộ lọc sinh viên")
-student_list = sorted(df_risk['student_id_hash'].unique())
-selected_student = st.sidebar.selectbox("Chọn mã Hash sinh viên:", student_list)
+st.sidebar.header("🔍 Quản Lý Học Viên")
+student_list = df_risk['student_id_hash'].unique()
+
+# Tạo từ điển mapping để đánh số thứ tự Sinh viên cho dễ gọi tên khi demo
+hash_to_friendly = {
+    raw_hash: f"👤 Học viên #{idx+1} ({raw_hash[:8]}...)" 
+    for idx, raw_hash in enumerate(student_list)
+}
+
+# Sử dụng format_func để hiển thị tên thân thiện lên Dropdown
+selected_student = st.sidebar.selectbox(
+    "Chọn học viên để phân tích:", 
+    student_list, 
+    format_func=lambda x: hash_to_friendly.get(x, x)
+)
 
 # Lọc dữ liệu riêng của sinh viên được chọn
 student_risk_rows = df_risk[df_risk['student_id_hash'] == selected_student]
@@ -124,6 +136,10 @@ student_risk = student_risk_rows.iloc[0]
 
 # BKT uses user_id as identifier (string type matching)
 student_bkt = df_bkt[df_bkt['user_id'] == str(selected_student)]
+
+# Hiển thị profile góc trên cùng của Dashboard
+st.subheader(f"📊 Hồ sơ phân tích: Học viên #{list(student_list).index(selected_student) + 1}")
+st.info(f"🔑 Định danh bảo mật (SHA-256 Cloud ID): `{selected_student}`")
 
 # ─── VIEW 1: CẢNH BÁO RỦI RO (LIGHTGBM) ───
 st.markdown('<div class="glass-card">', unsafe_allow_html=True)

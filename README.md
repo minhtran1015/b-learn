@@ -59,3 +59,39 @@ SPARK_DRIVER_MEMORY=8g AZURE_STORAGE_KEY="<your key>" make bronze-full-flow
 - `bronze-full-ingest` writes to `abfss://bronze@stblearnminhdata2026.dfs.core.windows.net/iceberg_warehouse/full/`.
 - `bronze-full-verify` should return `ok: true` with no mismatches before you consider the Bronze layer complete.
 - `bronze-full-audit` samples `_ingest_at`, `_source_file`, and `_source_dataset` from `bronze_catalog.full_db.ednet_kt1_events` and `bronze_catalog.full_db.oulad_studentinfo`.
+
+## Serving Layer & Streamlit Dashboard
+
+To provide a zero-cost, high-speed UI interaction tier, we implemented a **File-Driven (Parquet + DuckDB)** serving layer:
+
+1. **Serving Export Job**: Reads the Gold Iceberg tables (dropout predictions, BKT mastery status, LightGCN embeddings) and exports them as optimized flat Parquet files to the `serving` container in Azure Blob Storage.
+2. **Streamlit UI**: Loads the Parquet files into memory. Performs a real-time matrix dot-product on user-item embeddings via NumPy to recommend resources in under 1 millisecond.
+
+### Troubleshooting and Resolutions
+
+* **Problem**: Streamlit crashed at startup with `File does not exist: dashboard/app.py`.
+  * **Cause**: The `Dockerfile` did not copy the `dashboard/` directory, only `data_pipeline/`. Additionally, the container runtime environment ran from a different working directory.
+  * **Resolution**:
+    1. Added `COPY dashboard/ /app/dashboard/` to the [Dockerfile](file:///Users/trandinhquangminh/Codespace/b-learn/Dockerfile).
+    2. Updated the Kubernetes Deployment command in [streamlit-dashboard.yaml](file:///Users/trandinhquangminh/Codespace/b-learn/infra/manifests/streamlit-dashboard.yaml) to use the absolute path `/app/dashboard/app.py`.
+    3. Triggered a CI/CD rebuild to push the updated Docker image to Azure Container Registry (ACR).
+
+### Human-Readable Presentation Refinement
+
+* **Friendly Dropdowns**: Rather than showing raw 64-character SHA-256 hash strings (e.g. `24c8b...`), the sidebar selection uses Streamlit's `format_func` to display user friendly IDs like `👤 Học viên #1 (24c8b...)`. This keeps the dropdown clean and structured for live demonstrations while retaining the original hash for filtering.
+* **Student Profile Headers**: Displayed a clean metadata card showing the student index and the full SHA-256 Cloud ID inside the main page.
+
+### Deploying the Serving Tier
+
+Make targets are available to manage the serving layer and UI deployment:
+
+```bash
+# Export Gold tables to serving parquet files (on AKS)
+make k8s-serving-export
+
+# Deploy or update the Streamlit Dashboard deployment on AKS
+make k8s-deploy-streamlit
+
+# View LoadBalancer external IP and status
+make k8s-streamlit-status
+```

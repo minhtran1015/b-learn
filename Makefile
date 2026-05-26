@@ -201,6 +201,14 @@ gold-bkt-run:
 gold-recsys-run:
 	python -m data_pipeline.jobs.gold_recsys_pipeline
 
+# 6. Chạy tầng Gold -> Serving Layer: Xuất Parquet phẳng
+serving-export-run:
+	python -m data_pipeline.jobs.export_to_serving
+
+# Chạy Dashboard Streamlit cục bộ
+streamlit-local-run:
+	streamlit run dashboard/app.py
+
 # ====================================================================
 # 🔄 KUBERNETES ONE-SHOT TEST JOBS (KÍCH HOẠT CHẠY TRÊN AKS)
 # ====================================================================
@@ -212,6 +220,22 @@ k8s-test-bkt:
 	@echo "Chờ 5s để Pod khởi tạo rồi theo dõi log..."
 	sleep 5
 	kubectl logs -f $$(kubectl get pods -n blearn-medallion -l job-name=oulad-gold-bkt-test -o jsonpath='{.items[0].metadata.name}') -n blearn-medallion
+
+# Kích hoạt serving export job trên cụm Cloud
+k8s-serving-export:
+	kubectl delete job oulad-serving-export-job -n blearn-medallion --ignore-not-found=true
+	kubectl apply -f infra/manifests/oulad-serving-export-job.yaml
+	@echo "Chờ 5s để Pod khởi tạo rồi theo dõi log..."
+	sleep 5
+	kubectl logs -f job/oulad-serving-export-job -n blearn-medallion
+
+# Triển khai Streamlit Dashboard lên AKS
+k8s-deploy-streamlit:
+	kubectl apply -f infra/manifests/streamlit-dashboard.yaml
+
+# Theo dõi IP LoadBalancer của Streamlit
+k8s-streamlit-status:
+	kubectl get svc blearn-streamlit-service -n blearn-medallion
 
 # Xóa toàn bộ các job test tạm thời để làm sạch cụm
 k8s-clean-test:
