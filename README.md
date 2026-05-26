@@ -21,6 +21,12 @@ The repository now also includes an infra-first OULAD Silver/Gold path for the s
 3. `make medallion-oulad-flow` runs Silver then Gold in sequence.
 4. Terraform now provisions an AKS CronJob that periodically clones `https://github.com/minhtran1015/b-learn.git` and runs the same Silver -> Gold pipeline in-cluster.
 
+## Gold BKT Pipeline & Reports
+
+A sequential, memory-optimized pyBKT pipeline has been implemented to train Bayesian Knowledge Tracing models over OULAD course assessment sequences:
+- To run the BKT pipeline: `make gold-bkt-run`
+- To review design decisions, bug fixes, and validation metrics (ROC-AUC), read the [Gold BKT Pipeline Report](file:///Users/trandinhquangminh/Codespace/b-learn/docs/bkt_pipeline_report.md).
+
 ## Prerequisites
 
 Set these environment variables before running the full cloud flow:
