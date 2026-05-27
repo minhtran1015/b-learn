@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 from datetime import datetime
+from azure.storage.blob import ContainerClient
+import io
 
 # ─── PREMIUM MODERN DESIGN THEME (GLASSMORPHISM & CUSTOM TYPOGRAPHY) ───
 st.set_page_config(
@@ -105,20 +107,38 @@ storage_key = os.getenv("AZURE_STORAGE_KEY")
 
 # @st.cache_data: correct decorator for DataFrames — hashes arguments, serializes
 # return value to disk, safe for multi-user Streamlit. ttl=7200 = 2h refresh.
-@st.cache_data(ttl=7200, show_spinner=False)
+@st.cache_data(ttl=3600, show_spinner=False)
 def load_serving_data(file_name):
-    """Load a Parquet file from Azure ADLS / HTTP fallback. Cached per file_name."""
+    """Load a Parquet file from Azure Blob Storage using fast flat HTTPS streaming client."""
     t0 = datetime.now()
     if storage_key:
-        storage_options = {
-            "account_name": storage_account,
-            "account_key": storage_key
-        }
-        path = f"abfss://serving@{storage_account}.dfs.core.windows.net/ui_data/{file_name}"
-        df = pd.read_parquet(path, storage_options=storage_options)
+        try:
+            container_client = ContainerClient(
+                account_url=f"https://{storage_account}.blob.core.windows.net",
+                container_name="serving",
+                credential=storage_key
+            )
+            prefix = f"ui_data/{file_name}/"
+            blobs = container_client.list_blobs(name_starts_with=prefix)
+            dfs = []
+            for b in blobs:
+                if b.name.endswith(".parquet") and b.size > 0:
+                    stream = io.BytesIO()
+                    container_client.get_blob_client(b.name).download_blob().readinto(stream)
+                    stream.seek(0)
+                    dfs.append(pd.read_parquet(stream))
+            
+            if not dfs:
+                raise FileNotFoundError(f"No parquet files found in {prefix}")
+            df = pd.concat(dfs, ignore_index=True)
+        except Exception as e:
+            # Fallback to direct HTTP URL read if SDK call fails
+            url = f"https://{storage_account}.blob.core.windows.net/serving/ui_data"
+            df = pd.read_parquet(f"{url}/{file_name}")
     else:
         url = f"https://{storage_account}.blob.core.windows.net/serving/ui_data"
         df = pd.read_parquet(f"{url}/{file_name}")
+    
     elapsed = (datetime.now() - t0).total_seconds()
     print(f"[CACHE] Loaded {file_name}: {len(df)} rows in {elapsed:.2f}s")
     return df
