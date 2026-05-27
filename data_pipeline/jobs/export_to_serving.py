@@ -169,7 +169,15 @@ def main():
             )
 
             df_cohort_stats = df_gender.union(df_region).union(df_edu).union(df_engagement).union(df_engagement_weekly)
-            df_cohort_stats.write.mode("overwrite").parquet(f"{serving_path}/cohort_stats.parquet")
+            
+            # Ép kiểu dữ liệu phẳng tuyệt đối tại lõi Spark để tránh lỗi schema/PyArrow extension objects
+            final_cohort_df = df_cohort_stats.select(
+                F.col("metric_name").cast("string"),
+                F.col("category").cast("string"),
+                F.col("count").cast("int"),
+                F.col("value").cast("float")
+            )
+            final_cohort_df.write.mode("overwrite").parquet(f"{serving_path}/cohort_stats.parquet")
             print("🎉 Cohort stats exported successfully!")
         else:
             print("⚠️ Skipping cohort stats export: df_info or df_vle was None")

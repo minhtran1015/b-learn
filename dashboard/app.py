@@ -291,6 +291,12 @@ with st.spinner("⏳ Đang nạp dữ liệu từ Azure Cloud (lần đầu mấ
                 {"metric_name": "engagement_weekly", "category": "4", "value": 24.3, "count": None},
             ])
             
+        # Làm sạch tuyệt đối các cột text để tránh bẫy khoảng trắng từ Spark
+        if not df_cohort.empty:
+            df_cohort['metric_name'] = df_cohort['metric_name'].astype(str).str.strip().str.lower()
+            if 'category' in df_cohort.columns:
+                df_cohort['category'] = df_cohort['category'].astype(str).str.strip()
+            
         # Load VLE metadata with local fallback
         try:
             df_lms = load_serving_data("lms_simulator.parquet")
@@ -403,6 +409,24 @@ else:
         selected_student = search_input.strip()
     else:
         selected_student = curated_student_list[0] if curated_student_list else "demo_student_hash_placeholder"
+
+# Hộp kiểm kiểm thử Sandbox
+st.sidebar.markdown("---")
+st.sidebar.header("🛠️ Debug & Sandbox")
+sandbox_mode = st.sidebar.checkbox("Bật dữ liệu cứng Sandbox (Mỏ neo)", value=False)
+
+# ĐÈ DỮ LIỆU CỨNG ĐỂ KIỂM THỬ KHÔNG GIAN PHẲNG NẾU BẬT SANDBOX MODE
+if sandbox_mode:
+    df_cohort = pd.DataFrame([
+        {"metric_name": "gender", "category": "M", "value": None, "count": 1500},
+        {"metric_name": "gender", "category": "F", "value": None, "count": 1300},
+        {"metric_name": "highest_education", "category": "HE Qualification", "value": 0.0, "count": 1200},
+        {"metric_name": "highest_education", "category": "A Level", "value": 0.0, "count": 1500},
+        {"metric_name": "region", "category": "London Region", "value": None, "count": 600},
+        {"metric_name": "region", "category": "South Region", "value": None, "count": 700},
+        {"metric_name": "engagement_weekly", "category": "1", "value": 25.4, "count": 0},
+        {"metric_name": "engagement_weekly", "category": "2", "value": 28.2, "count": 0}
+    ])
 
 
 # Lọc dữ liệu riêng của sinh viên được chọn
