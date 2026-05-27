@@ -510,41 +510,43 @@ with tab_learning:
     # 2. Khối Hệ thống biểu đồ tương tác
     col_g1, col_g2 = st.columns(2)
     with col_g1:
-        with st.container(border=True):
-            # Tích hợp selectbox nhỏ bên trong card để chuyển đổi góc nhìn nhân khẩu học học đường
-            demo_option = st.selectbox("Chọn góc nhìn phân tích:", ["Giới tính (Gender)", "Trình độ học vấn (Education)"])
-            if demo_option == "Giới tính (Gender)":
-                fig_demo = px.pie(df_cohort[df_cohort["metric_name"] == "gender"], names="category", values="count", title="Phân phối giới tính học viên", hole=0.4, color_discrete_sequence=["#FF6B6B", "#4D96FF"])
-            else:
-                fig_demo = px.bar(df_cohort[df_cohort["metric_name"] == "highest_education"], x="count", y="category", orientation="h", title="Cơ cấu trình độ học vấn", color="category", color_discrete_sequence=px.colors.qualitative.Pastel)
-            
-            fig_demo.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Outfit", color="#1e1e24"))
-            st.plotly_chart(fig_demo, use_container_width=True)
-            
-        with st.container(border=True):
-            # BIỂU ĐỒ BỔ SUNG: Đánh giá tần suất tương tác học liệu từ cao xuống thấp
-            # Giả lập hoặc đọc từ dữ liệu metadata Silver cấu trúc tần suất tương tác học liệu
-            df_vle_types = pd.DataFrame({
-                "Loại hình học liệu": ["oucontent (Sách điện tử)", "forumng (Diễn đàn)", "quiz (Trắc nghiệm)", "url (Liên kết ngoài)", "resource (Tài liệu phẳng)"],
-                "Tổng lượt tương tác (Clicks)": [425310, 312045, 289400, 142500, 98400]
-            }).sort_values(by="Tổng lượt tương tác (Clicks)", ascending=True)
-            
-            fig_vle = px.bar(df_vle_types, x="Tổng lượt tương tác (Clicks)", y="Loại hình học liệu", orientation="h", title="Xếp hạng phân loại học liệu có tần suất click cao nhất", color="Tổng lượt tương tác (Clicks)", color_continuous_scale="Blugrn")
-            fig_vle.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Outfit", color="#1e1e24"), coloraxis_showscale=False)
-            st.plotly_chart(fig_vle, use_container_width=True)
+        # 1. Biểu đồ Giới tính (Thay Pie Chart bằng Native Bar Chart)
+        df_gender = df_cohort[df_cohort["metric_name"] == "gender"]
+        if not df_gender.empty:
+            st.markdown("##### 📊 Phân phối giới tính của Cohort")
+            with st.container(border=True):
+                chart_data = df_gender.set_index("category")[["count"]]
+                st.bar_chart(chart_data, color="#4D96FF", use_container_width=True)
+
+        # 2. Biểu đồ Trình độ học vấn (Native Horizontal/Vertical Bar Chart)
+        df_edu = df_cohort[df_cohort["metric_name"] == "highest_education"]
+        if not df_edu.empty:
+            st.markdown("##### 🎓 Trình độ học vấn của Cohort")
+            with st.container(border=True):
+                chart_data = df_edu.set_index("category")[["count"]]
+                st.bar_chart(chart_data, color="#FF6B6B", use_container_width=True)
 
     with col_g2:
-        with st.container(border=True):
-            # Line Chart: Lịch trình Click Velocity Baseline hằng tuần
-            df_trend_clean = df_cohort[df_cohort["metric_name"] == "engagement_weekly"].copy()
-            if not df_trend_clean.empty:
-                df_trend_clean["category"] = df_trend_clean["category"].astype(int)
-                df_trend_clean = df_trend_clean.sort_values(by="category")
-                
-                fig_trend = px.line(df_trend_clean, x="category", y="value", title="Xu hướng vận tốc tương tác (Click Velocity) hằng tuần", labels={"category": "Tuần học (Week Index)", "value": "Lượt click chuột trung bình / Học viên"}, markers=True)
-                fig_trend.update_traces(line_color="#4D96FF", line_width=3, marker=dict(size=8, color="#FF6B6B"))
-                fig_trend.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Outfit", color="#1e1e24"))
-                st.plotly_chart(fig_trend, use_container_width=True)
+        # 3. Biểu đồ Vùng miền
+        df_region = df_cohort[df_cohort["metric_name"] == "region"].sort_values(by="count", ascending=False).head(8)
+        if not df_region.empty:
+            st.markdown("##### 🗺️ Phân bố vùng miền Cohort (Top 8 Regions)")
+            with st.container(border=True):
+                chart_data = df_region.set_index("category")[["count"]]
+                st.bar_chart(chart_data, color="#ffa502", use_container_width=True)
+
+        # 4. Biểu đồ xu hướng tương tác hằng tuần (Native Line Chart)
+        df_trend = df_cohort[df_cohort["metric_name"] == "engagement_weekly"].copy()
+        if not df_trend.empty:
+            st.markdown("##### 📈 Xu hướng click chuột trung bình qua các tuần học")
+            with st.container(border=True):
+                try:
+                    df_trend["category"] = df_trend["category"].astype(int)
+                    df_trend = df_trend.sort_values(by="category")
+                    chart_data = df_trend.set_index("category")[["value"]]
+                    st.line_chart(chart_data, color="#2ed573", use_container_width=True)
+                except Exception:
+                    st.dataframe(df_trend[["category", "value"]])
 
 # ====================================================================
 # PHÂN HỆ 2: INFRASTRUCTURE & MLOPS ANALYTICS
@@ -563,12 +565,11 @@ with tab_infra:
     # 2. Khối Hệ thống biểu đồ hạ tầng MLOps
     col_m_ch1, col_m_ch2 = st.columns(2)
     with col_m_ch1:
+        st.markdown("##### ⏳ Thời gian thực thi chi tiết của Medallion Pipeline (Giây)")
         with st.container(border=True):
-            # Grouped Horizontal Bar Chart: Thời gian thực thi chuỗi Medallion Pipeline
             df_durations = df_sys[df_sys["metric_type"] == "job_duration"]
-            fig_duration = px.bar(df_durations, x="value", y="key_name", orientation="h", title="Thời gian thực thi chi tiết của Medallion Pipeline (Tính bằng giây)", color="value", color_continuous_scale="Reds", labels={"value": "Thời gian chạy (Giây)", "key_name": "Công đoạn Pipeline"})
-            fig_duration.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Outfit", color="#1e1e24"), coloraxis_showscale=False)
-            st.plotly_chart(fig_duration, use_container_width=True)
+            chart_data = df_durations.set_index("key_name")[["value"]]
+            st.bar_chart(chart_data, color="#FF6B6B", use_container_width=True)
             
         with st.container(border=True):
             st.markdown("<p style='font-size:1rem; font-weight:600; margin:0 0 0.5rem 0;'>🚨 Giám sát hạn mức tài nguyên so với Quota Azure Student</p>", unsafe_allow_html=True)
@@ -584,13 +585,11 @@ with tab_infra:
             st.progress(ram_val / 8.0)
 
     with col_m_ch2:
+        st.markdown("##### 📈 Lượng truy cập đồng thời vào Serving API & Dashboard")
         with st.container(border=True):
-            # Area Chart: Biểu đồ lượng người truy cập đồng thời qua các khung giờ
             df_traffic = df_sys[df_sys["metric_type"] == "api_traffic"]
-            fig_traffic = px.area(df_traffic, x="key_name", y="value", title="Biểu đồ lượng truy cập đồng thời vào Serving API & Dashboard", labels={"key_name": "Khung giờ trong ngày", "value": "Số lượng kết nối đồng thời (Concurrent Inbound API Hits)"})
-            fig_traffic.update_traces(line_color="#4D96FF", fillcolor="rgba(77, 150, 255, 0.2)")
-            fig_traffic.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Outfit", color="#1e1e24"))
-            st.plotly_chart(fig_traffic, use_container_width=True)
+            chart_data = df_traffic.set_index("key_name")[["value"]]
+            st.area_chart(chart_data, color="#4D96FF", use_container_width=True)
 
 # ==========================================
 # TAB 2: STUDENT DEEP-DIVE (BẢN GỐC LÀM ĐẸP)
@@ -644,46 +643,16 @@ with tab2:
     col_t1, col_t2 = st.columns(2)
 
     with col_t1:
+        st.markdown("##### 📉 Xu hướng nguy cơ bỏ học qua các Checkpoint (%)")
         with st.container(border=True):
-            # Biểu đồ đường so sánh rủi ro sinh viên vs. Toàn trường
-            fig_timeline_risk = px.line(
-                df_timeline, 
-                x="Mốc thời gian", 
-                y=["Xác suất bỏ học (%)", "Trường học (Risk Baseline) (%)"],
-                title="Xu hướng nguy cơ bỏ học qua các Checkpoint (LightGBM)",
-                markers=True,
-                color_discrete_map={"Xác suất bỏ học (%)": "#FF6B6B", "Trường học (Risk Baseline) (%)": "#95a5a6"}
-            )
-            fig_timeline_risk.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)", 
-                plot_bgcolor="rgba(0,0,0,0)", 
-                font=dict(family="Outfit", color="#1e1e24"), 
-                legend=dict(orientation="h", y=-0.2),
-                xaxis=dict(gridcolor="rgba(0,0,0,0.05)"),
-                yaxis=dict(gridcolor="rgba(0,0,0,0.05)")
-            )
-            st.plotly_chart(fig_timeline_risk, use_container_width=True)
+            chart_data = df_timeline.set_index("Mốc thời gian")[["Xác suất bỏ học (%)", "Trường học (Risk Baseline) (%)"]]
+            st.line_chart(chart_data, color=["#FF6B6B", "#95a5a6"], use_container_width=True)
 
     with col_t2:
+        st.markdown("##### 🧠 Tiến trình phát triển năng lực qua các Checkpoint (%)")
         with st.container(border=True):
-            # Biểu đồ đường so sánh độ thành thục kiến thức vs. Toàn trường
-            fig_timeline_bkt = px.line(
-                df_timeline, 
-                x="Mốc thời gian", 
-                y=["Độ thành thục BKT (%)", "Trường học (BKT Baseline) (%)"],
-                title="Tiến trình phát triển năng lực qua các Checkpoint (pyBKT)",
-                markers=True,
-                color_discrete_map={"Độ thành thục BKT (%)": "#2ed573", "Trường học (BKT Baseline) (%)": "#95a5a6"}
-            )
-            fig_timeline_bkt.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)", 
-                plot_bgcolor="rgba(0,0,0,0)", 
-                font=dict(family="Outfit", color="#1e1e24"), 
-                legend=dict(orientation="h", y=-0.2),
-                xaxis=dict(gridcolor="rgba(0,0,0,0.05)"),
-                yaxis=dict(gridcolor="rgba(0,0,0,0.05)")
-            )
-            st.plotly_chart(fig_timeline_bkt, use_container_width=True)
+            chart_data = df_timeline.set_index("Mốc thời gian")[["Độ thành thục BKT (%)", "Trường học (BKT Baseline) (%)"]]
+            st.line_chart(chart_data, color=["#2ed573", "#95a5a6"], use_container_width=True)
 
     # ─── VIEW 3: GỢI Ý TÀI LIỆU CÁ NHÂN HÓA (LIGHTGCN) ───
     with st.container(border=True):
