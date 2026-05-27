@@ -96,13 +96,26 @@ st.markdown('<h1 class="main-title">🎓 B-LEARN: Hệ Thống Phân Tích & Cá
 storage_account = os.getenv("AZURE_STORAGE_ACCOUNT", "stblearnminhdata2026")
 storage_key = os.getenv("AZURE_STORAGE_KEY")
 
+import shutil
+
 # @st.cache_data: correct decorator for DataFrames — hashes arguments, serializes
-# return value to disk, safe for multi-user Streamlit. ttl=60 = 1m refresh.
-@st.cache_data(ttl=60, show_spinner=False)
+# return value to disk, safe for multi-user Streamlit. Restored to ttl=3600 since data is cached on disk.
+@st.cache_data(ttl=3600, show_spinner=False)
 def load_serving_data(file_name):
-    """Load a Parquet file from Azure Blob Storage using fast flat HTTPS streaming client."""
+    """Load a Parquet file using local Pod-Disk cache (Local File Mirroring) to prevent network I/O hangs."""
     t0 = datetime.now()
-    if storage_key:
+    local_cache_path = f"/tmp/{file_name}"
+    
+    # Khối điều hướng cho chế độ chạy thử cục bộ (Local Mock)
+    if not storage_key:
+        url = f"https://{storage_account}.blob.core.windows.net/serving/ui_data/{file_name}"
+        df = pd.read_parquet(url)
+        elapsed = (datetime.now() - t0).total_seconds()
+        print(f"[LOCAL MOCK] Loaded {file_name}: {len(df)} rows in {elapsed:.2f}s")
+        return df
+        
+    # NẾU CHƯA CÓ TRÊN ĐĨA POD: Tiến hành tải phẳng một lần duy nhất
+    if not os.path.exists(local_cache_path):
         try:
             container_client = ContainerClient(
                 account_url=f"https://{storage_account}.blob.core.windows.net",
@@ -112,27 +125,38 @@ def load_serving_data(file_name):
             prefix = f"ui_data/{file_name}/"
             blobs = container_client.list_blobs(name_starts_with=prefix)
             dfs = []
+            
             for b in blobs:
-                if b.name.endswith(".parquet") and b.size > 0:
+                if b.name.endswith('.parquet') and b.size > 0:
                     stream = io.BytesIO()
                     container_client.get_blob_client(b.name).download_blob().readinto(stream)
                     stream.seek(0)
                     dfs.append(pd.read_parquet(stream))
-            
-            if not dfs:
-                raise FileNotFoundError(f"No parquet files found in {prefix}")
-            df = pd.concat(dfs, ignore_index=True)
+                    
+            if dfs:
+                combined_df = pd.concat(dfs, ignore_index=True)
+                # Ghi thẳng bản sao xuống bộ nhớ đệm của Pod để tái sử dụng siêu tốc
+                combined_df.to_parquet(local_cache_path)
+            else:
+                # Fallback to direct HTTP URL read if no partition blobs are listed
+                url = f"https://{storage_account}.blob.core.windows.net/serving/ui_data"
+                df = pd.read_parquet(f"{url}/{file_name}")
+                df.to_parquet(local_cache_path)
         except Exception as e:
             # Fallback to direct HTTP URL read if SDK call fails
             url = f"https://{storage_account}.blob.core.windows.net/serving/ui_data"
             df = pd.read_parquet(f"{url}/{file_name}")
+            df.to_parquet(local_cache_path)
+                
+    # NẾU ĐÃ CÓ TRÊN ĐĨA POD: Đọc trực tiếp bằng Pandas mất < 5ms, chặn hoàn toàn treo mạng
+    if os.path.exists(local_cache_path):
+        df = pd.read_parquet(local_cache_path)
+        elapsed = (datetime.now() - t0).total_seconds()
+        print(f"[DISK-CACHE] Loaded {file_name}: {len(df)} rows in {elapsed:.2f}s")
+        return df
     else:
-        url = f"https://{storage_account}.blob.core.windows.net/serving/ui_data"
-        df = pd.read_parquet(f"{url}/{file_name}")
-    
-    elapsed = (datetime.now() - t0).total_seconds()
-    print(f"[CACHE] Loaded {file_name}: {len(df)} rows in {elapsed:.2f}s")
-    return df
+        raise FileNotFoundError(f"Không thể khởi tạo bản sao dữ liệu cho {file_name}")
+
 
 
 @st.cache_data(ttl=60)
@@ -233,6 +257,20 @@ def load_and_cache_system_metrics():
         ])
 
 
+# ─── SIDEBAR: SETUP DEBUG & SANDBOX FIRST ───
+st.sidebar.markdown(
+    """
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h2 style="font-weight: 600; color: #4D96FF; margin: 0;">B-LEARN UI</h2>
+        <span style="font-size: 0.85rem; color: #888;">Medallion Serving Console</span>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+st.sidebar.header("🛠️ Debug & Sandbox")
+sandbox_mode = st.sidebar.checkbox("Bật dữ liệu cứng Sandbox (Mỏ neo)", value=False)
+st.sidebar.markdown("---")
+
 with st.spinner("⏳ Đang nạp dữ liệu từ Azure Cloud (lần đầu mất ~10-15s, sau đó phục vụ từ bộ nhớ)..."):
     try:
         df_risk = load_serving_data("risk_predictions.parquet")
@@ -309,6 +347,20 @@ with st.spinner("⏳ Đang nạp dữ liệu từ Azure Cloud (lần đầu mấ
         st.error(f"Lỗi nạp dữ liệu từ Serving Layer Cloud: {e}")
         st.stop()
 
+# Đặt ngay sau khối nạp dữ liệu tổng
+if sandbox_mode:
+    df_cohort = pd.DataFrame([
+        {"metric_name": "gender", "category": "M", "count": 1500, "value": 0.0},
+        {"metric_name": "gender", "category": "F", "count": 1300, "value": 0.0},
+        {"metric_name": "highest_education", "category": "HE Qualification", "count": 1200, "value": 0.0},
+        {"metric_name": "highest_education", "category": "A Level", "count": 1500, "value": 0.0},
+        {"metric_name": "engagement_weekly", "category": "1", "count": 0, "value": 25.4},
+        {"metric_name": "engagement_weekly", "category": "2", "count": 0, "value": 28.2}
+    ])
+    # Đảm bảo làm sạch chuỗi cho cả dữ liệu Sandbox
+    df_cohort['metric_name'] = df_cohort['metric_name'].astype(str).str.strip().str.lower()
+    df_cohort['category'] = df_cohort['category'].astype(str).str.strip()
+
 # Helper function to get activity type for VLE sites
 def get_vle_activity(site_id):
     try:
@@ -353,15 +405,6 @@ def compute_recommendations(student_id_hash: str):
 
 
 # ─── SIDEBAR: BỘ LỌC TÌM KIẾM ĐÃ ĐƯỢC LÀM ĐẸP ───
-st.sidebar.markdown(
-    """
-    <div style="text-align: center; margin-bottom: 2rem;">
-        <h2 style="font-weight: 600; color: #4D96FF; margin: 0;">B-LEARN UI</h2>
-        <span style="font-size: 0.85rem; color: #888;">Medallion Serving Console</span>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
 st.sidebar.header("🔑 Quyền hạn truy cập")
 is_admin = st.sidebar.toggle("🔓 Chế độ Giảng viên (Hiện danh tính thực)", value=False)
 
@@ -410,23 +453,7 @@ else:
     else:
         selected_student = curated_student_list[0] if curated_student_list else "demo_student_hash_placeholder"
 
-# Hộp kiểm kiểm thử Sandbox
-st.sidebar.markdown("---")
-st.sidebar.header("🛠️ Debug & Sandbox")
-sandbox_mode = st.sidebar.checkbox("Bật dữ liệu cứng Sandbox (Mỏ neo)", value=False)
-
-# ĐÈ DỮ LIỆU CỨNG ĐỂ KIỂM THỬ KHÔNG GIAN PHẲNG NẾU BẬT SANDBOX MODE
-if sandbox_mode:
-    df_cohort = pd.DataFrame([
-        {"metric_name": "gender", "category": "M", "value": None, "count": 1500},
-        {"metric_name": "gender", "category": "F", "value": None, "count": 1300},
-        {"metric_name": "highest_education", "category": "HE Qualification", "value": 0.0, "count": 1200},
-        {"metric_name": "highest_education", "category": "A Level", "value": 0.0, "count": 1500},
-        {"metric_name": "region", "category": "London Region", "value": None, "count": 600},
-        {"metric_name": "region", "category": "South Region", "value": None, "count": 700},
-        {"metric_name": "engagement_weekly", "category": "1", "value": 25.4, "count": 0},
-        {"metric_name": "engagement_weekly", "category": "2", "value": 28.2, "count": 0}
-    ])
+# Old sandbox override logic removed
 
 
 # Lọc dữ liệu riêng của sinh viên được chọn
