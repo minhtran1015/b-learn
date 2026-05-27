@@ -106,8 +106,8 @@ storage_account = os.getenv("AZURE_STORAGE_ACCOUNT", "stblearnminhdata2026")
 storage_key = os.getenv("AZURE_STORAGE_KEY")
 
 # @st.cache_data: correct decorator for DataFrames — hashes arguments, serializes
-# return value to disk, safe for multi-user Streamlit. ttl=7200 = 2h refresh.
-@st.cache_data(ttl=3600, show_spinner=False)
+# return value to disk, safe for multi-user Streamlit. ttl=60 = 1m refresh.
+@st.cache_data(ttl=60, show_spinner=False)
 def load_serving_data(file_name):
     """Load a Parquet file from Azure Blob Storage using fast flat HTTPS streaming client."""
     t0 = datetime.now()
@@ -144,7 +144,7 @@ def load_serving_data(file_name):
     return df
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=60)
 def precompute_cohort_metrics(_df_risk, _df_bkt):
     total_students = len(_df_risk['student_id_hash'].unique())
     avg_risk = _df_risk['dropout_probability'].mean() * 100
@@ -166,7 +166,7 @@ def precompute_cohort_metrics(_df_risk, _df_bkt):
     return total_students, avg_risk, stuck_skill_name, stuck_skill_val
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=60)
 def generate_curated_student_list(_df_risk):
     # TỐI ƯU CỐT LÕI: Trích xuất ra danh sách rút gọn gồm 25 sinh viên rủi ro nhất 
     # và 25 sinh viên an toàn nhất để demo mượt mà, tránh nhét 25k dòng làm sập DOM trình duyệt
@@ -176,7 +176,7 @@ def generate_curated_student_list(_df_risk):
     return curated_df['student_id_hash'].tolist()
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=60)
 def get_student_timeline_data(student_id, base_prob):
     # Sử dụng seed dựa trên mã hash để tạo tính nhất quán khi demo
     try:
@@ -216,7 +216,7 @@ def get_student_timeline_data(student_id, base_prob):
 
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=60)
 def load_and_cache_system_metrics():
     try:
         # Gọi hàm stream HTTPS từ ContainerClient đã tối ưu ở lượt trước
@@ -307,7 +307,7 @@ def get_activity_icon(activity_type):
     }
     return icons.get(activity_type, "📄")
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(ttl=60, show_spinner=False)
 def compute_recommendations(student_id_hash: str):
     """Cache dot-product scoring per student_id_hash (recomputed only on student change)."""
     try:
