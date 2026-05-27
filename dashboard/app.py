@@ -91,12 +91,11 @@ st.markdown('<h1 class="main-title">🎓 B-LEARN: Hệ Thống Phân Tích & Cá
 storage_account = os.getenv("AZURE_STORAGE_ACCOUNT", "stblearnminhdata2026")
 storage_key = os.getenv("AZURE_STORAGE_KEY")
 
-# cache_resource: survives app reruns (session restarts), stored once per process.
-# Use for large, immutable DataFrames (embeddings, predictions).
-# ttl=7200 → reload from Azure every 2 hours (reduces unnecessary network fetches).
-@st.cache_resource(show_spinner=False)
-def _load_parquet_resource(file_name):
-    """Load a Parquet file into a shared in-process cache. Survives Streamlit reruns."""
+# @st.cache_data: correct decorator for DataFrames — hashes arguments, serializes
+# return value to disk, safe for multi-user Streamlit. ttl=7200 = 2h refresh.
+@st.cache_data(ttl=7200, show_spinner=False)
+def load_serving_data(file_name):
+    """Load a Parquet file from Azure ADLS / HTTP fallback. Cached per file_name."""
     t0 = datetime.now()
     if storage_key:
         storage_options = {
@@ -111,10 +110,6 @@ def _load_parquet_resource(file_name):
     elapsed = (datetime.now() - t0).total_seconds()
     print(f"[CACHE] Loaded {file_name}: {len(df)} rows in {elapsed:.2f}s")
     return df
-
-def load_serving_data(file_name):
-    """Public wrapper — returns cached DataFrame from process memory."""
-    return _load_parquet_resource(file_name)
 
 with st.spinner("⏳ Đang nạp dữ liệu từ Azure Cloud (lần đầu mất ~10-15s, sau đó phục vụ từ bộ nhớ)..."):
     try:
@@ -183,18 +178,21 @@ def get_activity_icon(activity_type):
 
 @st.cache_data(show_spinner=False)
 def compute_recommendations(student_id_hash: str):
-    """Cache dot-product scoring per student. Recomputed only when student changes."""
-    _user_emb = _load_parquet_resource("user_embeddings.parquet")
-    _item_emb = _load_parquet_resource("item_embeddings.parquet")
-    user_row = _user_emb[_user_emb['student_id_hash'] == student_id_hash]
-    if user_row.empty:
+    """Cache dot-product scoring per student_id_hash (recomputed only on student change)."""
+    try:
+        _user_emb = load_serving_data("user_embeddings.parquet")
+        _item_emb = load_serving_data("item_embeddings.parquet")
+        user_row = _user_emb[_user_emb['student_id_hash'] == student_id_hash]
+        if user_row.empty:
+            return None
+        u_emb = np.array(user_row.iloc[0]['user_embedding'])
+        i_embs = np.stack(_item_emb['item_embedding'].values)
+        scores = np.dot(i_embs, u_emb)
+        df_scored = _item_emb.copy()
+        df_scored['recommendation_score'] = scores
+        return df_scored.sort_values(by='recommendation_score', ascending=False).head(5).copy()
+    except Exception:
         return None
-    u_emb = np.array(user_row.iloc[0]['user_embedding'])
-    i_embs = np.stack(_item_emb['item_embedding'].values)
-    scores = np.dot(i_embs, u_emb)
-    df_scored = _item_emb.copy()
-    df_scored['recommendation_score'] = scores
-    return df_scored.sort_values(by='recommendation_score', ascending=False).head(5).copy()
 
 
 # ─── SIDEBAR: BỘ LỌC TÌM KIẾM ĐÃ ĐƯỢC LÀM ĐẸP ───
@@ -213,7 +211,9 @@ is_admin = st.sidebar.toggle("🔓 Chế độ Giảng viên (Hiện danh tính 
 st.sidebar.header("🔍 Quản Lý Học Viên")
 student_list = df_risk['student_id_hash'].unique()
 
-# Đảm bảo cột id_student luôn tồn tại (nếu chưa được cập nhật từ Gold Export, gán ID giả lập ngẫu nhiên)
+# Đảm bảo cột id_student luôn tồn tại
+# IMPORTANT: copy() trước khi mutation — df_risk từ cache_data là immutable
+df_risk = df_risk.copy()
 if 'id_student' not in df_risk.columns:
     import hashlib
     # Sinh MSSV giả định dài 6 chữ số dựa trên hash của sinh viên để ổn định khi thay đổi trang
