@@ -91,21 +91,32 @@ st.markdown('<h1 class="main-title">🎓 B-LEARN: Hệ Thống Phân Tích & Cá
 storage_account = os.getenv("AZURE_STORAGE_ACCOUNT", "stblearnminhdata2026")
 storage_key = os.getenv("AZURE_STORAGE_KEY")
 
-@st.cache_data(ttl=3600)
-def load_serving_data(file_name):
+# cache_resource: survives app reruns (session restarts), stored once per process.
+# Use for large, immutable DataFrames (embeddings, predictions).
+# ttl=7200 → reload from Azure every 2 hours (reduces unnecessary network fetches).
+@st.cache_resource(show_spinner=False)
+def _load_parquet_resource(file_name):
+    """Load a Parquet file into a shared in-process cache. Survives Streamlit reruns."""
+    t0 = datetime.now()
     if storage_key:
         storage_options = {
             "account_name": storage_account,
             "account_key": storage_key
         }
         path = f"abfss://serving@{storage_account}.dfs.core.windows.net/ui_data/{file_name}"
-        return pd.read_parquet(path, storage_options=storage_options)
+        df = pd.read_parquet(path, storage_options=storage_options)
     else:
-        # Fallback to HTTP for local mock runs
         url = f"https://{storage_account}.blob.core.windows.net/serving/ui_data"
-        return pd.read_parquet(f"{url}/{file_name}")
+        df = pd.read_parquet(f"{url}/{file_name}")
+    elapsed = (datetime.now() - t0).total_seconds()
+    print(f"[CACHE] Loaded {file_name}: {len(df)} rows in {elapsed:.2f}s")
+    return df
 
-with st.spinner("⏳ Loading serving data vectors from Azure Cloud..."):
+def load_serving_data(file_name):
+    """Public wrapper — returns cached DataFrame from process memory."""
+    return _load_parquet_resource(file_name)
+
+with st.spinner("⏳ Đang nạp dữ liệu từ Azure Cloud (lần đầu mất ~10-15s, sau đó phục vụ từ bộ nhớ)..."):
     try:
         df_risk = load_serving_data("risk_predictions.parquet")
         df_bkt = load_serving_data("bkt_mastery.parquet")
