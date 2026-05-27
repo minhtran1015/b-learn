@@ -34,21 +34,20 @@ st.markdown(
         margin-bottom: 2rem;
     }
     
-    /* Card containers */
-    .glass-card {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-radius: 16px;
-        padding: 1.5rem;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
-        transition: transform 0.3s ease, border-color 0.3s ease;
-        margin-bottom: 1.5rem;
+    .glass-card, div[data-testid="stMetricBlock"], div[data-testid="stContainer"], div[data-testid="stVerticalBlockBorderWrapper"] {
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border-radius: 16px !important;
+        padding: 1.5rem !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15) !important;
+        transition: transform 0.3s ease, border-color 0.3s ease !important;
+        margin-bottom: 1.5rem !important;
     }
-    .glass-card:hover {
-        transform: translateY(-4px);
-        border-color: rgba(77, 150, 255, 0.3);
+    .glass-card:hover, div[data-testid="stMetricBlock"]:hover, div[data-testid="stContainer"]:hover, div[data-testid="stVerticalBlockBorderWrapper"]:hover {
+        transform: translateY(-4px) !important;
+        border-color: rgba(77, 150, 255, 0.3) !important;
     }
     
     /* Specific Status Indicators */
@@ -344,9 +343,8 @@ with tab1:
                 font=dict(family="Outfit", color="#ffffff"),
                 legend=dict(orientation="h", yanchor="bottom", y=-0.1, xanchor="center", x=0.5)
             )
-            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-            st.plotly_chart(fig_gender, use_container_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+            with st.container(border=True):
+                st.plotly_chart(fig_gender, use_container_width=True)
 
         # Bar chart: Education
         df_edu = df_cohort[df_cohort["metric_name"] == "highest_education"]
@@ -368,9 +366,8 @@ with tab1:
                 xaxis=dict(gridcolor="rgba(255,255,255,0.05)"),
                 yaxis=dict(gridcolor="rgba(255,255,255,0.05)", title=None)
             )
-            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-            st.plotly_chart(fig_edu, use_container_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+            with st.container(border=True):
+                st.plotly_chart(fig_edu, use_container_width=True)
 
     with col_chart2:
         # Bar chart: Region
@@ -393,9 +390,8 @@ with tab1:
                 xaxis=dict(gridcolor="rgba(255,255,255,0.05)"),
                 yaxis=dict(gridcolor="rgba(255,255,255,0.05)", title=None)
             )
-            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-            st.plotly_chart(fig_region, use_container_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+            with st.container(border=True):
+                st.plotly_chart(fig_region, use_container_width=True)
 
         # Line chart: Engagement trend
         df_trend = df_cohort[df_cohort["metric_name"] == "engagement_weekly"].copy()
@@ -419,9 +415,8 @@ with tab1:
                     xaxis=dict(gridcolor="rgba(255,255,255,0.05)", dtick=1),
                     yaxis=dict(gridcolor="rgba(255,255,255,0.05)")
                 )
-                st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-                st.plotly_chart(fig_trend, use_container_width=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+                with st.container(border=True):
+                    st.plotly_chart(fig_trend, use_container_width=True)
             except Exception:
                 pass
 
@@ -433,82 +428,79 @@ with tab2:
     st.info(f"🔑 Định danh bảo mật (SHA-256 Cloud ID): `{selected_student}`")
 
     # ─── VIEW 1: CẢNH BÁO RỦI RO (LIGHTGBM) ───
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("<h3 style='margin:0 0 1rem 0;'>🚨 Phân Tích Nguy Cơ Bỏ Học & Kết Quả (LightGBM)</h3>", unsafe_allow_html=True)
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        prob = student_risk.get('dropout_probability', 0.15)
-        st.metric(label="Xác suất bỏ học", value=f"{prob*100:.2f}%")
-    with col2:
-        status_html = (
-            '<span class="status-badge-risk">🔴 Nguy cơ cao</span>'
-            if prob > 0.5 else
-            '<span class="status-badge-safe">🟢 An toàn</span>'
-        )
-        st.markdown(f"**Trạng thái hệ thống:** {status_html}", unsafe_allow_html=True)
-    with col3:
-        pred_class = student_risk.get('predicted_class', 'Success')
-        st.metric(label="Dự đoán kết quả cuối kỳ", value=pred_class)
-    st.markdown('</div>', unsafe_allow_html=True)
+    with st.container(border=True):
+        st.markdown("<h3 style='margin:0 0 1rem 0;'>🚨 Phân Tích Nguy Cơ Bỏ Học & Kết Quả (LightGBM)</h3>", unsafe_allow_html=True)
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            prob = student_risk.get('dropout_probability', 0.15)
+            st.metric(label="Xác suất bỏ học", value=f"{prob*100:.2f}%")
+        with col2:
+            status_html = (
+                '<span class="status-badge-risk">🔴 Nguy cơ cao</span>'
+                if prob > 0.5 else
+                '<span class="status-badge-safe">🟢 An toàn</span>'
+            )
+            st.markdown(f"**Trạng thái hệ thống:** {status_html}", unsafe_allow_html=True)
+        with col3:
+            pred_class = student_risk.get('predicted_class', 'Success')
+            st.metric(label="Dự đoán kết quả cuối kỳ", value=pred_class)
 
     # ─── VIEW 2: LỖ HỔNG KIẾN THỨC (pyBKT) ───
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("<h3 style='margin:0 0 1rem 0;'>🧠 Biểu Đồ Thành Thục Kiến Thức (Bayesian Knowledge Tracing)</h3>", unsafe_allow_html=True)
-    if not student_bkt.empty:
-        display_bkt = student_bkt[['skill_name', 'correct_predictions']].copy()
-        display_bkt = display_bkt.rename(
-            columns={
-                'skill_name': 'Kỹ năng / Phân mục học tập (Skill Name)',
-                'correct_predictions': 'Độ thành thục kiến thức (Mastery State)'
-            }
-        )
-        # Style the percentage representation safely
-        try:
-            display_bkt['Độ thành thục kiến thức (Mastery State)'] = display_bkt['Độ thành thục kiến thức (Mastery State)'].astype(float).apply(lambda x: f"{x*100:.1f}%")
-        except Exception:
-            pass
-        st.dataframe(display_bkt, use_container_width=True)
-    else:
-        st.info("Sinh viên này chưa thực hiện bài tập chuỗi tuần tự tuần này.")
-    st.markdown('</div>', unsafe_allow_html=True)
+    with st.container(border=True):
+        st.markdown("<h3 style='margin:0 0 1rem 0;'>🧠 Biểu Đồ Thành Thục Kiến Thức (Bayesian Knowledge Tracing)</h3>", unsafe_allow_html=True)
+        if not student_bkt.empty:
+            display_bkt = student_bkt[['skill_name', 'correct_predictions']].copy()
+            display_bkt = display_bkt.rename(
+                columns={
+                    'skill_name': 'Kỹ năng / Phân mục học tập (Skill Name)',
+                    'correct_predictions': 'Độ thành thục kiến thức (Mastery State)'
+                }
+            )
+            # Style the percentage representation safely
+            try:
+                display_bkt['Độ thành thục kiến thức (Mastery State)'] = display_bkt['Độ thành thục kiến thức (Mastery State)'].astype(float).apply(lambda x: f"{x*100:.1f}%")
+            except Exception:
+                pass
+            st.dataframe(display_bkt, use_container_width=True)
+        else:
+            st.info("Sinh viên này chưa thực hiện bài tập chuỗi tuần tự tuần này.")
 
     # ─── VIEW 3: GỢI Ý TÀI LIỆU CÁ NHÂN HÓA (LIGHTGCN) ───
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("<h3 style='margin:0 0 1rem 0;'>🎯 Gợi Ý Tài Liệu Học Tập Phù Hợp (LightGCN Đồ Thị Deep Learning)</h3>", unsafe_allow_html=True)
+    with st.container(border=True):
+        st.markdown("<h3 style='margin:0 0 1rem 0;'>🎯 Gợi Ý Tài Liệu Học Tập Phù Hợp (LightGCN Đồ Thị Deep Learning)</h3>", unsafe_allow_html=True)
+        
+        # Use cached recommendations; fall back to session_state only for NRT embedding shifts
+        if st.session_state.get('interactions_log'):  # User has done NRT interactions
+            top_5_items = None
+            if st.session_state.custom_u_emb is not None:
+                u_emb = st.session_state.custom_u_emb
+                i_embs = np.stack(df_item_emb['item_embedding'].values)
+                scores = np.dot(i_embs, u_emb)
+                df_item_emb_scored = df_item_emb.copy()
+                df_item_emb_scored['recommendation_score'] = scores
+                top_5_items = df_item_emb_scored.sort_values(by='recommendation_score', ascending=False).head(5).copy()
+        else:
+            # ⚡ Use cached dot-product — instant for already-viewed students
+            top_5_items = compute_recommendations(selected_student)
     
-    # Use cached recommendations; fall back to session_state only for NRT embedding shifts
-    if st.session_state.get('interactions_log'):  # User has done NRT interactions
-        top_5_items = None
-        if st.session_state.custom_u_emb is not None:
-            u_emb = st.session_state.custom_u_emb
-            i_embs = np.stack(df_item_emb['item_embedding'].values)
-            scores = np.dot(i_embs, u_emb)
-            df_item_emb_scored = df_item_emb.copy()
-            df_item_emb_scored['recommendation_score'] = scores
-            top_5_items = df_item_emb_scored.sort_values(by='recommendation_score', ascending=False).head(5).copy()
-    else:
-        # ⚡ Use cached dot-product — instant for already-viewed students
-        top_5_items = compute_recommendations(selected_student)
-
-    if top_5_items is not None:
-        st.success("Hệ thống khuyên dùng 5 tài liệu học tập sau đây để bù đắp kiến thức:")
-        top_5_items = top_5_items.copy()
-        top_5_items['recommendation_score'] = top_5_items['recommendation_score'].apply(lambda x: f"{x:.4f}")
-        top_5_items['activity_type'] = top_5_items['id_site'].apply(get_vle_activity)
-        top_5_items['display_activity'] = top_5_items['activity_type'].apply(lambda x: f"{get_activity_icon(x)} {x}")
-        st.dataframe(
-            top_5_items[['id_site', 'display_activity', 'recommendation_score']].rename(
-                columns={
-                    'id_site': 'Mã tài liệu (VLE Site ID)',
-                    'display_activity': 'Phân loại học liệu (Type)',
-                    'recommendation_score': 'Độ phù hợp cá nhân hóa (Score)'
-                }
-            ),
-            use_container_width=True
-        )
-    else:
-        st.warning("Không tìm thấy dữ liệu Vector nhúng cho sinh viên này.")
-    st.markdown('</div>', unsafe_allow_html=True)
+        if top_5_items is not None:
+            st.success("Hệ thống khuyên dùng 5 tài liệu học tập sau đây để bù đắp kiến thức:")
+            top_5_items = top_5_items.copy()
+            top_5_items['recommendation_score'] = top_5_items['recommendation_score'].apply(lambda x: f"{x:.4f}")
+            top_5_items['activity_type'] = top_5_items['id_site'].apply(get_vle_activity)
+            top_5_items['display_activity'] = top_5_items['activity_type'].apply(lambda x: f"{get_activity_icon(x)} {x}")
+            st.dataframe(
+                top_5_items[['id_site', 'display_activity', 'recommendation_score']].rename(
+                    columns={
+                        'id_site': 'Mã tài liệu (VLE Site ID)',
+                        'display_activity': 'Phân loại học liệu (Type)',
+                        'recommendation_score': 'Độ phù hợp cá nhân hóa (Score)'
+                    }
+                ),
+                use_container_width=True
+            )
+        else:
+            st.warning("Không tìm thấy dữ liệu Vector nhúng cho sinh viên này.")
 
 
 # ==========================================
