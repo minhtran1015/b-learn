@@ -34,26 +34,39 @@ st.markdown(
         margin-bottom: 2rem;
     }
     
-    .glass-card, div[data-testid="stMetricBlock"], div[data-testid="stContainer"], div[data-testid="stVerticalBlockBorderWrapper"] {
-        background: rgba(255, 255, 255, 0.05) !important;
-        backdrop-filter: blur(12px) !important;
-        -webkit-backdrop-filter: blur(12px) !important;
-        border-radius: 16px !important;
-        padding: 1.5rem !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15) !important;
-        transition: transform 0.3s ease, border-color 0.3s ease !important;
-        margin-bottom: 1.5rem !important;
+    /* Thẻ CSS an toàn, chỉ áp dụng cho khung viền mặc định của Streamlit */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        background: rgba(255, 255, 255, 0.6) !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+        border: 1px solid rgba(0, 0, 0, 0.05) !important;
+        margin-bottom: 1rem;
     }
-    .glass-card:hover, div[data-testid="stMetricBlock"]:hover, div[data-testid="stContainer"]:hover, div[data-testid="stVerticalBlockBorderWrapper"]:hover {
-        transform: translateY(-4px) !important;
-        border-color: rgba(77, 150, 255, 0.3) !important;
+
+    /* Đảm bảo màu chữ hiển thị rõ ràng trên nền sáng */
+    h1, h2, h3, h4, h5, h6, p, label {
+        color: #1e1e24 !important;
+    }
+
+    /* Đảm bảo console log không bị ghi đè màu chữ */
+    .console-log * {
+        color: inherit !important;
+    }
+
+    /* Giữ kiểu dáng cho class glass-card tự chế */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.6) !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+        border: 1px solid rgba(0, 0, 0, 0.05) !important;
+        margin-bottom: 1rem;
+        padding: 1.5rem;
     }
     
     /* Specific Status Indicators */
     .status-badge-safe {
         background: rgba(46, 213, 115, 0.2);
-        color: #2ed573;
+        color: #2ed573 !important;
         padding: 0.4rem 0.8rem;
         border-radius: 20px;
         font-weight: 600;
@@ -61,7 +74,7 @@ st.markdown(
     }
     .status-badge-risk {
         background: rgba(255, 71, 87, 0.2);
-        color: #ff4757;
+        color: #ff4757 !important;
         padding: 0.4rem 0.8rem;
         border-radius: 20px;
         font-weight: 600;
