@@ -17,7 +17,7 @@ export SPARK_DRIVER_MEMORY
 export AZURE_STORAGE_ACCOUNT
 export AZURE_STORAGE_KEY
 
-.PHONY: help bronze-discover-full bronze-consolidate-ednet bronze-full-manifest bronze-full-ingest bronze-full-verify bronze-full-audit bronze-full-flow silver-oulad-transform gold-oulad-train gold-bkt-run medallion-oulad-flow infra-terraform-init infra-terraform-plan infra-terraform-apply nrt-inference-run k8s-deploy-nrt k8s-nrt-trigger-once k8s-activate-failover-schedule k8s-deactivate-failover-schedule k8s-failover-status airflow-upgrade-ha api-local-run k8s-deploy-api k8s-api-status
+.PHONY: help bronze-discover-full bronze-consolidate-ednet bronze-full-manifest bronze-full-ingest bronze-full-verify bronze-full-audit bronze-full-flow silver-oulad-transform gold-oulad-train gold-bkt-run medallion-oulad-flow infra-terraform-init infra-terraform-plan infra-terraform-apply nrt-inference-run k8s-deploy-nrt k8s-nrt-trigger-once k8s-activate-failover-schedule k8s-deactivate-failover-schedule k8s-failover-status airflow-upgrade-ha api-local-run k8s-deploy-api k8s-api-status react-local-install react-local-run react-local-build
 
 help:
 	@printf '%s\n' \
@@ -212,6 +212,18 @@ streamlit-local-run:
 # Chạy Serving API FastAPI cục bộ
 api-local-run:
 	uvicorn dashboard.api_server:app --reload
+
+# Cài đặt thư viện cho React Frontend Dashboard
+react-local-install:
+	cd frontend-dashboard && npm install
+
+# Chạy React Frontend Dashboard cục bộ (Development)
+react-local-run:
+	cd frontend-dashboard && npm run dev
+
+# Biên dịch React Frontend Dashboard cho production
+react-local-build:
+	cd frontend-dashboard && npm run build
 
 # Triển khai FastAPI API Serving lên AKS
 k8s-deploy-api:

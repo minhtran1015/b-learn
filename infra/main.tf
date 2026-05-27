@@ -80,7 +80,7 @@ resource "azurerm_subnet" "aks_subnet" {
 # --- 1. STORAGE CHO MEDALLION LAYERS ---
 resource "azurerm_storage_account" "data_storage" {
   # Hãy đổi tên này nếu bị báo lỗi "already exists"
-  name                     = "stblearnminhdata2026" 
+  name                     = "stblearnminhdata2026"
   resource_group_name      = azurerm_resource_group.compute.name
   location                 = azurerm_resource_group.compute.location
   account_tier             = "Standard"
@@ -101,15 +101,19 @@ resource "azurerm_kubernetes_cluster" "aks" {
   resource_group_name = azurerm_resource_group.compute.name
   dns_prefix          = "blearn"
 
-	oidc_issuer_enabled = true # Phải giữ là true để tránh lỗi này
+  oidc_issuer_enabled = true # Phải giữ là true để tránh lỗi này
 
   default_node_pool {
-    name       = "default"
-    node_count = 2 # Giữ nguyên số lượng bạn muốn mở rộng
-    vm_size    = "Standard_D2s_v3"
-    
+    name                        = "default"
+    node_count                  = 2 # Giữ nguyên số lượng bạn muốn mở rộng
+    vm_size                     = "Standard_D8s_v3"
+    temporary_name_for_rotation = "defaulttmp"
+    upgrade_settings {
+      max_surge = "0"
+    }
+
     # Đảm bảo vnet_subnet_id vẫn được khai báo để tránh lỗi network
-    vnet_subnet_id = azurerm_subnet.aks_subnet.id 
+    vnet_subnet_id = azurerm_subnet.aks_subnet.id
   }
 
   identity {
@@ -117,12 +121,12 @@ resource "azurerm_kubernetes_cluster" "aks" {
   }
 
   network_profile {
-    network_plugin     = "azure"
-    load_balancer_sku  = "standard"
-    
+    network_plugin    = "azure"
+    load_balancer_sku = "standard"
+
     # THÊM 3 DÒNG NÀY ĐỂ TRÁNH TRÙNG LẶP:
-    service_cidr       = "10.1.0.0/16"    # Dải IP cho các Service (ClusterIP)
-    dns_service_ip     = "10.1.0.10"     # IP của dịch vụ DNS nội bộ (phải nằm trong service_cidr)
+    service_cidr   = "10.1.0.0/16" # Dải IP cho các Service (ClusterIP)
+    dns_service_ip = "10.1.0.10"   # IP của dịch vụ DNS nội bộ (phải nằm trong service_cidr)
   }
 }
 
@@ -181,7 +185,7 @@ resource "kubernetes_cron_job_v1" "oulad_medallion" {
     schedule                      = var.oulad_cron_schedule
     concurrency_policy            = "Forbid"
     successful_jobs_history_limit = 1
-    failed_jobs_history_limit      = 1
+    failed_jobs_history_limit     = 1
 
     job_template {
       metadata {
