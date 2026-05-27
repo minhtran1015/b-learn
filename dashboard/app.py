@@ -181,6 +181,22 @@ def get_activity_icon(activity_type):
     }
     return icons.get(activity_type, "📄")
 
+@st.cache_data(show_spinner=False)
+def compute_recommendations(student_id_hash: str):
+    """Cache dot-product scoring per student. Recomputed only when student changes."""
+    _user_emb = _load_parquet_resource("user_embeddings.parquet")
+    _item_emb = _load_parquet_resource("item_embeddings.parquet")
+    user_row = _user_emb[_user_emb['student_id_hash'] == student_id_hash]
+    if user_row.empty:
+        return None
+    u_emb = np.array(user_row.iloc[0]['user_embedding'])
+    i_embs = np.stack(_item_emb['item_embedding'].values)
+    scores = np.dot(i_embs, u_emb)
+    df_scored = _item_emb.copy()
+    df_scored['recommendation_score'] = scores
+    return df_scored.sort_values(by='recommendation_score', ascending=False).head(5).copy()
+
+
 # ─── SIDEBAR: BỘ LỌC TÌM KIẾM ĐÃ ĐƯỢC LÀM ĐẸP ───
 st.sidebar.markdown(
     """
@@ -460,23 +476,26 @@ with tab2:
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.markdown("<h3 style='margin:0 0 1rem 0;'>🎯 Gợi Ý Tài Liệu Học Tập Phù Hợp (LightGCN Đồ Thị Deep Learning)</h3>", unsafe_allow_html=True)
     
-    # Calculate recommendations using Custom/Updated user embedding
-    if st.session_state.custom_u_emb is not None:
-        u_emb = st.session_state.custom_u_emb
-        i_embs = np.stack(df_item_emb['item_embedding'].values)
-        scores = np.dot(i_embs, u_emb)
-        
-        df_item_emb_scored = df_item_emb.copy()
-        df_item_emb_scored['recommendation_score'] = scores
-        top_5_items = df_item_emb_scored.sort_values(by='recommendation_score', ascending=False).head(5).copy()
-        
+    # Use cached recommendations; fall back to session_state only for NRT embedding shifts
+    if st.session_state.get('interactions_log'):  # User has done NRT interactions
+        top_5_items = None
+        if st.session_state.custom_u_emb is not None:
+            u_emb = st.session_state.custom_u_emb
+            i_embs = np.stack(df_item_emb['item_embedding'].values)
+            scores = np.dot(i_embs, u_emb)
+            df_item_emb_scored = df_item_emb.copy()
+            df_item_emb_scored['recommendation_score'] = scores
+            top_5_items = df_item_emb_scored.sort_values(by='recommendation_score', ascending=False).head(5).copy()
+    else:
+        # ⚡ Use cached dot-product — instant for already-viewed students
+        top_5_items = compute_recommendations(selected_student)
+
+    if top_5_items is not None:
         st.success("Hệ thống khuyên dùng 5 tài liệu học tập sau đây để bù đắp kiến thức:")
+        top_5_items = top_5_items.copy()
         top_5_items['recommendation_score'] = top_5_items['recommendation_score'].apply(lambda x: f"{x:.4f}")
-        
-        # Add Activity type to dataframe
         top_5_items['activity_type'] = top_5_items['id_site'].apply(get_vle_activity)
         top_5_items['display_activity'] = top_5_items['activity_type'].apply(lambda x: f"{get_activity_icon(x)} {x}")
-        
         st.dataframe(
             top_5_items[['id_site', 'display_activity', 'recommendation_score']].rename(
                 columns={
@@ -490,6 +509,7 @@ with tab2:
     else:
         st.warning("Không tìm thấy dữ liệu Vector nhúng cho sinh viên này.")
     st.markdown('</div>', unsafe_allow_html=True)
+
 
 # ==========================================
 # TAB 3: EXTERNAL LMS WEB DEMO

@@ -243,9 +243,16 @@ function App() {
     
     if (isLiveMode) {
       try {
-        // Fetch Profile (Risk and pyBKT)
-        const profileRes = await fetch(`${targetUrl}/api/v1/student/${studentId}`);
-        const profileData = await profileRes.json();
+        // ⚡ Run both API calls IN PARALLEL — cuts latency from (T1+T2) to max(T1,T2)
+        const [profileRes, recsRes] = await Promise.all([
+          fetch(`${targetUrl}/api/v1/student/${studentId}`),
+          fetch(`${targetUrl}/api/v1/student/${studentId}/recommendations`)
+        ]);
+        
+        const [profileData, recsData] = await Promise.all([
+          profileRes.json(),
+          recsRes.json()
+        ]);
         
         // Add fake id_student fallback if not returned by older Parquet schemas
         if (profileData.risk && !profileData.risk.id_student) {
@@ -253,18 +260,13 @@ function App() {
           profileData.risk.id_student = `10${1000 + (idx >= 0 ? idx : 0)}`;
         }
         
-        // Fetch Recommendations
-        const recsRes = await fetch(`${targetUrl}/api/v1/student/${studentId}/recommendations`);
-        const recsData = await recsRes.json();
-        
         setStudentProfile({
           risk: profileData.risk,
-
           bkt_mastery: profileData.bkt_mastery,
           recommendations: recsData.recommendations
         });
         
-        writeLog(`📥 Đã nạp Hồ sơ học viên & Gợi ý LightGCN cho student: ${studentId.substring(0, 8)}...`, "system");
+        writeLog(`📥 Đã nạp song song Hồ sơ học viên & Gợi ý LightGCN cho student: ${studentId.substring(0, 8)}...`, "system");
       } catch (err) {
         writeLog(`❌ Lỗi khi tải hồ sơ học viên từ API: ${err.message}. Sử dụng dữ liệu giả lập.`, "error");
         // Fallback
@@ -283,6 +285,7 @@ function App() {
       setStudentProfile(fallbackProfile);
     }
   };
+
 
 
   // --- INITIAL LOAD ---
