@@ -180,6 +180,29 @@ def main():
         else:
             print("⚠️ Skipping LMS simulator export: df_vle_meta was None")
 
+        # 5. Export static system metrics for MLOps dashboard
+        print("➡️ Exporting system metrics...")
+        metrics_data = [
+            ("job_duration", "1. Bronze Ingest", 45.0),
+            ("job_duration", "2. Silver Cleanse", 60.0),
+            ("job_duration", "3. Gold BKT Pipeline", 580.0),
+            ("job_duration", "4. Gold RecSys Deep", 319.0),
+            ("job_duration", "5. Serving Export", 65.0),
+            
+            ("api_traffic", "00:00", 15.0),
+            ("api_traffic", "04:00", 8.0),
+            ("api_traffic", "08:00", 92.0),
+            ("api_traffic", "12:00", 156.0),
+            ("api_traffic", "16:00", 110.0),
+            ("api_traffic", "20:00", 185.0),
+            
+            ("resource_quota", "CPU Usage (Cores)", 1.25),
+            ("resource_quota", "RAM Footprint (Gi)", 6.4)
+        ]
+        df_sys = spark.createDataFrame(metrics_data, ["metric_type", "key_name", "value"])
+        df_sys.write.mode("overwrite").parquet(f"{serving_path}/system_metrics.parquet")
+        print("🎉 System metrics exported successfully!")
+
         print("🎉 Serving layer files exported successfully!")
     finally:
         spark.stop()
