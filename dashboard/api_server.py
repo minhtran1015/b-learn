@@ -65,6 +65,11 @@ def get_student_profile(student_id: str):
     
     # Replace NaN with None
     risk_dict = student_risk.replace({np.nan: None}).to_dict(orient="records")[0]
+    if "id_student" not in risk_dict:
+        import hashlib
+        val = int(hashlib.md5(student_id.encode('utf-8')).hexdigest()[:6], 16) % 900000 + 100000
+        risk_dict["id_student"] = str(val)
+        
     bkt_dict = student_bkt.replace({np.nan: None}).to_dict(orient="records")
     
     return {
@@ -72,6 +77,7 @@ def get_student_profile(student_id: str):
         "risk": risk_dict,
         "bkt_mastery": bkt_dict
     }
+
 
 # API 3: Trả về Top 5 tài liệu được gợi ý cá nhân hóa dựa trên dot-product nhúng user/item
 @app.get("/api/v1/student/{student_id}/recommendations", summary="Lấy top 5 gợi ý tài liệu học tập")

@@ -16,9 +16,10 @@ def build_spark_session(app_name="B-Learn_Gold_To_Serving"):
     return build_spark(
         app_name,
         output_root,
-        iceberg_catalogs={"silver_catalog": "silver", "gold_catalog": "gold"},
+        iceberg_catalogs={"bronze_catalog": "bronze", "silver_catalog": "silver", "gold_catalog": "gold"},
         default_catalog_name="gold_catalog"
     )
+
 
 def main():
     print("📦 Exporting Gold Iceberg tables to high-speed Serving Parquet files...")
@@ -36,7 +37,27 @@ def main():
         if "at_risk_probability" in df_risk.columns:
             df_risk = df_risk.withColumnRenamed("at_risk_probability", "dropout_probability")
             
+        # Ánh xạ từ Bronze để lấy id_student gốc (MSSV unhashed) cho chế độ Giảng viên
+        try:
+            print("➡️ Joining with Bronze info to map original id_student...")
+            from pyspark.sql import functions as F
+            df_bronze = spark.read.table("bronze_catalog.full_db.oulad_studentinfo") \
+                .select("id_student") \
+                .distinct() \
+                .withColumn("student_id_hash", F.sha2(F.col("id_student").cast("string"), 256)) \
+                .withColumn("id_student_unhashed", F.col("id_student").cast("string")) \
+                .select("student_id_hash", "id_student_unhashed")
+            
+            df_risk = df_risk.join(df_bronze, on="student_id_hash", how="left")
+            df_risk = df_risk.withColumnRenamed("id_student_unhashed", "id_student")
+            print("Successfully joined with Bronze to add original id_student.")
+        except Exception as e:
+            print(f"⚠️ Warning: Failed to map original id_student from Bronze: {e}")
+            from pyspark.sql import functions as F
+            df_risk = df_risk.withColumn("id_student", F.lit("Unknown"))
+            
         df_risk.write.mode("overwrite").parquet(f"{serving_path}/risk_predictions.parquet")
+
             
         # 2. Đọc và xuất kết quả đo lường kiến thức pyBKT
         print("➡️ Exporting BKT mastery predictions...")

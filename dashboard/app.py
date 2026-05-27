@@ -180,14 +180,29 @@ st.sidebar.markdown(
     """,
     unsafe_allow_html=True
 )
+st.sidebar.header("🔑 Quyền hạn truy cập")
+is_admin = st.sidebar.toggle("🔓 Chế độ Giảng viên (Hiện danh tính thực)", value=False)
+
 st.sidebar.header("🔍 Quản Lý Học Viên")
 student_list = df_risk['student_id_hash'].unique()
 
-# Tạo từ điển mapping để đánh số thứ tự Sinh viên cho dễ gọi tên khi demo
-hash_to_friendly = {
-    raw_hash: f"👤 Học viên #{idx+1} ({raw_hash[:8]}...)" 
-    for idx, raw_hash in enumerate(student_list)
-}
+# Đảm bảo cột id_student luôn tồn tại (nếu chưa được cập nhật từ Gold Export, gán ID giả lập ngẫu nhiên)
+if 'id_student' not in df_risk.columns:
+    import hashlib
+    # Sinh MSSV giả định dài 6 chữ số dựa trên hash của sinh viên để ổn định khi thay đổi trang
+    def get_stable_fake_id(h):
+        return str(int(hashlib.md5(h.encode('utf-8')).hexdigest()[:6], 16) % 900000 + 100000)
+    df_risk['id_student'] = df_risk['student_id_hash'].apply(get_stable_fake_id)
+
+# Tạo từ điển mapping để hiển thị danh sách thân thiện hoặc giải mã MSSV thực tế
+hash_to_friendly = {}
+for idx, raw_hash in enumerate(student_list):
+    row_data = df_risk[df_risk['student_id_hash'] == raw_hash]
+    if is_admin and not row_data.empty:
+        real_id = row_data.iloc[0]['id_student']
+        hash_to_friendly[raw_hash] = f"👤 MSSV: {real_id} (#{idx+1})"
+    else:
+        hash_to_friendly[raw_hash] = f"👤 Học viên #{idx+1} ({raw_hash[:8]}...)"
 
 # Sử dụng format_func để hiển thị tên thân thiện lên Dropdown
 selected_student = st.sidebar.selectbox(
@@ -195,6 +210,7 @@ selected_student = st.sidebar.selectbox(
     student_list, 
     format_func=lambda x: hash_to_friendly.get(x, x)
 )
+
 
 # Lọc dữ liệu riêng của sinh viên được chọn
 student_risk_rows = df_risk[df_risk['student_id_hash'] == selected_student]
@@ -517,9 +533,11 @@ with tab3:
                         
                         # Log the events
                         t_now = datetime.now().strftime('%H:%M:%S')
-                        st.session_state.interactions_log.append(f"🟢 [{t_now}] [Bronze/Silver] Clickstream logged: student={selected_student[:8]}..., site_id={site_id}")
+                        student_disp = df_risk[df_risk['student_id_hash'] == selected_student].iloc[0]['id_student'] if is_admin else f"{selected_student[:8]}..."
+                        st.session_state.interactions_log.append(f"🟢 [{t_now}] [Bronze/Silver] Clickstream logged: student={student_disp}, site_id={site_id}")
                         st.session_state.interactions_log.append(f"⚙️ [{t_now}] [Gold NRT] Triggered online embedding update: Vector shifted toward site_id={site_id}")
                         st.session_state.interactions_log.append(f"🔄 [{t_now}] [Serving] Refreshed recommendations cache locally")
+
                         
                         st.success(f"Đã ghi nhận tương tác với tài liệu #{site_id}! Trạng thái cá nhân hóa đã được cập nhật.")
                         st.rerun()

@@ -80,7 +80,8 @@ const MOCK_STUDENT_PROFILE = {
       dropout_probability: 0.145,
       dropout_risk_level: "Low Risk",
       total_clicks: 342,
-      final_result: "Pass"
+      final_result: "Pass",
+      id_student: "100234"
     },
     bkt_mastery: [
       { skill_name: "lexical_resource", mastery_probability: 0.42, correct_count: 8, total_attempts: 15 },
@@ -102,7 +103,8 @@ const MOCK_STUDENT_PROFILE = {
       dropout_probability: 0.742,
       dropout_risk_level: "High Risk",
       total_clicks: 89,
-      final_result: "Fail"
+      final_result: "Fail",
+      id_student: "234510"
     },
     bkt_mastery: [
       { skill_name: "lexical_resource", mastery_probability: 0.21, correct_count: 2, total_attempts: 10 },
@@ -121,7 +123,7 @@ const MOCK_STUDENT_PROFILE = {
 };
 
 const DEFAULT_PROFILE = {
-  risk: { student_id_hash: "Unknown", dropout_probability: 0.50, dropout_risk_level: "Medium Risk", total_clicks: 150, final_result: "Pass" },
+  risk: { student_id_hash: "Unknown", dropout_probability: 0.50, dropout_risk_level: "Medium Risk", total_clicks: 150, final_result: "Pass", id_student: "999999" },
   bkt_mastery: [
     { skill_name: "lexical_resource", mastery_probability: 0.50, correct_count: 5, total_attempts: 10 },
     { skill_name: "grammatical_range", mastery_probability: 0.50, correct_count: 5, total_attempts: 10 }
@@ -130,6 +132,7 @@ const DEFAULT_PROFILE = {
     { id_site: "542847", activity_type: "resource", activity_name: "Tài liệu gợi ý tổng quan", recommendation_score: 0.80 }
   ]
 };
+
 
 // Colors for charts
 const COLORS_GENDER = ['#6366f1', '#ec4899'];
@@ -140,9 +143,11 @@ function App() {
   const [activeTab, setActiveTab] = useState('cohort');
   const [apiBaseUrl, setApiBaseUrl] = useState('http://20.195.55.162'); // Default to deployed AKS API
   const [isLiveMode, setIsLiveMode] = useState(false); // Controlled by health check
+  const [isTeacherMode, setIsTeacherMode] = useState(false); // Controls identity reveal
   const [showConfig, setShowConfig] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
+
   
   // Data State
   const [studentsList, setStudentsList] = useState([]);
@@ -242,12 +247,19 @@ function App() {
         const profileRes = await fetch(`${targetUrl}/api/v1/student/${studentId}`);
         const profileData = await profileRes.json();
         
+        // Add fake id_student fallback if not returned by older Parquet schemas
+        if (profileData.risk && !profileData.risk.id_student) {
+          const idx = studentsList.indexOf(studentId);
+          profileData.risk.id_student = `10${1000 + (idx >= 0 ? idx : 0)}`;
+        }
+        
         // Fetch Recommendations
         const recsRes = await fetch(`${targetUrl}/api/v1/student/${studentId}/recommendations`);
         const recsData = await recsRes.json();
         
         setStudentProfile({
           risk: profileData.risk,
+
           bkt_mastery: profileData.bkt_mastery,
           recommendations: recsData.recommendations
         });
@@ -256,14 +268,22 @@ function App() {
       } catch (err) {
         writeLog(`❌ Lỗi khi tải hồ sơ học viên từ API: ${err.message}. Sử dụng dữ liệu giả lập.`, "error");
         // Fallback
-        const fallbackProfile = MOCK_STUDENT_PROFILE[studentId] || MOCK_STUDENT_PROFILE[MOCK_STUDENTS[0]] || DEFAULT_PROFILE;
+        const fallbackProfile = { ...(MOCK_STUDENT_PROFILE[studentId] || MOCK_STUDENT_PROFILE[MOCK_STUDENTS[0]] || DEFAULT_PROFILE) };
+        if (fallbackProfile.risk && !fallbackProfile.risk.id_student) {
+          fallbackProfile.risk.id_student = `10${1000 + studentsList.indexOf(studentId)}`;
+        }
         setStudentProfile(fallbackProfile);
       }
     } else {
-      const profile = MOCK_STUDENT_PROFILE[studentId] || MOCK_STUDENT_PROFILE[MOCK_STUDENTS[0]] || DEFAULT_PROFILE;
-      setStudentProfile(profile);
+      const fallbackProfile = { ...(MOCK_STUDENT_PROFILE[studentId] || MOCK_STUDENT_PROFILE[MOCK_STUDENTS[0]] || DEFAULT_PROFILE) };
+      if (fallbackProfile.risk && !fallbackProfile.risk.id_student) {
+        const idx = studentsList.indexOf(studentId);
+        fallbackProfile.risk.id_student = `10${1000 + (idx >= 0 ? idx : 0)}`;
+      }
+      setStudentProfile(fallbackProfile);
     }
   };
+
 
   // --- INITIAL LOAD ---
   useEffect(() => {
@@ -282,7 +302,12 @@ function App() {
   const handleSimulateStudy = async (item) => {
     if (!selectedStudent || !studentProfile) return;
     
-    writeLog(`\n[TƯƠNG TÁC] 👤 Học sinh #${studentsList.indexOf(selectedStudent) + 1} click vào tài liệu: "${item.activity_name || `LMS Site ID ${item.id_site}`}"`, "request");
+    const studentDispName = (isTeacherMode && studentProfile.risk && studentProfile.risk.id_student) 
+      ? `MSSV ${studentProfile.risk.id_student}` 
+      : `Học sinh #${studentsList.indexOf(selectedStudent) + 1}`;
+      
+    writeLog(`\n[TƯƠNG TÁC] 👤 ${studentDispName} click vào tài liệu: "${item.activity_name || `LMS Site ID ${item.id_site}`}"`, "request");
+
     
     if (isLiveMode) {
       const startTime = performance.now();
@@ -452,18 +477,34 @@ function App() {
       {/* ─── SETTINGS DRAWER ─── */}
       {showConfig && (
         <section className="config-drawer glass-panel glow-purple animate-fade">
-          <div className="config-input-group">
-            <label htmlFor="api-url-input" className="kpi-label" style={{ minWidth: 100 }}>FastAPI Endpoint:</label>
-            <input 
-              id="api-url-input"
-              type="text" 
-              className="config-input" 
-              value={apiBaseUrl} 
-              onChange={(e) => setApiBaseUrl(e.target.value)} 
-              placeholder="http://20.x.x.x"
-            />
+          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', flexGrow: 1, alignItems: 'center' }}>
+            <div className="config-input-group">
+              <label htmlFor="api-url-input" className="kpi-label" style={{ minWidth: 100 }}>FastAPI Endpoint:</label>
+              <input 
+                id="api-url-input"
+                type="text" 
+                className="config-input" 
+                value={apiBaseUrl} 
+                onChange={(e) => setApiBaseUrl(e.target.value)} 
+                placeholder="http://20.x.x.x"
+              />
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input 
+                id="teacher-mode-toggle"
+                type="checkbox" 
+                checked={isTeacherMode}
+                onChange={(e) => setIsTeacherMode(e.target.checked)}
+                style={{ width: 18, height: 18, cursor: 'pointer' }}
+              />
+              <label htmlFor="teacher-mode-toggle" className="kpi-label" style={{ cursor: 'pointer', userSelect: 'none', fontWeight: 600, fontSize: 13, textTransform: 'none' }}>
+                🔓 Chế độ Giảng viên (Hiện danh tính thực)
+              </label>
+            </div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
+
             <button 
               className="config-button" 
               onClick={() => {
@@ -666,7 +707,17 @@ function App() {
 
                 <div className="student-list-scroller">
                   {filteredStudents.map((id, index) => {
-                    const friendlyName = `👤 Học viên #${studentsList.indexOf(id) + 1}`;
+                    const idx = studentsList.indexOf(id);
+                    let friendlyName = `👤 Học viên #${idx + 1}`;
+                    
+                    if (isTeacherMode) {
+                      const mockProfile = MOCK_STUDENT_PROFILE[id];
+                      const unhashedId = (studentProfile && studentProfile.risk && studentProfile.risk.student_id_hash === id)
+                        ? studentProfile.risk.id_student
+                        : (mockProfile && mockProfile.risk ? mockProfile.risk.id_student : `10${1000 + idx}`);
+                      friendlyName = `👤 MSSV: ${unhashedId} (#${idx + 1})`;
+                    }
+                    
                     return (
                       <div 
                         key={id} 
@@ -682,6 +733,7 @@ function App() {
                     );
                   })}
                 </div>
+
               </aside>
 
               {/* Main Profile Details */}
@@ -690,10 +742,13 @@ function App() {
                   <div className="glass-panel profile-summary-header">
                     <div>
                       <h2 style={{ fontSize: 20, fontWeight: 700 }}>
-                        📊 Phân tích hồ sơ: Học viên #{studentsList.indexOf(selectedStudent) + 1}
+                        📊 Phân tích hồ sơ: {isTeacherMode && studentProfile.risk && studentProfile.risk.id_student 
+                          ? `Sinh viên mã số ${studentProfile.risk.id_student}` 
+                          : `Học viên #${studentsList.indexOf(selectedStudent) + 1}`}
                       </h2>
                       <span className="profile-id-badge">Secure ID: {selectedStudent}</span>
                     </div>
+
                     <div style={{ textAlign: 'right' }}>
                       <span className="kpi-label">Tổng lượt clicks tương tác</span>
                       <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--primary)' }}>

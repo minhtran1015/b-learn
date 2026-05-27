@@ -25,3 +25,7 @@ tfplan
 
 # Exclude macOS system files
 .DS_Store
+
+# Exclude React frontend dashboard files
+frontend-dashboard/
+
