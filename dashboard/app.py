@@ -251,7 +251,36 @@ with st.spinner("⏳ Đang nạp dữ liệu từ Azure Cloud (lần đầu mấ
         
         # Load descriptive stats with local mock fallback
         try:
-            df_cohort = load_serving_data("cohort_stats.parquet")
+            df_cohort_raw = load_serving_data("cohort_stats.parquet")
+            
+            # LỚP CHUẨN HÓA DỮ LIỆU ĐỀ PHÒNG SCHEMA MISMATCH TỪ SPARK JOB
+            if "metric_name" not in df_cohort_raw.columns:
+                normalized_chunks = []
+                
+                # Chuẩn hoá cột giới tính
+                if "gender" in df_cohort_raw.columns:
+                    g_df = df_cohort_raw[["gender", "count"]].dropna().rename(columns={"gender": "category"})
+                    g_df["metric_name"] = "gender"
+                    g_df["value"] = None
+                    normalized_chunks.append(g_df)
+                    
+                # Chuẩn hoá cột trình độ học vấn
+                if "highest_education" in df_cohort_raw.columns:
+                    e_df = df_cohort_raw[["highest_education", "count"]].dropna().rename(columns={"highest_education": "category"})
+                    e_df["metric_name"] = "highest_education"
+                    e_df["value"] = None
+                    normalized_chunks.append(e_df)
+                    
+                # Chuẩn hoá cột vùng miền
+                if "region" in df_cohort_raw.columns:
+                    r_df = df_cohort_raw[["region", "count"]].dropna().rename(columns={"region": "category"})
+                    r_df["metric_name"] = "region"
+                    r_df["value"] = None
+                    normalized_chunks.append(r_df)
+                    
+                df_cohort = pd.concat(normalized_chunks, ignore_index=True) if normalized_chunks else df_cohort_raw
+            else:
+                df_cohort = df_cohort_raw
         except Exception as e:
             df_cohort = pd.DataFrame([
                 {"metric_name": "gender", "category": "M", "value": None, "count": 1500},
