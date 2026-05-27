@@ -143,6 +143,38 @@ def load_serving_data(file_name):
     print(f"[CACHE] Loaded {file_name}: {len(df)} rows in {elapsed:.2f}s")
     return df
 
+
+@st.cache_data(ttl=3600)
+def precompute_cohort_metrics(_df_risk, _df_bkt):
+    total_students = len(_df_risk['student_id_hash'].unique())
+    avg_risk = _df_risk['dropout_probability'].mean() * 100
+    
+    stuck_skill_name = "N/A"
+    stuck_skill_val = 0.0
+    if not _df_bkt.empty:
+        try:
+            _df_bkt_clean = _df_bkt.copy()
+            _df_bkt_clean['correct_predictions'] = _df_bkt_clean['correct_predictions'].astype(float)
+            skill_averages = _df_bkt_clean.groupby('skill_name')['correct_predictions'].mean().reset_index()
+            if not skill_averages.empty:
+                lowest_skill = skill_averages.sort_values(by='correct_predictions').iloc[0]
+                stuck_skill_name = lowest_skill['skill_name']
+                stuck_skill_val = lowest_skill['correct_predictions']
+        except Exception:
+            pass
+            
+    return total_students, avg_risk, stuck_skill_name, stuck_skill_val
+
+
+@st.cache_data(ttl=3600)
+def generate_curated_student_list(_df_risk):
+    # TỐI ƯU CỐT LÕI: Trích xuất ra danh sách rút gọn gồm 25 sinh viên rủi ro nhất 
+    # và 25 sinh viên an toàn nhất để demo mượt mà, tránh nhét 25k dòng làm sập DOM trình duyệt
+    top_at_risk = _df_risk.sort_values(by='dropout_probability', ascending=False).head(25)
+    top_safe = _df_risk.sort_values(by='dropout_probability', ascending=True).head(25)
+    curated_df = pd.concat([top_at_risk, top_safe]).drop_duplicates(subset=['student_id_hash'])
+    return curated_df['student_id_hash'].tolist()
+
 with st.spinner("⏳ Đang nạp dữ liệu từ Azure Cloud (lần đầu mất ~10-15s, sau đó phục vụ từ bộ nhớ)..."):
     try:
         df_risk = load_serving_data("risk_predictions.parquet")
@@ -241,7 +273,9 @@ st.sidebar.header("🔑 Quyền hạn truy cập")
 is_admin = st.sidebar.toggle("🔓 Chế độ Giảng viên (Hiện danh tính thực)", value=False)
 
 st.sidebar.header("🔍 Quản Lý Học Viên")
-student_list = df_risk['student_id_hash'].unique()
+
+# Lấy danh sách 50 học viên tiêu biểu đã được cache tăng tốc
+curated_student_list = generate_curated_student_list(df_risk)
 
 # Đảm bảo cột id_student luôn tồn tại
 # IMPORTANT: copy() trước khi mutation — df_risk từ cache_data là immutable
@@ -255,7 +289,7 @@ if 'id_student' not in df_risk.columns:
 
 # Tạo từ điển mapping để hiển thị danh sách thân thiện hoặc giải mã MSSV thực tế
 hash_to_friendly = {}
-for idx, raw_hash in enumerate(student_list):
+for idx, raw_hash in enumerate(curated_student_list):
     row_data = df_risk[df_risk['student_id_hash'] == raw_hash]
     if is_admin and not row_data.empty:
         real_id = row_data.iloc[0]['id_student']
@@ -263,12 +297,21 @@ for idx, raw_hash in enumerate(student_list):
     else:
         hash_to_friendly[raw_hash] = f"👤 Học viên #{idx+1} ({raw_hash[:8]}...)"
 
-# Sử dụng format_func để hiển thị tên thân thiện lên Dropdown
-selected_student = st.sidebar.selectbox(
-    "Chọn học viên để phân tích:", 
-    student_list, 
-    format_func=lambda x: hash_to_friendly.get(x, x)
-)
+# Công tắc chọn phương thức tìm kiếm để linh hoạt khi chấm điểm
+search_mode = st.sidebar.radio("Chế độ chọn:", ["Chọn từ danh sách tiêu biểu", "Nhập mã Cloud ID thủ công"])
+
+if search_mode == "Chọn từ danh sách tiêu biểu":
+    selected_student = st.sidebar.selectbox(
+        "Chọn học viên mẫu (Top Risk/Safe):", 
+        curated_student_list, 
+        format_func=lambda x: hash_to_friendly.get(x, x)
+    )
+else:
+    search_input = st.sidebar.text_input("Dán mã SHA-256 Cloud ID của sinh viên vào đây:")
+    if search_input:
+        selected_student = search_input.strip()
+    else:
+        selected_student = curated_student_list[0] # Mặc định lấy người đầu tiên nếu để trống
 
 
 # Lọc dữ liệu riêng của sinh viên được chọn
@@ -304,23 +347,8 @@ tab1, tab2, tab3 = st.tabs([
 with tab1:
     st.subheader("📈 Phân tích chỉ số tổng quan & Nhân khẩu học học đường")
     
-    # Compute cohort-level metrics
-    total_students = len(df_risk['student_id_hash'].unique())
-    avg_risk = df_risk['dropout_probability'].mean() * 100
-    
-    stuck_skill_name = "N/A"
-    stuck_skill_val = 0.0
-    if not df_bkt.empty:
-        try:
-            df_bkt_clean = df_bkt.copy()
-            df_bkt_clean['correct_predictions'] = df_bkt_clean['correct_predictions'].astype(float)
-            skill_averages = df_bkt_clean.groupby('skill_name')['correct_predictions'].mean().reset_index()
-            if not skill_averages.empty:
-                lowest_skill = skill_averages.sort_values(by='correct_predictions').iloc[0]
-                stuck_skill_name = lowest_skill['skill_name']
-                stuck_skill_val = lowest_skill['correct_predictions']
-        except Exception:
-            pass
+    # Compute cohort-level metrics using cached function
+    total_students, avg_risk, stuck_skill_name, stuck_skill_val = precompute_cohort_metrics(df_risk, df_bkt)
 
     # Render beautiful KPI cards
     col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
@@ -457,7 +485,7 @@ with tab1:
 # TAB 2: STUDENT DEEP-DIVE (BẢN GỐC LÀM ĐẸP)
 # ==========================================
 with tab2:
-    st.subheader(f"📊 Hồ sơ cá nhân học tập: {hash_to_friendly.get(selected_student)}")
+    st.subheader(f"📊 Hồ sơ cá nhân học tập: {hash_to_friendly.get(selected_student, f'👤 Học viên ({selected_student[:8]}...)')}")
     st.info(f"🔑 Định danh bảo mật (SHA-256 Cloud ID): `{selected_student}`")
 
     # ─── VIEW 1: CẢNH BÁO RỦI RO (LIGHTGBM) ───
