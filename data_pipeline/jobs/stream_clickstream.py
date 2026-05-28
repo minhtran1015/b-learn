@@ -56,6 +56,7 @@ def main():
         .option("kafka.bootstrap.servers", kafka_bootstrap_servers)
         .option("subscribe", kafka_topic)
         .option("startingOffsets", "latest")
+        .option("failOnDataLoss", "false")  # GreenOps: broker restarts may reset offsets safely
         .load()
     )
     
