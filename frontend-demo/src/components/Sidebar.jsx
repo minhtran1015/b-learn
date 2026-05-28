@@ -1,11 +1,13 @@
-import { GraduationCap, Lightbulb, Settings, UserCircle } from 'lucide-react';
+import { CalendarDays, GraduationCap, HelpCircle, Mail, Settings, UserCircle } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { user } from '../data/mockData.js';
 
 const globalItems = [
   { to: '/courses', label: 'Khóa học', icon: GraduationCap },
-  { to: '/recommendations', label: 'Gợi ý học tập', icon: Lightbulb },
+  { to: '/calendar', label: 'Lịch', icon: CalendarDays },
+  { to: '/messages', label: 'Tin nhắn', icon: Mail },
+  { to: '/help', label: 'Trợ giúp', icon: HelpCircle },
 ];
 
 const accountItems = [
@@ -43,7 +45,6 @@ export default function Sidebar() {
             </NavLink>
           ))}
         </nav>
-
       </div>
 
       <nav className="nav-section nav-account">

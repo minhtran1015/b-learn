@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
 import { tempUsers } from '../data/tempUsers.js';
 
 const USERS_KEY = 'blearn.tempUsers';
@@ -19,32 +19,8 @@ function writeUsers(users) {
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
 
-async function fetchUsersFromTempFile() {
-  const response = await fetch('/api/temp-users');
-  if (!response.ok) {
-    throw new Error('Cannot load temp users file');
-  }
-  return response.json();
-}
-
-async function writeUsersToTempFile(users) {
-  const response = await fetch('/api/temp-users', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(users),
-  });
-  if (!response.ok) {
-    throw new Error('Cannot write temp users file');
-  }
-}
-
-async function persistUsers(users) {
+function persistUsers(users) {
   writeUsers(users);
-  try {
-    await writeUsersToTempFile(users);
-  } catch {
-    // Static builds do not have the Vite temp-file middleware, so localStorage remains the fallback.
-  }
 }
 
 function makeSalt() {
@@ -67,21 +43,6 @@ function sanitizeUser(user) {
 export function AuthProvider({ children }) {
   const [users, setUsers] = useState(() => readUsers());
   const [currentUserId, setCurrentUserId] = useState(() => localStorage.getItem(SESSION_KEY));
-
-  useEffect(() => {
-    let isMounted = true;
-    fetchUsersFromTempFile()
-      .then((fileUsers) => {
-        if (!isMounted) return;
-        setUsers(fileUsers);
-        writeUsers(fileUsers);
-      })
-      .catch(() => {});
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   const currentUser = useMemo(
     () => sanitizeUser(users.find((user) => user.id === currentUserId)),
@@ -122,7 +83,7 @@ export function AuthProvider({ children }) {
 
     const nextUsers = [...users, user];
     setUsers(nextUsers);
-    await persistUsers(nextUsers);
+    persistUsers(nextUsers);
     localStorage.setItem(SESSION_KEY, user.id);
     setCurrentUserId(user.id);
     return sanitizeUser(user);

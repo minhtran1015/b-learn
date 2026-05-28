@@ -568,6 +568,553 @@ textarea {
   color: var(--muted);
 }
 
+.detail-list li {
+  display: grid;
+  gap: 4px;
+}
+
+.detail-list span {
+  color: var(--text);
+  font-weight: 750;
+}
+
+.detail-list small {
+  color: var(--muted);
+}
+
+.calendar-layout,
+.mail-layout,
+.help-layout,
+.discussion-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 28px;
+  align-items: start;
+}
+
+.calendar-board,
+.agenda-panel,
+.mail-list-panel,
+.mail-reader,
+.help-hero,
+.faq-panel,
+.support-panel,
+.discussion-board,
+.setting-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow);
+}
+
+.calendar-board {
+  overflow: hidden;
+}
+
+.calendar-toolbar,
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.calendar-toolbar {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.calendar-toolbar span {
+  color: var(--muted);
+  font-weight: 750;
+}
+
+.calendar-toolbar h2,
+.agenda-panel h2,
+.faq-panel h2,
+.support-panel h2 {
+  margin: 4px 0 0;
+}
+
+.calendar-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.calendar-controls button,
+.mail-actions button {
+  min-width: 38px;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: var(--primary);
+  font-weight: 800;
+}
+
+.calendar-weekdays {
+  background: #eef4ff;
+  border-bottom: 1px solid var(--line);
+}
+
+.calendar-weekdays span {
+  padding: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 850;
+  text-align: center;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.calendar-cell {
+  min-height: 116px;
+  padding: 10px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: white;
+}
+
+.calendar-cell:nth-child(7n) {
+  border-right: 0;
+}
+
+.calendar-cell strong {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--text);
+}
+
+.calendar-cell.today strong {
+  color: white;
+  background: var(--primary);
+}
+
+.calendar-cell.muted {
+  background: #f7f9fd;
+}
+
+.calendar-events {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.calendar-pill {
+  overflow: hidden;
+  border-radius: 6px;
+  padding: 5px 7px;
+  color: #12335f;
+  background: #dfeeff;
+  font-size: 12px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-pill.exam {
+  color: #6f1d1b;
+  background: #ffe2e2;
+}
+
+.calendar-pill.deadline,
+.calendar-pill.urgent {
+  color: #753a00;
+  background: #fff0c2;
+}
+
+.agenda-panel,
+.mail-list-panel,
+.mail-reader,
+.faq-panel,
+.support-panel,
+.discussion-board {
+  padding: 20px;
+}
+
+.agenda-list,
+.mail-list,
+.faq-list {
+  display: grid;
+  gap: 12px;
+}
+
+.agenda-item {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fbff;
+}
+
+.agenda-date {
+  display: grid;
+  place-items: center;
+  align-self: start;
+  min-height: 58px;
+  border-radius: 10px;
+  color: white;
+  background: var(--primary);
+}
+
+.agenda-date strong {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.agenda-date span {
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.agenda-item small,
+.faq-item span,
+.thread-card span {
+  color: var(--primary-2);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.agenda-item h3,
+.mail-item h3,
+.faq-item h3,
+.thread-card h3,
+.setting-card h3 {
+  margin: 4px 0;
+}
+
+.agenda-item p,
+.mail-item p,
+.faq-item p,
+.setting-card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.meta-line span {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.mail-layout {
+  grid-template-columns: 420px minmax(0, 1fr);
+}
+
+.mail-search,
+.help-search {
+  min-height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fbff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 13px;
+  color: var(--muted);
+}
+
+.mail-search input,
+.help-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+
+.mail-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.mail-tabs button {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 13px;
+  background: white;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.mail-tabs .active {
+  color: white;
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.mail-item {
+  display: grid;
+  grid-template-columns: 46px 1fr;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+
+.mail-item.active {
+  border-color: #b9cdf5;
+  background: #eef5ff;
+}
+
+.mail-item.unread h3::after {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+}
+
+.mail-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: white;
+  background: var(--primary);
+  font-weight: 900;
+}
+
+.mail-row,
+.mail-reader-head,
+.thread-card,
+.setting-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.mail-row time {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.mail-item span,
+.mail-reader-head span {
+  display: inline-flex;
+  width: max-content;
+  margin-top: 8px;
+  border-radius: 999px;
+  padding: 5px 9px;
+  color: var(--primary);
+  background: #dce9ff;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.mail-reader {
+  min-height: 520px;
+}
+
+.mail-reader-head {
+  align-items: flex-start;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.mail-reader-head h2 {
+  margin: 8px 0;
+  font-size: 30px;
+}
+
+.mail-reader-head p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.mail-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.mail-body {
+  display: grid;
+  gap: 18px;
+  padding: 24px 0;
+  color: #26354a;
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.mail-context {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 10px;
+  background: #f3f7ff;
+}
+
+.help-hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(280px, 420px);
+  gap: 20px;
+  align-items: center;
+  padding: 24px;
+}
+
+.help-hero svg {
+  color: var(--primary);
+}
+
+.help-hero h2 {
+  margin: 0 0 6px;
+}
+
+.help-hero p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.faq-item,
+.support-card,
+.thread-card {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fbff;
+}
+
+.support-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.support-card {
+  display: flex;
+  gap: 13px;
+}
+
+.support-card svg,
+.thread-icon,
+.setting-card > svg {
+  color: var(--primary);
+}
+
+.support-card strong,
+.support-card span,
+.support-card small {
+  display: block;
+}
+
+.support-card span {
+  margin-top: 4px;
+  font-weight: 800;
+}
+
+.support-card small {
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.discussion-layout {
+  grid-template-columns: minmax(0, 1fr) 320px;
+}
+
+.thread-card {
+  margin-top: 12px;
+}
+
+.thread-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #dce9ff;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.thread-card > div:nth-child(2) {
+  flex: 1;
+}
+
+.thread-card > strong {
+  color: var(--primary);
+  white-space: nowrap;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.setting-card {
+  min-height: 136px;
+  padding: 20px;
+}
+
+.setting-card > div {
+  flex: 1;
+}
+
+.switch {
+  position: relative;
+  width: 52px;
+  height: 30px;
+  flex: 0 0 auto;
+}
+
+.switch input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.switch span {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.switch span::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.18s ease;
+}
+
+.switch input:checked + span {
+  background: var(--primary);
+}
+
+.switch input:checked + span::after {
+  transform: translateX(22px);
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1422,6 +1969,11 @@ textarea {
   .course-grid,
   .dashboard-grid,
   .course-workspace,
+  .calendar-layout,
+  .mail-layout,
+  .help-layout,
+  .discussion-layout,
+  .settings-grid,
   .two-column,
   .learning-layout,
   .assignment-detail-grid,
@@ -1444,6 +1996,10 @@ textarea {
 
   .profile-summary {
     position: static;
+  }
+
+  .help-hero {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1486,6 +2042,36 @@ textarea {
   .radar-chart,
   .stat-wide {
     grid-template-columns: 1fr;
+  }
+
+  .calendar-toolbar,
+  .mail-reader-head,
+  .thread-card,
+  .setting-card {
+    display: grid;
+    align-items: stretch;
+  }
+
+  .calendar-grid,
+  .calendar-weekdays {
+    min-width: 720px;
+  }
+
+  .calendar-board {
+    overflow-x: auto;
+  }
+
+  .mail-list-panel,
+  .mail-reader,
+  .agenda-panel,
+  .faq-panel,
+  .support-panel,
+  .discussion-board {
+    padding: 16px;
+  }
+
+  .mail-layout {
+    gap: 18px;
   }
 
   .card-heading {
