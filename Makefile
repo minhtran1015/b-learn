@@ -396,8 +396,9 @@ streaming-resume:
 	kubectl scale statefulset kafka-stream -n blearn-medallion --replicas=1
 	kubectl scale deployment spark-streaming-job -n blearn-medallion --replicas=1
 	kubectl scale deployment blearn-api-gateway -n blearn-medallion --replicas=1
-	kubectl scale deployment -l app.kubernetes.io/name=kube-prometheus-stack -n blearn-medallion --replicas=1
-	kubectl scale statefulset -l app=prometheus -n blearn-medallion --replicas=1
+	kubectl scale deployment kube-prometheus-stack-grafana -n blearn-medallion --replicas=1
+	kubectl scale deployment -l release=kube-prometheus-stack -n blearn-medallion --replicas=1
+	kubectl scale statefulset prometheus-kube-prometheus-stack-prometheus -n blearn-medallion --replicas=1
 	@echo "✅ Tất cả các cấu phần streaming đã live, sẵn sàng phục vụ!"
 
 # 🔴 ĐÓNG BĂNG TOÀN BỘ HỆ THỐNG ĐỂ TIẾT KIỆM CREDIT (Ngay sau khi demo xong)
@@ -406,6 +407,7 @@ streaming-suspend:
 	kubectl scale statefulset kafka-stream -n blearn-medallion --replicas=0
 	kubectl scale deployment spark-streaming-job -n blearn-medallion --replicas=0
 	kubectl scale deployment blearn-api-gateway -n blearn-medallion --replicas=0
-	kubectl scale deployment -l app.kubernetes.io/name=kube-prometheus-stack -n blearn-medallion --replicas=0
-	kubectl scale statefulset -l app=prometheus -n blearn-medallion --replicas=0
+	kubectl scale deployment kube-prometheus-stack-grafana -n blearn-medallion --replicas=0
+	kubectl scale deployment -l release=kube-prometheus-stack -n blearn-medallion --replicas=0
+	kubectl scale statefulset prometheus-kube-prometheus-stack-prometheus -n blearn-medallion --replicas=0
 	@echo "😴 Đã ngủ đông thành công! Hệ thống tiêu thụ 0% CPU/RAM, bảo toàn Credit Azure."
