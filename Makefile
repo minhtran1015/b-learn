@@ -388,7 +388,7 @@ k8s-iceberg-compact:
 # ====================================================================
 # 🟢 GREEN-OPS: SUSPEND / RESUME STREAMING & MLOPS ARCHITECTURE
 # ====================================================================
-.PHONY: streaming-resume streaming-suspend
+.PHONY: streaming-resume streaming-suspend streaming-load-test
 
 # 🟢 ĐÁNH THỨC TOÀN BỘ KIẾN TRÚC STREAMING VÀ MLOPS INFRA (Khi bắt đầu demo)
 streaming-resume:
@@ -411,6 +411,10 @@ streaming-suspend:
 	kubectl scale deployment -l release=kube-prometheus-stack -n blearn-medallion --replicas=0
 	kubectl scale statefulset prometheus-kube-prometheus-stack-prometheus -n blearn-medallion --replicas=0
 	@echo "😴 Đã ngủ đông thành công! Hệ thống tiêu thụ 0% CPU/RAM, bảo toàn Credit Azure."
+
+# 📡 Sinh lưu lượng clickstream phục vụ demo realtime và kiểm thử chịu tải
+streaming-load-test:
+	$(PYTHON) -m data_pipeline.utils.traffic_generator
 
 # 🎯 TẮT VẬT LÝ TOÀN BỘ CỤM AKS (Đưa tiền thuê máy về 0đ khi không làm việc)
 cluster-stop:

@@ -67,19 +67,29 @@ def main():
         StructField("id_student", StringType(), True),
         StructField("id_site", IntegerType(), True),
         StructField("date", IntegerType(), True),
-        StructField("sum_click", IntegerType(), True)
+        StructField("sum_click", IntegerType(), True),
+        StructField("_corrupt_record", StringType(), True),
     ])
     
     # 3. Deserialize JSON string payload and capture event_time (from Kafka native timestamp)
     parsed_df = (
         kafka_df
         .selectExpr("CAST(value AS STRING) as json_payload", "timestamp as event_time")
-        .select(F.from_json(F.col("json_payload"), payload_schema).alias("data"), "event_time")
+        .select(
+            F.from_json(
+                F.col("json_payload"),
+                payload_schema,
+                {"mode": "PERMISSIVE", "columnNameOfCorruptRecord": "_corrupt_record"},
+            ).alias("data"),
+            "event_time",
+        )
         .select("data.*", "event_time")
     )
+
+    clean_df = parsed_df.filter(F.col("_corrupt_record").isNull())
     
     # 4. Add Watermark to handle out-of-order logs (10 minutes)
-    watermarked_df = parsed_df.withWatermark("event_time", "10 minutes")
+    watermarked_df = clean_df.withWatermark("event_time", "10 minutes")
     
     # 5. Sessionize clickstream data: group by student and 30-minute session window
     sessionized_df = (
@@ -126,6 +136,7 @@ def main():
         .format("iceberg")
         .outputMode("append")
         .option("checkpointLocation", checkpoint_path)
+        .trigger(processingTime="10 seconds")
         .toTable("bronze_catalog.full_db.oulad_studentvle")
     )
     

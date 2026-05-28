@@ -1,10 +1,11 @@
 import os
 import sys
+import json
 import jwt
 import datetime
 from pathlib import Path
 from typing import Optional
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, BackgroundTasks, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
@@ -12,6 +13,7 @@ import pandas as pd
 import numpy as np
 from azure.storage.blob import ContainerClient
 import io
+from kafka import KafkaProducer
 
 # Thêm root data_pipeline vào sys.path để giải quyết import module
 PIPELINE_ROOT = Path(__file__).resolve().parents[1]
@@ -45,11 +47,80 @@ df_item_emb = None
 df_risk = None
 df_lms_meta = None
 last_loaded = None
+click_producer = None
 
 
 class LoginRequest(BaseModel):
     username: str
     role: str = "student"
+
+
+class ClickTrackRequest(BaseModel):
+    student_id_hash: str
+    id_site: int
+    code_module: str = ""
+    code_presentation: str = ""
+    sum_click: int = 1
+    event_type: str = "click"
+    page_path: str = ""
+    source: str = "frontend-demo"
+    event_time: Optional[str] = None
+
+
+def _fallback_click_log_path() -> str:
+    return os.getenv("CLICK_FALLBACK_LOG_PATH", "/tmp/fallback_clicks.log")
+
+
+def _build_click_event(payload: ClickTrackRequest, current_user: dict) -> dict:
+    return {
+        "student_id_hash": payload.student_id_hash,
+        "id_site": int(payload.id_site),
+        "code_module": payload.code_module,
+        "code_presentation": payload.code_presentation,
+        "sum_click": int(payload.sum_click),
+        "event_type": payload.event_type,
+        "page_path": payload.page_path,
+        "source": payload.source,
+        "event_time": payload.event_time or datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "client_role": current_user.get("role"),
+        "client_user": current_user.get("username"),
+    }
+
+
+def _get_click_producer() -> KafkaProducer:
+    global click_producer
+    if click_producer is None:
+        bootstrap_servers = os.getenv(
+            "KAFKA_BOOTSTRAP_SERVERS", "kafka-service.blearn-medallion.svc.cluster.local:9092"
+        )
+        click_producer = KafkaProducer(
+            bootstrap_servers=bootstrap_servers,
+            value_serializer=lambda value: json.dumps(value, ensure_ascii=False).encode("utf-8"),
+            linger_ms=0,
+            acks=1,
+            retries=0,
+            max_block_ms=1000,
+        )
+    return click_producer
+
+
+def _append_click_fallback(record: dict) -> None:
+    log_path = _fallback_click_log_path()
+    with open(log_path, "a", encoding="utf-8") as handle:
+        handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
+def _publish_click_event(record: dict) -> None:
+    try:
+        producer = _get_click_producer()
+        topic = os.getenv("KAFKA_TOPIC", "learning-events")
+        producer.send(topic, record)
+    except Exception as exc:
+        print(f"Cảnh báo: Kafka unavailable, lưu click fallback vào file ({exc})")
+        try:
+            _append_click_fallback(record)
+        except Exception as fallback_exc:
+            print(f"Lỗi ghi fallback click log: {fallback_exc}")
 
 def load_parquet_file(file_name: str) -> pd.DataFrame:
     """Tải tệp Parquet từ Local Cache của Pod hoặc ADLS Gen2."""
@@ -265,6 +336,23 @@ def login(payload: LoginRequest):
         expires_delta=datetime.timedelta(hours=24)
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@app.post("/track-click")
+def track_click(
+    payload: ClickTrackRequest,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(verify_token),
+):
+    """Nhận clickstream từ frontend và đẩy Kafka ở nền để tránh chặn UI."""
+    record = _build_click_event(payload, current_user)
+    background_tasks.add_task(_publish_click_event, record)
+    return {
+        "accepted": True,
+        "queued": True,
+        "topic": os.getenv("KAFKA_TOPIC", "learning-events"),
+        "event_time": record["event_time"],
+    }
 
 @app.get("/recommendations/{student_id_hash}")
 def get_recommendations(student_id_hash: str, current_user: dict = Depends(verify_token)):

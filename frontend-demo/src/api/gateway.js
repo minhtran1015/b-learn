@@ -60,6 +60,10 @@ export async function resolveStudentHash(user) {
   return hash;
 }
 
+export function readStudentHash() {
+  return localStorage.getItem(STUDENT_HASH_KEY) || '';
+}
+
 export async function loginGateway({ username, role = 'student' }) {
   const response = await fetch(`${API_BASE_URL}/login`, {
     method: 'POST',
@@ -88,6 +92,48 @@ export async function ensureGatewaySession(user) {
   const token = getToken() || (await loginGateway({ username, role: 'student' }));
   const studentHash = await resolveStudentHash(user);
   return { token, studentHash };
+}
+
+export async function trackStudentClick(studentId, siteId) {
+  const studentHash = studentId || readStudentHash();
+  const numericSiteId = Number(siteId);
+
+  if (!studentHash || !Number.isFinite(numericSiteId)) {
+    console.log('click tracking skipped: missing student hash or site id', { studentId, siteId });
+    return false;
+  }
+
+  try {
+    const token = getToken();
+    if (!token) {
+      throw new Error('missing JWT token');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/track-click`, {
+      method: 'POST',
+      keepalive: true,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        student_id_hash: studentHash,
+        id_site: numericSiteId,
+        page_path: window.location.pathname,
+        source: 'frontend-demo',
+      }),
+    });
+
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(`track-click failed (${response.status}): ${detail || 'Unknown error'}`);
+    }
+
+    return true;
+  } catch (error) {
+    console.log('track-click fallback:', error);
+    return false;
+  }
 }
 
 export async function fetchRecommendations(studentHash) {

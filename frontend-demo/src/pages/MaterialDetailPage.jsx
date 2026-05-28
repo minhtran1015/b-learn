@@ -1,16 +1,40 @@
 import { CheckCircle2, Download, Play, Reply } from 'lucide-react';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { readCachedMaterials } from '../api/gateway.js';
+import { useAuth } from '../auth/AuthContext.jsx';
+import { readCachedMaterials, resolveStudentHash, trackStudentClick } from '../api/gateway.js';
 import { materials } from '../data/mockData.js';
 
 export default function MaterialDetailPage() {
   const { courseId, materialId } = useParams();
+  const { currentUser } = useAuth();
+  const [studentHash, setStudentHash] = useState('');
   const activeMaterials = useMemo(() => {
     const cached = readCachedMaterials();
     return cached.length > 0 ? cached : materials;
   }, []);
   const material = activeMaterials.find((item) => item.id === materialId) ?? activeMaterials[0];
+
+  useEffect(() => {
+    let isMounted = true;
+    resolveStudentHash(currentUser)
+      .then((hash) => {
+        if (isMounted) {
+          setStudentHash(hash);
+        }
+      })
+      .catch((error) => {
+        console.log('detail hash fallback:', error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser]);
+
+  const handleMaterialClick = async (item) => {
+    await trackStudentClick(studentHash, item.id_site);
+  };
 
   return (
     <div className="learning-layout">
@@ -50,7 +74,14 @@ export default function MaterialDetailPage() {
         <div className="card">
           <h2>Nội dung học tập</h2>
           {activeMaterials.map((item) => (
-            <Link key={item.id} className={`lesson-row ${item.id === material.id ? 'active' : ''}`} to={`/courses/${courseId}/materials/${item.id}`}>
+            <Link
+              key={item.id}
+              className={`lesson-row ${item.id === material.id ? 'active' : ''}`}
+              to={`/courses/${courseId}/materials/${item.id}`}
+              onClick={() => {
+                void handleMaterialClick(item);
+              }}
+            >
               <span>{item.status === 'Đã hoàn thành' ? <CheckCircle2 size={18} /> : <Play size={18} />}</span>
               <div><strong>{item.title}</strong><small>{item.type} • {item.duration}</small></div>
             </Link>

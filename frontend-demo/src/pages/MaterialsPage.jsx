@@ -3,31 +3,35 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import { ensureGatewaySession, fetchRecommendations } from '../api/gateway.js';
+import { ensureGatewaySession, fetchRecommendations, resolveStudentHash, trackStudentClick } from '../api/gateway.js';
+import { materials as localMaterials } from '../data/mockData.js';
 
 export default function MaterialsPage() {
   const { courseId } = useParams();
   const { currentUser } = useAuth();
-  const [materials, setMaterials] = useState([]);
+  const [materials, setMaterials] = useState(() => localMaterials);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [studentHash, setStudentHash] = useState('');
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadMaterials() {
       setIsLoading(true);
-      setError('');
       try {
+        const resolvedHash = await resolveStudentHash(currentUser);
+        if (isMounted) {
+          setStudentHash(resolvedHash);
+        }
         const { studentHash } = await ensureGatewaySession(currentUser);
         const payload = await fetchRecommendations(studentHash);
         if (isMounted) {
           setMaterials(Array.isArray(payload?.recommendations) ? payload.recommendations : []);
         }
       } catch (loadError) {
+        console.log('materials fallback:', loadError);
         if (isMounted) {
-          setError(loadError.message || 'Không thể tải tài liệu từ Gateway.');
-          setMaterials([]);
+          setMaterials(localMaterials);
         }
       } finally {
         if (isMounted) {
@@ -43,6 +47,10 @@ export default function MaterialsPage() {
   }, [currentUser]);
 
   const hasMaterials = useMemo(() => materials.length > 0, [materials]);
+
+  const handleMaterialClick = async (item) => {
+    await trackStudentClick(studentHash, item.id_site);
+  };
 
   return (
     <div className="page-stack">
@@ -60,10 +68,16 @@ export default function MaterialsPage() {
       </div>
       <section className="material-list">
         {isLoading && <p>Đang tải tài liệu từ FastAPI Gateway...</p>}
-        {!isLoading && error && <p>{error}</p>}
-        {!isLoading && !error && !hasMaterials && <p>Chưa có gợi ý tài liệu cho học viên hiện tại.</p>}
+        {!isLoading && !hasMaterials && <p>Chưa có tài liệu để hiển thị.</p>}
         {materials.map((item) => (
-          <Link key={item.id} to={`/courses/${courseId}/materials/${item.id}`} className="material-card">
+          <Link
+            key={item.id}
+            to={`/courses/${courseId}/materials/${item.id}`}
+            className="material-card"
+            onClick={() => {
+              void handleMaterialClick(item);
+            }}
+          >
             <div className="material-icon">{item.type.toLowerCase().includes('pdf') ? <FileText /> : <PlaySquare />}</div>
             <div>
               <small>{item.type}</small>
