@@ -5,7 +5,9 @@ import datetime
 from pathlib import Path
 from typing import Optional
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
+from pydantic import BaseModel
 import pandas as pd
 import numpy as np
 from azure.storage.blob import ContainerClient
@@ -24,6 +26,15 @@ app = FastAPI(
 
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "b-learn-super-secret-key-1015")
 ALGORITHM = "HS256"
+ALLOWED_ORIGINS = os.getenv("CORS_ALLOW_ORIGINS", "*")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[origin.strip() for origin in ALLOWED_ORIGINS.split(",") if origin.strip()] or ["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 storage_account = os.getenv("AZURE_STORAGE_ACCOUNT", "stblearnminhdata2026")
 storage_key = os.getenv("AZURE_STORAGE_KEY")
@@ -32,7 +43,13 @@ storage_key = os.getenv("AZURE_STORAGE_KEY")
 df_user_emb = None
 df_item_emb = None
 df_risk = None
+df_lms_meta = None
 last_loaded = None
+
+
+class LoginRequest(BaseModel):
+    username: str
+    role: str = "student"
 
 def load_parquet_file(file_name: str) -> pd.DataFrame:
     """Tải tệp Parquet từ Local Cache của Pod hoặc ADLS Gen2."""
@@ -77,8 +94,112 @@ def load_parquet_file(file_name: str) -> pd.DataFrame:
         return pd.read_parquet(local_cache_path)
     raise FileNotFoundError(f"Không thể tìm thấy tệp dữ liệu {file_name}")
 
+def _coerce_text(value, fallback: str = "") -> str:
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return fallback
+    text = str(value).strip()
+    return text if text else fallback
+
+
+def _normalize_content_type(raw_type: str, idx: int) -> str:
+    lowered = raw_type.lower()
+    if any(token in lowered for token in ["video", "lecture", "audio"]):
+        return "Video bài giảng"
+    if any(token in lowered for token in ["pdf", "file", "document", "reading", "book"]):
+        return "PDF"
+    return "Video bài giảng" if idx % 2 == 0 else "PDF"
+
+
+def _format_duration(record: dict, idx: int) -> str:
+    for field in ["duration", "estimated_time", "estimated_minutes", "minutes"]:
+        value = record.get(field)
+        if value is None or (isinstance(value, float) and pd.isna(value)):
+            continue
+        try:
+            minutes = int(float(value))
+            if minutes > 0:
+                return f"{minutes} phút"
+        except (TypeError, ValueError):
+            text = _coerce_text(value)
+            if text:
+                return text
+
+    for field in ["pages", "page_count"]:
+        value = record.get(field)
+        if value is None or (isinstance(value, float) and pd.isna(value)):
+            continue
+        try:
+            pages = int(float(value))
+            if pages > 0:
+                return f"{pages} trang"
+        except (TypeError, ValueError):
+            text = _coerce_text(value)
+            if text:
+                return text
+
+    return "25 phút" if idx % 2 == 0 else "12 trang"
+
+
+def _format_chapter(record: dict) -> str:
+    chapter = _coerce_text(record.get("chapter"))
+    if chapter:
+        return chapter
+
+    week_from = record.get("week_from")
+    week_to = record.get("week_to")
+    if week_from is not None and week_to is not None and not pd.isna(week_from) and not pd.isna(week_to):
+        try:
+            return f"Tuần {int(float(week_from))} - {int(float(week_to))}"
+        except (TypeError, ValueError):
+            pass
+
+    return "Chương 1: Phân tích hành vi & Gợi ý cá nhân hóa"
+
+
+def _material_from_lookup(site_id: int, score: float, idx: int, lms_by_site: dict) -> dict:
+    record = lms_by_site.get(site_id, {})
+    raw_title = (
+        _coerce_text(record.get("title"))
+        or _coerce_text(record.get("activity_title"))
+        or _coerce_text(record.get("activity_name"))
+        or _coerce_text(record.get("resource_name"))
+    )
+    raw_type = (
+        _coerce_text(record.get("type"))
+        or _coerce_text(record.get("activity_type"))
+        or _coerce_text(record.get("resource_type"))
+    )
+    status = _coerce_text(record.get("status"), "Mở khóa")
+
+    return {
+        "id": f"m-{site_id}",
+        "title": raw_title or f"Tài liệu tương tác chuyên sâu học phần #{site_id}",
+        "type": _normalize_content_type(raw_type, idx),
+        "duration": _format_duration(record, idx),
+        "status": status,
+        "chapter": _format_chapter(record),
+        "id_site": site_id,
+        "score": float(score),
+    }
+
+
+def _build_lms_lookup(df_meta: pd.DataFrame) -> dict:
+    if df_meta is None or df_meta.empty or "id_site" not in df_meta.columns:
+        return {}
+
+    normalized = df_meta.copy()
+    normalized["id_site"] = pd.to_numeric(normalized["id_site"], errors="coerce")
+    normalized = normalized.dropna(subset=["id_site"]).drop_duplicates(subset=["id_site"], keep="first")
+
+    lookup = {}
+    for _, row in normalized.iterrows():
+        site_id = int(row["id_site"])
+        lookup[site_id] = row.to_dict()
+    return lookup
+
+
 def get_cached_data():
-    global df_user_emb, df_item_emb, df_risk, last_loaded
+    global df_user_emb, df_item_emb, df_risk, df_lms_meta, last_loaded
     now = datetime.datetime.now()
     # Cache hết hạn sau 5 phút
     if last_loaded is None or (now - last_loaded).total_seconds() > 300:
@@ -86,6 +207,11 @@ def get_cached_data():
             df_user_emb = load_parquet_file("user_embeddings.parquet")
             df_item_emb = load_parquet_file("item_embeddings.parquet")
             df_risk = load_parquet_file("risk_predictions.parquet")
+            try:
+                df_lms_meta = load_parquet_file("lms_simulator.parquet")
+            except Exception as lms_error:
+                print(f"Cảnh báo: không tải được lms_simulator.parquet ({lms_error})")
+                df_lms_meta = pd.DataFrame()
             last_loaded = now
             print(f"[{now.isoformat()}] Dữ liệu phục vụ đã được làm mới thành công.")
         except Exception as e:
@@ -95,7 +221,8 @@ def get_cached_data():
                 df_user_emb = pd.DataFrame()
                 df_item_emb = pd.DataFrame()
                 df_risk = pd.DataFrame()
-    return df_user_emb, df_item_emb, df_risk
+                df_lms_meta = pd.DataFrame()
+    return df_user_emb, df_item_emb, df_risk, df_lms_meta
 
 # Bảo mật và JWT logic
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -131,10 +258,10 @@ def verify_token(token: str = Depends(oauth2_scheme)):
 
 # API Routes
 @app.post("/login")
-def login(username: str, role: str = "student"):
+def login(payload: LoginRequest):
     """Tạo JWT access token. Demo chấp nhận mọi tài khoản hợp lệ."""
     access_token = create_access_token(
-        data={"sub": username, "role": role},
+        data={"sub": payload.username, "role": payload.role},
         expires_delta=datetime.timedelta(hours=24)
     )
     return {"access_token": access_token, "token_type": "bearer"}
@@ -142,7 +269,7 @@ def login(username: str, role: str = "student"):
 @app.get("/recommendations/{student_id_hash}")
 def get_recommendations(student_id_hash: str, current_user: dict = Depends(verify_token)):
     """Tính toán RecSys realtime dựa trên vector nhúng LightGCN."""
-    u_emb_df, i_emb_df, risk_df = get_cached_data()
+    u_emb_df, i_emb_df, risk_df, lms_meta_df = get_cached_data()
     
     if u_emb_df.empty or i_emb_df.empty:
         raise HTTPException(status_code=503, detail="Dịch vụ lưu trữ dữ liệu Serving chưa sẵn sàng.")
@@ -160,13 +287,12 @@ def get_recommendations(student_id_hash: str, current_user: dict = Depends(verif
     df_scored['score'] = scores
     
     top_5 = df_scored.sort_values(by='score', ascending=False).head(5)
-    
+
+    lms_by_site = _build_lms_lookup(lms_meta_df)
     recs = []
-    for idx, row in top_5.iterrows():
-        recs.append({
-            "id_site": int(row['id_site']),
-            "score": float(row['score'])
-        })
+    for idx, (_, row) in enumerate(top_5.iterrows()):
+        sid = int(row['id_site'])
+        recs.append(_material_from_lookup(sid, row['score'], idx, lms_by_site))
         
     student_risk_row = risk_df[risk_df['student_id_hash'] == student_id_hash]
     dropout_prob = float(student_risk_row.iloc[0]['dropout_probability']) if not student_risk_row.empty else 0.0

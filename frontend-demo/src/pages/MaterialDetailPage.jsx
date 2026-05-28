@@ -1,10 +1,16 @@
 import { CheckCircle2, Download, Play, Reply } from 'lucide-react';
+import { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { readCachedMaterials } from '../api/gateway.js';
 import { materials } from '../data/mockData.js';
 
 export default function MaterialDetailPage() {
   const { courseId, materialId } = useParams();
-  const material = materials.find((item) => item.id === materialId) ?? materials[0];
+  const activeMaterials = useMemo(() => {
+    const cached = readCachedMaterials();
+    return cached.length > 0 ? cached : materials;
+  }, []);
+  const material = activeMaterials.find((item) => item.id === materialId) ?? activeMaterials[0];
 
   return (
     <div className="learning-layout">
@@ -43,7 +49,7 @@ export default function MaterialDetailPage() {
         </div>
         <div className="card">
           <h2>Nội dung học tập</h2>
-          {materials.map((item) => (
+          {activeMaterials.map((item) => (
             <Link key={item.id} className={`lesson-row ${item.id === material.id ? 'active' : ''}`} to={`/courses/${courseId}/materials/${item.id}`}>
               <span>{item.status === 'Đã hoàn thành' ? <CheckCircle2 size={18} /> : <Play size={18} />}</span>
               <div><strong>{item.title}</strong><small>{item.type} • {item.duration}</small></div>

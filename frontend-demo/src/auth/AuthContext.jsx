@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, useState } from 'react';
 import { tempUsers } from '../data/tempUsers.js';
+import { clearGatewaySession, ensureGatewaySession } from '../api/gateway.js';
 
 const USERS_KEY = 'blearn.tempUsers';
 const SESSION_KEY = 'blearn.currentUserId';
@@ -86,7 +87,9 @@ export function AuthProvider({ children }) {
     persistUsers(nextUsers);
     localStorage.setItem(SESSION_KEY, user.id);
     setCurrentUserId(user.id);
-    return sanitizeUser(user);
+    const safeUser = sanitizeUser(user);
+    await ensureGatewaySession(safeUser);
+    return safeUser;
   };
 
   const login = async ({ email, password }) => {
@@ -103,12 +106,15 @@ export function AuthProvider({ children }) {
 
     localStorage.setItem(SESSION_KEY, user.id);
     setCurrentUserId(user.id);
-    return sanitizeUser(user);
+    const safeUser = sanitizeUser(user);
+    await ensureGatewaySession(safeUser);
+    return safeUser;
   };
 
   const logout = () => {
     localStorage.removeItem(SESSION_KEY);
     setCurrentUserId(null);
+    clearGatewaySession();
   };
 
   const updateProfile = (nextProfile) => {
