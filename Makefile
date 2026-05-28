@@ -343,3 +343,44 @@ airflow-upgrade-ha:
 		--timeout 10m
 	@echo "✅ Airflow HA upgrade complete. Check scheduler pods:"
 	kubectl get pods -n blearn-medallion -l component=scheduler
+
+# ====================================================================
+# 📺 KAFKA STREAMING & TOPIC MANAGEMENT UTILITIES
+# ====================================================================
+.PHONY: kafka-topics-list kafka-consume-stream kafka-produce-test
+
+# 1. Liệt kê toàn bộ các topics đang hoạt động trên cụm Kafka KRaft
+kafka-topics-list:
+	@echo "🔍 Đang quét danh sách các Topics trên cụm Kafka KRaft..."
+	kubectl exec kafka-stream-0 -n blearn-medallion -- /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list
+
+# 2. Lắng nghe trực tiếp dòng sự kiện click chuột thời gian thực (Live Clickstream Monitor)
+kafka-consume-stream:
+	@echo "📺 Đang theo dõi luồng dữ liệu thời gian thực từ topic 'learning-events'..."
+	@echo "💡 Bấm click chuột trên Streamlit Dashboard để thấy sự kiện nhảy về đây real-time."
+	kubectl exec -it kafka-stream-0 -n blearn-medallion -- /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic learning-events --from-beginning
+
+# 3. Giả lập bắn một lượng lớn clickstream thử nghiệm vào Kafka để test tải (Load Testing)
+kafka-produce-test:
+	@echo "🚀 Đang bắn chuỗi tương tác học liệu mẫu vào Kafka Broker..."
+	kubectl exec -i kafka-stream-0 -n blearn-medallion -- /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic learning-events <<< '{"student_id_hash":"test_portfolio_student_hash","id_site":"1001","date":0,"sum_click":5}'
+	@echo "✅ Đã phát tán sự kiện mẫu thành công."
+
+# ====================================================================
+# 🧹 APACHE ICEBERG DATA MAINTENANCE (BRONZE COMPACTION)
+# ====================================================================
+.PHONY: k8s-iceberg-compact
+
+# 4. Kích hoạt lệnh nén tệp nhỏ (Data Compaction) cho tầng Bronze Iceberg để tối ưu hiệu năng đọc ghi
+k8s-iceberg-compact:
+	@echo "🧹 Đang khởi chạy Spark Session để thực hiện dọn dẹp và nén tệp nhỏ (Data Compaction) cho bảng oulad_studentvle..."
+	kubectl exec -i deployment/blearn-streamlit-ui -n blearn-medallion -- python3 -c " \
+		from data_pipeline.ingestion.ingest import build_spark; \
+		import os; \
+		account = os.getenv('AZURE_STORAGE_ACCOUNT', 'stblearnminhdata2026'); \
+		root = f'abfss://gold@{account}.dfs.core.windows.net/iceberg_warehouse/gold/'; \
+		spark = build_spark('Iceberg_Compaction_Utility', root, iceberg_catalogs={'bronze_catalog': 'bronze'}); \
+		print('⚙️ Đang thực thi lệnh OPTIMIZE COMPACT trên tầng Bronze...'); \
+		spark.sql('ALTER TABLE bronze_catalog.full_db.oulad_studentvle EXECUTE optimize WHERE date IS NOT NULL'); \
+		print('🎉 Chu trình nén tệp nhỏ (Data Compaction) hoàn thành xuất sắc!'); \
+		spark.stop();"
