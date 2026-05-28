@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-streaming-job
+  namespace: blearn-medallion
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark-streaming
+  template:
+    metadata:
+      labels:
+        app: spark-streaming
+    spec:
+      containers:
+      - name: spark-streaming
+        image: acrblearnminh2026.azurecr.io/oulad-medallion:latest
+        imagePullPolicy: Always
+        command: ["python", "-m", "data_pipeline.jobs.stream_clickstream"]
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "512Mi"
+          limits:
+            cpu: "500m"
+            memory: "1Gi"
+        env:
+        - name: AZURE_STORAGE_ACCOUNT
+          valueFrom:
+            secretKeyRef:
+              name: oulad-runtime
+              key: AZURE_STORAGE_ACCOUNT
+        - name: AZURE_STORAGE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: oulad-runtime
+              key: AZURE_STORAGE_KEY
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka-service.blearn-medallion.svc.cluster.local:9092"

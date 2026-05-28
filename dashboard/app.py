@@ -830,6 +830,36 @@ with tab2:
         )
 
 
+def send_kafka_event(student_id_unhashed, site_id, activity_type):
+    import json
+    from kafka import KafkaProducer
+    
+    bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka-service.blearn-medallion.svc.cluster.local:9092")
+    try:
+        producer = KafkaProducer(
+            bootstrap_servers=[bootstrap_servers],
+            value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+            api_version=(3, 5, 0),
+            request_timeout_ms=5000,
+        )
+        
+        event = {
+            "code_module": "AAA",
+            "code_presentation": "2013J",
+            "id_student": str(student_id_unhashed),
+            "id_site": int(site_id),
+            "date": 0,
+            "sum_click": 1
+        }
+        
+        future = producer.send("learning-events", value=event)
+        result = future.get(timeout=5)
+        producer.close()
+        return True, f"event={event}"
+    except Exception as e:
+        return False, str(e)
+
+
 # ==========================================
 # TAB 3: EXTERNAL LMS WEB DEMO
 # ==========================================
@@ -888,6 +918,14 @@ with tab3:
                         st.session_state.interactions_log.append(f"⚙️ [{t_now}] [Gold NRT] Triggered online embedding update: Vector shifted toward site_id={site_id}")
                         st.session_state.interactions_log.append(f"🔄 [{t_now}] [Serving] Refreshed recommendations cache locally")
 
+                        # Real Kafka Event Ingestion
+                        unhashed_id = student_risk.get('id_student', 'Unknown')
+                        vle_type = get_vle_activity(site_id)
+                        success, detail = send_kafka_event(unhashed_id, site_id, vle_type)
+                        if success:
+                            st.session_state.interactions_log.append(f"📡 [{t_now}] [Kafka] Published event to 'learning-events' -> {detail}")
+                        else:
+                            st.session_state.interactions_log.append(f"⚠️ [{t_now}] [Kafka Error] Failed to publish event: {detail}")
                         
                         st.success(f"Đã ghi nhận tương tác với tài liệu #{site_id}! Trạng thái cá nhân hóa đã được cập nhật.")
                         st.rerun()
