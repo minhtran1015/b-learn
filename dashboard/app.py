@@ -225,7 +225,20 @@ def get_student_timeline_data(student_id, base_prob):
             "Độ thành thục BKT (%)": round(current_bkt, 2),
             "Trường học (BKT Baseline) (%)": cohort_baselines_bkt[i]
         })
-    return pd.DataFrame(timeline_records)
+    df_timeline = pd.DataFrame(timeline_records)
+    
+    # Khai báo mảng thứ tự mốc thời gian chuẩn giáo dục
+    checkpoint_order = ["Tuần 4", "Tuần 8", "Tuần 12", "Tuần 16"]
+
+    # Ép kiểu định dạng tuần tự nghiêm ngặt cho Pandas
+    df_timeline["Mốc thời gian"] = pd.Categorical(
+        df_timeline["Mốc thời gian"], 
+        categories=checkpoint_order, 
+        ordered=True
+    )
+    # Sắp xếp lại DataFrame theo thứ tự logic đã thiết lập
+    df_timeline = df_timeline.sort_values(by="Mốc thời gian")
+    return df_timeline
 
 
 
@@ -518,10 +531,13 @@ with tab_learning:
                 st.bar_chart(chart_data, color="#4D96FF", use_container_width=True)
 
         # 2. Biểu đồ Trình độ học vấn (Native Horizontal/Vertical Bar Chart)
-        df_edu = df_cohort[df_cohort["metric_name"] == "highest_education"]
+        df_edu = df_cohort[df_cohort["metric_name"] == "highest_education"].copy()
         if not df_edu.empty:
             st.markdown("##### 🎓 Trình độ học vấn của Cohort")
             with st.container(border=True):
+                edu_order = ["Lower Than A Level", "A Level or Equivalent", "HE Qualification", "Post Graduate"]
+                df_edu["category"] = pd.Categorical(df_edu["category"], categories=edu_order, ordered=True)
+                df_edu = df_edu.sort_values(by="category")
                 chart_data = df_edu.set_index("category")[["count"]]
                 st.bar_chart(chart_data, color="#FF6B6B", use_container_width=True)
 
@@ -539,13 +555,10 @@ with tab_learning:
         if not df_trend.empty:
             st.markdown("##### 📈 Xu hướng click chuột trung bình qua các tuần học")
             with st.container(border=True):
-                try:
-                    df_trend["category"] = df_trend["category"].astype(int)
-                    df_trend = df_trend.sort_values(by="category")
-                    chart_data = df_trend.set_index("category")[["value"]]
-                    st.line_chart(chart_data, color="#2ed573", use_container_width=True)
-                except Exception:
-                    st.dataframe(df_trend[["category", "value"]])
+                df_trend["category"] = pd.to_numeric(df_trend["category"])
+                df_trend = df_trend.sort_values(by="category")
+                chart_data = df_trend.set_index("category")[["value"]]
+                st.line_chart(chart_data, color="#2ed573", use_container_width=True)
 
 # ====================================================================
 # PHÂN HỆ 2: INFRASTRUCTURE & MLOPS ANALYTICS
