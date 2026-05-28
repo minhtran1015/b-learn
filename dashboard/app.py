@@ -542,11 +542,20 @@ with tab_learning:
                 st.bar_chart(chart_data, color="#FF6B6B", use_container_width=True)
 
     with col_g2:
-        # 3. Biểu đồ Vùng miền
+        # 3. Biểu đồ Vùng miền (Khóa thứ tự giảm dần thực tế)
         df_region = df_cohort[df_cohort["metric_name"] == "region"].sort_values(by="count", ascending=False).head(8)
         if not df_region.empty:
             st.markdown("##### 🗺️ Phân bố vùng miền Cohort (Top 8 Regions)")
             with st.container(border=True):
+                # GIẢI PHÁP: Ép kiểu Categorical với danh sách categories khớp chuẩn chuỗi đã sort giảm dần
+                sorted_categories = df_region["category"].tolist()
+                df_region["category"] = pd.Categorical(
+                    df_region["category"], 
+                    categories=sorted_categories, 
+                    ordered=True
+                )
+                # Sắp xếp lại theo cấu trúc Categorical mới ép buộc
+                df_region = df_region.sort_values(by="category")
                 chart_data = df_region.set_index("category")[["count"]]
                 st.bar_chart(chart_data, color="#ffa502", use_container_width=True)
 
