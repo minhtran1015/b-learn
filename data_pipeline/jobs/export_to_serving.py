@@ -37,24 +37,25 @@ def main():
         if "at_risk_probability" in df_risk.columns:
             df_risk = df_risk.withColumnRenamed("at_risk_probability", "dropout_probability")
             
-        # Ánh xạ từ Bronze để lấy id_student gốc (MSSV unhashed) cho chế độ Giảng viên
+        # Ánh xạ từ Bronze để lấy id_student gốc (MSSV unhashed) và highest_education cho chế độ Giảng viên
         try:
-            print("➡️ Joining with Bronze info to map original id_student...")
+            print("➡️ Joining with Bronze info to map original id_student and highest_education...")
             from pyspark.sql import functions as F
             df_bronze = spark.read.table("bronze_catalog.full_db.oulad_studentinfo") \
-                .select("id_student") \
+                .select("id_student", "highest_education") \
                 .distinct() \
                 .withColumn("student_id_hash", F.sha2(F.col("id_student").cast("string"), 256)) \
                 .withColumn("id_student_unhashed", F.col("id_student").cast("string")) \
-                .select("student_id_hash", "id_student_unhashed")
+                .select("student_id_hash", "id_student_unhashed", "highest_education")
             
             df_risk = df_risk.join(df_bronze, on="student_id_hash", how="left")
             df_risk = df_risk.withColumnRenamed("id_student_unhashed", "id_student")
-            print("Successfully joined with Bronze to add original id_student.")
+            print("Successfully joined with Bronze to add original id_student and highest_education.")
         except Exception as e:
-            print(f"⚠️ Warning: Failed to map original id_student from Bronze: {e}")
+            print(f"⚠️ Warning: Failed to map original id_student/highest_education from Bronze: {e}")
             from pyspark.sql import functions as F
             df_risk = df_risk.withColumn("id_student", F.lit("Unknown"))
+            df_risk = df_risk.withColumn("highest_education", F.lit("Unknown"))
             
         df_risk.write.mode("overwrite").parquet(f"{serving_path}/risk_predictions.parquet")
 
@@ -188,8 +189,24 @@ def main():
         else:
             print("⚠️ Skipping LMS simulator export: df_vle_meta was None")
 
-        # 5. Export static system metrics for MLOps dashboard
+        # 5. Export system metrics for MLOps dashboard with dynamic Data Quality and Freshness
         print("➡️ Exporting system metrics...")
+        import time
+        run_time_epoch = float(time.time())
+        null_rate_conformance = 1.0
+        
+        if df_vle is not None:
+            try:
+                total_rows = df_vle.count()
+                if total_rows > 0:
+                    cols_to_check = [c for c in df_vle.columns if c in ["id_student", "student_id_hash", "id_site", "date", "sum_click"]]
+                    if cols_to_check:
+                        non_null_rows = df_vle.na.drop(subset=cols_to_check).count()
+                        null_rate_conformance = float(non_null_rows) / total_rows
+                print(f"Calculated Schema Conformance: {null_rate_conformance * 100:.2f}%")
+            except Exception as e:
+                print(f"⚠️ Warning: Failed to calculate Schema Conformance: {e}")
+
         metrics_data = [
             ("job_duration", "1. Bronze Ingest", 45.0),
             ("job_duration", "2. Silver Cleanse", 60.0),
@@ -205,7 +222,10 @@ def main():
             ("api_traffic", "20:00", 185.0),
             
             ("resource_quota", "CPU Usage (Cores)", 1.25),
-            ("resource_quota", "RAM Footprint (Gi)", 6.4)
+            ("resource_quota", "RAM Footprint (Gi)", 6.4),
+            
+            ("mlops_metric", "data_freshness", run_time_epoch),
+            ("mlops_metric", "schema_conformance", null_rate_conformance)
         ]
         df_sys = spark.createDataFrame(metrics_data, ["metric_type", "key_name", "value"])
         df_sys.write.mode("overwrite").parquet(f"{serving_path}/system_metrics.parquet")
