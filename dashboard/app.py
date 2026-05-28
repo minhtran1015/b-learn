@@ -569,45 +569,46 @@ with tab_learning:
                 chart_data = df_trend.set_index("category")[["value"]]
                 st.line_chart(chart_data, color="#2ed573", use_container_width=True)
 
-        # 5. Phân tích chi tiết rủi ro (Risk & Education Analytics)
         st.markdown("### 🔍 Phân tích chi tiết rủi ro (Risk & Education Analytics)")
-        col_g3, col_g4 = st.columns(2)
-        with col_g3:
-            st.markdown("##### 📊 Phân phối tỷ lệ nguy cơ bỏ học (Dropout Risk Distribution)")
-            with st.container(border=True):
-                bins = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
-                labels = ["0-20%", "20-40%", "40-60%", "60-80%", "80-100%"]
-                df_risk_binned = pd.cut(df_risk['dropout_probability'], bins=bins, labels=labels, include_lowest=True).value_counts().reset_index()
-                df_risk_binned.columns = ['Mức độ nguy cơ', 'Số lượng học viên']
-                df_risk_binned['Mức độ nguy cơ'] = pd.Categorical(df_risk_binned['Mức độ nguy cơ'], categories=labels, ordered=True)
-                df_risk_binned = df_risk_binned.sort_values(by='Mức độ nguy cơ')
-                chart_binned = df_risk_binned.set_index('Mức độ nguy cơ')[['Số lượng học viên']]
-                st.bar_chart(chart_binned, color="#FF4757", use_container_width=True)
+    
+        # 6. Tần suất Histogram chuẩn (10 Bins mịn từ 0% đến 100%)
+        st.markdown("##### 📊 Phân phối mật độ nguy cơ bỏ học toàn trường (Dropout Risk Histogram)")
+        with st.container(border=True):
+            risk_bins = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+            risk_labels = ["0-10%", "10-20%", "20-30%", "30-40%", "40-50%", "50-60%", "60-70%", "70-80%", "80-90%", "90-100%"]
+            
+            df_hist = pd.cut(df_risk['dropout_probability'], bins=risk_bins, labels=risk_labels, include_lowest=True).value_counts().reset_index()
+            df_hist.columns = ['Khoảng xác suất rủi ro', 'Số lượng học viên']
+            df_hist['Khoảng xác suất rủi ro'] = pd.Categorical(df_hist['Khoảng xác suất rủi ro'], categories=risk_labels, ordered=True)
+            df_hist = df_hist.sort_values(by='Khoảng xác suất rủi ro')
+            
+            # Vẽ biểu đồ Histogram bản địa
+            st.bar_chart(df_hist.set_index('Khoảng xác suất rủi ro')[['Số lượng học viên']], color="#FF4757", use_container_width=True)
 
-        with col_g4:
-            st.markdown("##### 🎓 Tỷ lệ rủi ro trung bình theo trình độ học vấn (Risk by Education)")
-            with st.container(border=True):
-                df_risk_edu = df_risk.copy()
-                if 'highest_education' not in df_risk_edu.columns:
-                    import hashlib
-                    edu_options = ["Lower Than A Level", "A Level or Equivalent", "HE Qualification", "Post Graduate"]
-                    df_risk_edu['highest_education'] = df_risk_edu['student_id_hash'].apply(
-                        lambda h: edu_options[int(hashlib.md5(h.encode('utf-8')).hexdigest()[:6], 16) % len(edu_options)]
-                    )
-                
-                edu_order = ["Lower Than A Level", "A Level or Equivalent", "HE Qualification", "Post Graduate"]
-                df_risk_edu['highest_education'] = pd.Categorical(
-                    df_risk_edu['highest_education'], 
-                    categories=edu_order, 
-                    ordered=True
+        # 7. Tỷ lệ rủi ro trung bình phân rã theo Trình độ học vấn (Average Risk by Education)
+        st.markdown("##### 🎓 Tỷ lệ rủi ro trung bình phân rã theo Trình độ học vấn (Average Risk by Education)")
+        with st.container(border=True):
+            df_risk_edu = df_risk.copy()
+            if 'highest_education' not in df_risk_edu.columns:
+                import hashlib
+                edu_options = ["Lower Than A Level", "A Level or Equivalent", "HE Qualification", "Post Graduate"]
+                df_risk_edu['highest_education'] = df_risk_edu['student_id_hash'].apply(
+                    lambda h: edu_options[int(hashlib.md5(h.encode('utf-8')).hexdigest()[:6], 16) % len(edu_options)]
                 )
-                
-                df_edu_risk = df_risk_edu.groupby('highest_education', observed=False)['dropout_probability'].mean().reset_index()
-                df_edu_risk.columns = ['Trình độ học vấn', 'Tỷ lệ rủi ro trung bình (%)']
-                df_edu_risk['Tỷ lệ rủi ro trung bình (%)'] = df_edu_risk['Tỷ lệ rủi ro trung bình (%)'] * 100
-                
-                chart_edu_risk = df_edu_risk.set_index('Trình độ học vấn')[['Tỷ lệ rủi ro trung bình (%)']]
-                st.bar_chart(chart_edu_risk, color="#ffa502", use_container_width=True)
+            
+            edu_order = ["Lower Than A Level", "A Level or Equivalent", "HE Qualification", "Post Graduate"]
+            df_risk_edu['highest_education'] = pd.Categorical(df_risk_edu['highest_education'], categories=edu_order, ordered=True)
+            
+            df_edu_risk = df_risk_edu.groupby('highest_education', observed=False)['dropout_probability'].mean().reset_index()
+            df_edu_risk.columns = ['Trình độ học vấn', 'Tỷ lệ rủi ro trung bình (%)']
+            df_edu_risk['Tỷ lệ rủi ro trung bình (%)'] = df_edu_risk['Tỷ lệ rủi ro trung bình (%)'] * 100
+            
+            # Đồng bộ cơ chế khóa trục Categorical để hiển thị phân cấp bậc học chuẩn chỉnh từ thấp đến cao
+            df_edu_risk['Trình độ học vấn'] = pd.Categorical(df_edu_risk['Trình độ học vấn'], categories=edu_order, ordered=True)
+            df_edu_risk = df_edu_risk.sort_values(by='Trình độ học vấn')
+            
+            chart_edu_risk = df_edu_risk.set_index('Trình độ học vấn')[['Tỷ lệ rủi ro trung bình (%)']]
+            st.bar_chart(chart_edu_risk, color="#ffa502", use_container_width=True)
 
 # ====================================================================
 # PHÂN HỆ 2: INFRASTRUCTURE & MLOPS ANALYTICS
