@@ -49,7 +49,16 @@ export default function MaterialDetailPage() {
             <h1>{material.title}</h1>
             <p>Hiểu nội dung cốt lõi, ghi chú lại điểm quan trọng và đánh dấu hoàn thành khi đã sẵn sàng.</p>
           </div>
-          <button className="button primary"><CheckCircle2 size={19} />Đánh dấu hoàn thành</button>
+          <button
+            className="button primary"
+            onClick={() => {
+              try {
+                void handleMaterialClick(material);
+              } catch (e) {
+                // silent
+              }
+            }}
+          ><CheckCircle2 size={19} />Đánh dấu hoàn thành</button>
         </div>
         <div className="card">
           <div className="tabs-line">
