@@ -2,7 +2,6 @@ import os
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.express as px
 from datetime import datetime
 from azure.storage.blob import ContainerClient
 import io
