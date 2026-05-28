@@ -89,7 +89,10 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.markdown('<h1 class="main-title">🎓 B-LEARN: Hệ Thống Phân Tích & Cá Nhân Hóa Học Tập (OULAD)</h1>', unsafe_allow_html=True)
+st.markdown(
+    '<h1 style="color: #4D96FF !important; font-size: 2.6rem !important; font-weight: 700 !important; margin-bottom: 2rem !important; font-family: \'Outfit\', sans-serif !important;">🎓 B-LEARN: Hệ Thống Phân Tích & Cá Nhân Hóa Học Tập (OULAD)</h1>', 
+    unsafe_allow_html=True
+)
 
 # ─── SERVING LAYER CONNECTION ───
 storage_account = os.getenv("AZURE_STORAGE_ACCOUNT", "stblearnminhdata2026")
@@ -527,7 +530,7 @@ with tab_learning:
         if not df_gender.empty:
             st.markdown("##### 📊 Phân phối giới tính của Cohort")
             with st.container(border=True):
-                chart_data = df_gender.set_index("category")[["count"]]
+                chart_data = df_gender.groupby("category")[["count"]].sum()
                 st.bar_chart(chart_data, color="#4D96FF", use_container_width=True)
 
         # 2. Biểu đồ Trình độ học vấn (Native Horizontal/Vertical Bar Chart)
@@ -538,7 +541,7 @@ with tab_learning:
                 edu_order = ["Lower Than A Level", "A Level or Equivalent", "HE Qualification", "Post Graduate"]
                 df_edu["category"] = pd.Categorical(df_edu["category"], categories=edu_order, ordered=True)
                 df_edu = df_edu.sort_values(by="category")
-                chart_data = df_edu.set_index("category")[["count"]]
+                chart_data = df_edu.groupby("category")[["count"]].sum()
                 st.bar_chart(chart_data, color="#FF6B6B", use_container_width=True)
 
     with col_g2:
@@ -556,7 +559,7 @@ with tab_learning:
                 )
                 # Sắp xếp lại theo cấu trúc Categorical mới ép buộc
                 df_region = df_region.sort_values(by="category")
-                chart_data = df_region.set_index("category")[["count"]]
+                chart_data = df_region.groupby("category")[["count"]].sum().sort_values(by="count", ascending=False)
                 st.bar_chart(chart_data, color="#ffa502", use_container_width=True)
 
         # 4. Biểu đồ xu hướng tương tác hằng tuần (Native Line Chart)

@@ -411,3 +411,15 @@ streaming-suspend:
 	kubectl scale deployment -l release=kube-prometheus-stack -n blearn-medallion --replicas=0
 	kubectl scale statefulset prometheus-kube-prometheus-stack-prometheus -n blearn-medallion --replicas=0
 	@echo "😴 Đã ngủ đông thành công! Hệ thống tiêu thụ 0% CPU/RAM, bảo toàn Credit Azure."
+
+# 🎯 TẮT VẬT LÝ TOÀN BỘ CỤM AKS (Đưa tiền thuê máy về 0đ khi không làm việc)
+cluster-stop:
+	@echo "🛑 Đang phát lệnh tắt nguồn vật lý cụm máy ảo AKS đám mây..."
+	az aks stop --name aks-blearn-dev --resource-group RG-BLEarn-Compute
+	@echo "💤 Cụm AKS đã ngủ đông vật lý thành công. Toàn bộ tài nguyên tính toán đã ngừng tính phí!"
+
+# ⚡ BẬT LẠI NGUỒN VẬT LÝ CỤM AKS (Chạy trước khi demo 3-5 phút)
+cluster-start:
+	@echo "⚡ Đang khởi động lại nguồn vật lý hệ thống máy chủ AKS..."
+	az aks start --name aks-blearn-dev --resource-group RG-BLEarn-Compute
+	@echo "🚀 Cụm AKS đã trực tuyến trở lại! Hãy chạy 'make streaming-resume' sau khi các Node sẵn sàng."
