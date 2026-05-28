@@ -41,7 +41,7 @@ def build_streaming_spark():
     return builder.getOrCreate()
 
 def main():
-    print("🚀 Starting Spark Structured Streaming Clickstream Job...")
+    print("🚀 Starting Spark Structured Streaming Clickstream Job with Session Windows...")
     spark = build_streaming_spark()
     
     storage_account = os.getenv("AZURE_STORAGE_ACCOUNT", "stblearnminhdata2026")
@@ -69,24 +69,50 @@ def main():
         StructField("sum_click", IntegerType(), True)
     ])
     
-    # 3. Deserialize JSON string payload
+    # 3. Deserialize JSON string payload and capture event_time (from Kafka native timestamp)
     parsed_df = (
         kafka_df
-        .selectExpr("CAST(value AS STRING) as json_payload")
-        .select(F.from_json(F.col("json_payload"), payload_schema).alias("data"))
-        .select("data.*")
+        .selectExpr("CAST(value AS STRING) as json_payload", "timestamp as event_time")
+        .select(F.from_json(F.col("json_payload"), payload_schema).alias("data"), "event_time")
+        .select("data.*", "event_time")
     )
     
-    # 4. Add Bronze Layer Metadata Columns
+    # 4. Add Watermark to handle out-of-order logs (10 minutes)
+    watermarked_df = parsed_df.withWatermark("event_time", "10 minutes")
+    
+    # 5. Sessionize clickstream data: group by student and 30-minute session window
+    sessionized_df = (
+        watermarked_df.groupBy(
+            F.session_window(F.col("event_time"), "30 minutes"),
+            F.col("id_student")
+        )
+        .agg(
+            F.sum("sum_click").alias("sum_click"),
+            F.first("code_module").alias("code_module"),
+            F.first("code_presentation").alias("code_presentation"),
+            F.first("id_site").alias("id_site"),
+            F.first("date").alias("date")
+        )
+        .select(
+            F.col("code_module"),
+            F.col("code_presentation"),
+            F.col("id_student"),
+            F.col("id_site").cast("string").alias("id_site"),
+            F.col("date").cast("string").alias("date"),
+            F.col("sum_click").cast("string").alias("sum_click")
+        )
+    )
+    
+    # 6. Add Bronze Layer Metadata Columns
     bronze_stream_df = (
-        parsed_df
+        sessionized_df
         .withColumn("_ingest_at", F.current_timestamp())
         .withColumn("_ingest_date", F.current_date())
         .withColumn("_source_file", F.lit("kafka-stream"))
         .withColumn("_source_dataset", F.lit("oulad"))
     )
     
-    # 5. Write to Iceberg Bronze Table in Append Mode
+    # 7. Write to Iceberg Bronze Table in Append Mode
     checkpoint_path = f"abfss://bronze@{storage_account}.dfs.core.windows.net/checkpoints/oulad_studentvle_stream"
     if not os.getenv("AZURE_STORAGE_KEY"):
         # Fallback local path if running locally/offline

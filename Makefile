@@ -384,3 +384,28 @@ k8s-iceberg-compact:
 		spark.sql('ALTER TABLE bronze_catalog.full_db.oulad_studentvle EXECUTE optimize WHERE date IS NOT NULL'); \
 		print('🎉 Chu trình nén tệp nhỏ (Data Compaction) hoàn thành xuất sắc!'); \
 		spark.stop();"
+
+# ====================================================================
+# 🟢 GREEN-OPS: SUSPEND / RESUME STREAMING & MLOPS ARCHITECTURE
+# ====================================================================
+.PHONY: streaming-resume streaming-suspend
+
+# 🟢 ĐÁNH THỨC TOÀN BỘ KIẾN TRÚC STREAMING VÀ MLOPS INFRA (Khi bắt đầu demo)
+streaming-resume:
+	@echo "🔋 Đang đánh thức cụm Kafka KRaft, Spark Streaming và FastAPI Gateway..."
+	kubectl scale statefulset kafka-stream -n blearn-medallion --replicas=1
+	kubectl scale deployment spark-streaming-job -n blearn-medallion --replicas=1
+	kubectl scale deployment blearn-api-gateway -n blearn-medallion --replicas=1 --ignore-not-found=true
+	kubectl scale deployment -l app.kubernetes.io/name=kube-prometheus-stack -n blearn-medallion --replicas=1 --ignore-not-found=true
+	kubectl scale statefulset -l app=prometheus -n blearn-medallion --replicas=1 --ignore-not-found=true
+	@echo "✅ Tất cả các cấu phần streaming đã live, sẵn sàng phục vụ!"
+
+# 🔴 ĐÓNG BĂNG TOÀN BỘ HỆ THỐNG ĐỂ TIẾT KIỆM CREDIT (Ngay sau khi demo xong)
+streaming-suspend:
+	@echo "🛑 Đang hạ số lượng bản ghi (replicas) về 0 để đóng băng tài nguyên cụm..."
+	kubectl scale statefulset kafka-stream -n blearn-medallion --replicas=0
+	kubectl scale deployment spark-streaming-job -n blearn-medallion --replicas=0
+	kubectl scale deployment blearn-api-gateway -n blearn-medallion --replicas=0 --ignore-not-found=true
+	kubectl scale deployment -l app.kubernetes.io/name=kube-prometheus-stack -n blearn-medallion --replicas=0 --ignore-not-found=true
+	kubectl scale statefulset -l app=prometheus -n blearn-medallion --replicas=0 --ignore-not-found=true
+	@echo "😴 Đã ngủ đông thành công! Hệ thống tiêu thụ 0% CPU/RAM, bảo toàn Credit Azure."

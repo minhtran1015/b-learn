@@ -649,34 +649,10 @@ with tab_infra:
         col_m3.metric("Dữ Liệu Đã Cam Kết (Gold)", f"{168780:,} dòng", delta=freshness_delta)
         col_m4.metric("Chu Kỳ Huấn Luyện LightGCN", "5m 19s", delta="Hội Tụ Ổn Định (CPU)")
         
-    # 2. Khối Hệ thống biểu đồ hạ tầng MLOps
-    col_m_ch1, col_m_ch2 = st.columns(2)
-    with col_m_ch1:
-        st.markdown("##### ⏳ Thời gian thực thi chi tiết của Medallion Pipeline (Giây)")
-        with st.container(border=True):
-            df_durations = df_sys[df_sys["metric_type"] == "job_duration"]
-            chart_data = df_durations.set_index("key_name")[["value"]]
-            st.bar_chart(chart_data, color="#FF6B6B", use_container_width=True)
-            
-        with st.container(border=True):
-            st.markdown("<p style='font-size:1rem; font-weight:600; margin:0 0 0.5rem 0;'>🚨 Giám sát hạn mức tài nguyên so với Quota Azure Student</p>", unsafe_allow_html=True)
-            # BIỂU ĐỒ BỔ SUNG: Bullet/Gauge Chart hiển thị mức độ ngốn tài nguyên CPU và RAM thực tế
-            cpu_val = df_sys[(df_sys["metric_type"] == "resource_quota") & (df_sys["key_name"] == "CPU Usage (Cores)")].iloc[0]["value"]
-            ram_val = df_sys[(df_sys["metric_type"] == "resource_quota") & (df_sys["key_name"] == "RAM Footprint (Gi)")].iloc[0]["value"]
-            
-            # Sử dụng hệ thống thanh chỉ báo tiến trình trực quan của Streamlit làm phong cách tối giản sang trọng
-            st.write(f"💻 **CPU Usage Footprint:** `{cpu_val} Cores` / Hạn mức cứng `1.5 Cores` (An toàn)")
-            st.progress(cpu_val / 1.5)
-            
-            st.write(f"💾 **RAM Footprint Memory:** `{ram_val} GiB` / Hạn mức cứng `8.0 GiB` (Đạt đỉnh khi chạy Spark)")
-            st.progress(ram_val / 8.0)
-
-    with col_m_ch2:
-        st.markdown("##### 📈 Lượng truy cập đồng thời vào Serving API & Dashboard")
-        with st.container(border=True):
-            df_traffic = df_sys[df_sys["metric_type"] == "api_traffic"]
-            chart_data = df_traffic.set_index("key_name")[["value"]]
-            st.area_chart(chart_data, color="#4D96FF", use_container_width=True)
+    # 2. Khối Hệ thống biểu đồ hạ tầng MLOps từ Grafana
+    st.markdown("##### 📈 Biểu đồ giám sát thời gian thực (Live Grafana Dashboard)")
+    with st.container(border=True):
+        st.components.v1.iframe("http://20.195.5.3", height=600)
 
     st.markdown("##### 🚨 Nhật ký kiểm soát chất lượng dữ liệu & Trôi lệch đặc trưng (MLOps Data Quality Guardrails)")
     with st.container(border=True):
