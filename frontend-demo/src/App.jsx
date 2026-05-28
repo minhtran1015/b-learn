@@ -11,7 +11,11 @@ import AssignmentDetailPage from './pages/AssignmentDetailPage.jsx';
 import DoAssignmentPage from './pages/DoAssignmentPage.jsx';
 import AuthPage from './pages/AuthPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
-import SimplePage from './pages/SimplePage.jsx';
+import CalendarPage from './pages/CalendarPage.jsx';
+import DiscussionsPage from './pages/DiscussionsPage.jsx';
+import HelpPage from './pages/HelpPage.jsx';
+import MessagesPage from './pages/MessagesPage.jsx';
+import SettingsPage from './pages/SettingsPage.jsx';
 
 export default function App() {
   return (
@@ -21,7 +25,9 @@ export default function App() {
       <Route element={<AppLayout />}>
         <Route index element={<Navigate to="/courses" replace />} />
         <Route path="analytics" element={<Navigate to="/courses/machine-learning/analytics" replace />} />
-        <Route path="recommendations" element={<SimplePage type="recommendations" />} />
+        <Route path="calendar" element={<CalendarPage />} />
+        <Route path="messages" element={<MessagesPage />} />
+        <Route path="help" element={<HelpPage />} />
         <Route path="courses" element={<CoursesPage />} />
         <Route path="courses/:courseId" element={<CourseLayout />}>
           <Route index element={<CourseOverviewPage />} />
@@ -31,9 +37,9 @@ export default function App() {
           <Route path="assignments" element={<AssignmentsPage />} />
           <Route path="assignments/:assignmentId" element={<AssignmentDetailPage />} />
           <Route path="assignments/:assignmentId/do" element={<DoAssignmentPage />} />
-          <Route path="discussions" element={<SimplePage type="discussions" />} />
+          <Route path="discussions" element={<DiscussionsPage />} />
         </Route>
-        <Route path="settings" element={<SimplePage type="settings" />} />
+        <Route path="settings" element={<SettingsPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
