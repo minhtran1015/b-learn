@@ -29,3 +29,8 @@ Thumbs.db
 *.pdf
 *.md
 full_data_manifest.json
+*.ipynb
+/RecSys-Output
+/infra/staging/ednet_consolidated_full
+/infra/staging/ednet_consolidated_full_compacted
+infra/tfplan
