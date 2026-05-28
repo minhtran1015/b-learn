@@ -29,9 +29,9 @@ st.markdown(
     .main-title {
         font-size: 2.6rem;
         font-weight: 700;
-        background: linear-gradient(135deg, #FF6B6B 0%, #4D96FF 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #4D96FF !important; /* Hoặc #1e1e24 tùy gu của bạn */
+        background: none !important;
+        -webkit-text-fill-color: initial !important;
         margin-bottom: 2rem;
     }
     
