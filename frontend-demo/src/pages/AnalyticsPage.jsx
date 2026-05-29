@@ -91,6 +91,10 @@ export default function AnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // 🔴 KHÓA CHẶT TẠI ĐÂY: Ép trạng thái loading đồng bộ lập tức khi đổi định danh
+    setIsLoading(true);
+    setDropoutProbability(null); // Reset trị cũ để không bị lọt dữ liệu vòng chạy trước
+
     async function loadStats() {
       let token = null;
       let studentHash = null;
@@ -110,9 +114,7 @@ export default function AnalyticsPage() {
         return;
       }
 
-      // Chỉ khi có đủ dữ liệu kết nối mới bắt đầu bật trạng thái tải dữ liệu API
       try {
-        setIsLoading(true);
         const rawBaseUrl = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:8000';
         const API_BASE_URL = rawBaseUrl.replace(/\/$/, '');
 
