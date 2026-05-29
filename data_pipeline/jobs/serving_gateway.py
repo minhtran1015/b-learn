@@ -3,6 +3,7 @@ import sys
 import json
 import jwt
 import datetime
+import time
 from pathlib import Path
 from typing import Optional
 from fastapi import FastAPI, BackgroundTasks, Depends, HTTPException, status
@@ -13,6 +14,7 @@ import pandas as pd
 import numpy as np
 from azure.storage.blob import ContainerClient
 import io
+import joblib
 from kafka import KafkaProducer
 
 # Thêm root data_pipeline vào sys.path để giải quyết import module
@@ -46,11 +48,190 @@ df_user_emb = None
 df_item_emb = None
 df_risk = None
 df_lms_meta = None
+df_risk_features = None
+df_bkt_mastery = None
 last_loaded = None
 click_producer = None
 
 # Lưu vết các thay đổi độ thành thục/dropout rate để áp dụng lại nếu cache bị refresh
 _assessment_shifts = {}  # {student_id_hash: dropout_probability_reduction}
+
+GOLD_FEATURE_COLUMNS = [
+    "code_module",
+    "code_presentation",
+    "gender",
+    "region",
+    "highest_education",
+    "imd_band",
+    "age_band",
+    "num_of_prev_attempts",
+    "studied_credits",
+    "disability",
+    "total_clicks",
+    "active_days",
+    "avg_daily_clicks",
+    "max_clicks_day",
+    "engagement_span",
+    "recent_weekly_rate",
+    "recency_days",
+    "engagement_momentum",
+    "avg_score",
+    "min_score",
+    "submission_count",
+    "late_submissions",
+    "weighted_avg",
+]
+
+CATEGORICAL_FEATURES = [
+    "code_module",
+    "code_presentation",
+    "gender",
+    "region",
+    "highest_education",
+    "imd_band",
+    "age_band",
+    "disability",
+]
+
+# In-memory store for live features and BKT masteries of students
+_student_live_features = {}  # {student_id_hash: {feature_name: value}}
+_student_bkt_mastery = {}    # {student_id_hash: {chapter_id: p_L}}
+lgbm_model = None
+
+def get_student_features(student_hash: str) -> dict:
+    global _student_live_features
+    if student_hash not in _student_live_features:
+        # Khởi tạo mặc định
+        features_dict = {col: 0.0 for col in GOLD_FEATURE_COLUMNS}
+        for cat in CATEGORICAL_FEATURES:
+            features_dict[cat] = "Unknown"
+        features_dict["code_module"] = "AAA"
+        features_dict["code_presentation"] = "2014J"
+        
+        try:
+            # Lấy df_risk_features từ cache
+            _, _, _, _, df_feats, _ = get_cached_data()
+            if df_feats is not None and not df_feats.empty:
+                student_rows = df_feats[df_feats['student_id_hash'] == student_hash]
+                if not student_rows.empty:
+                    row_dict = student_rows.iloc[0].to_dict()
+                    for col in GOLD_FEATURE_COLUMNS:
+                        if col in row_dict:
+                            features_dict[col] = row_dict[col]
+        except Exception as e:
+            print(f"Lỗi nạp baseline features cho {student_hash}: {e}")
+            
+        _student_live_features[student_hash] = features_dict
+        
+    return _student_live_features[student_hash]
+
+
+def get_student_bkt_mastery(student_hash: str) -> dict:
+    global _student_bkt_mastery
+    if student_hash not in _student_bkt_mastery:
+        # Khởi tạo mặc định
+        _student_bkt_mastery[student_hash] = {
+            "C1": 0.40,
+            "C2": 0.40,
+            "C3": 0.40,
+            "C4": 0.40,
+            "C5": 0.40,
+            "C6": 0.40,
+        }
+        try:
+            # Lấy df_bkt_mastery từ cache
+            _, _, _, _, _, df_bkt = get_cached_data()
+            if df_bkt is not None and not df_bkt.empty:
+                student_rows = df_bkt[df_bkt['user_id'] == student_hash]
+                for _, row in student_rows.iterrows():
+                    skill = str(row['skill_name'])
+                    for ch in ["C1", "C2", "C3", "C4", "C5", "C6"]:
+                        if ch in skill:
+                            _student_bkt_mastery[student_hash][ch] = float(row['state_predictions'])
+        except Exception as e:
+            print(f"Lỗi nạp baseline BKT cho {student_hash}: {e}")
+            
+    return _student_bkt_mastery[student_hash]
+
+
+def load_lgbm_model():
+    """Tải và nạp mô hình LightGBM từ local cache hoặc Azure Storage."""
+    global lgbm_model
+    if lgbm_model is not None:
+        return lgbm_model
+        
+    local_model_path = "/tmp/oulad_lgbm_pipeline.joblib"
+    
+    if not os.path.exists(local_model_path):
+        try:
+            if storage_key:
+                container_client = ContainerClient(
+                    account_url=f"https://{storage_account}.blob.core.windows.net",
+                    container_name="gold",
+                    credential=storage_key
+                )
+                for model_blob in ["models/oulad_lgbm_pipeline.joblib", "models/lightgbm_model.pkl"]:
+                    try:
+                        blob_client = container_client.get_blob_client(model_blob)
+                        stream = io.BytesIO()
+                        blob_client.download_blob().readinto(stream)
+                        stream.seek(0)
+                        lgbm_model = joblib.load(stream)
+                        # Ghi cache file local
+                        with open(local_model_path, "wb") as f:
+                            f.write(stream.getvalue())
+                        print(f"Loaded LGBM model from blob {model_blob}")
+                        return lgbm_model
+                    except Exception:
+                        continue
+            
+            # Tải từ public URL của storage
+            import urllib.request
+            for url in [
+                f"https://{storage_account}.blob.core.windows.net/gold/models/oulad_lgbm_pipeline.joblib",
+                f"https://{storage_account}.blob.core.windows.net/gold/models/lightgbm_model.pkl"
+            ]:
+                try:
+                    urllib.request.urlretrieve(url, local_model_path)
+                    print(f"Downloaded LGBM model from public URL: {url}")
+                    lgbm_model = joblib.load(local_model_path)
+                    return lgbm_model
+                except Exception:
+                    continue
+        except Exception as e:
+            print(f"Lỗi tải LGBM model: {e}")
+            
+    if os.path.exists(local_model_path):
+        try:
+            lgbm_model = joblib.load(local_model_path)
+            return lgbm_model
+        except Exception as e:
+            print(f"Lỗi load cached LGBM model: {e}")
+            
+    return None
+
+
+def _run_live_risk_inference(student_hash: str, feats: dict):
+    global df_risk
+    model = load_lgbm_model()
+    if model is not None:
+        try:
+            df_input = pd.DataFrame([feats])
+            prob = model.predict_proba(df_input[GOLD_FEATURE_COLUMNS])[0]
+            # Success index is 1
+            dropout_prob = float(1.0 - prob[1])
+            
+            # Cập nhật trực tiếp vào cache df_risk
+            user_emb_df, item_emb_df, risk_df, lms_meta_df, _, _ = get_cached_data()
+            if risk_df is not None and not risk_df.empty:
+                idx_list = risk_df[risk_df['student_id_hash'] == student_hash].index
+                for idx in idx_list:
+                    risk_df.loc[idx, 'dropout_probability'] = dropout_prob
+            print(f"[LightGBM Live Inference] Updated student {student_hash} dropout_prob={dropout_prob:.4f}")
+            return dropout_prob
+        except Exception as e:
+            print(f"Lỗi Live Inference LightGBM: {e}")
+    return None
 
 
 class LoginRequest(BaseModel):
@@ -279,7 +460,7 @@ def _build_lms_lookup(df_meta: pd.DataFrame) -> dict:
 
 
 def get_cached_data():
-    global df_user_emb, df_item_emb, df_risk, df_lms_meta, last_loaded
+    global df_user_emb, df_item_emb, df_risk, df_lms_meta, df_risk_features, df_bkt_mastery, last_loaded
     now = datetime.datetime.now()
     # Cache hết hạn sau 5 phút
     if last_loaded is None or (now - last_loaded).total_seconds() > 300:
@@ -287,6 +468,18 @@ def get_cached_data():
             df_user_emb = load_parquet_file("user_embeddings.parquet")
             df_item_emb = load_parquet_file("item_embeddings.parquet")
             df_risk = load_parquet_file("risk_predictions.parquet")
+            
+            try:
+                df_risk_features = load_parquet_file("risk_features.parquet")
+            except Exception as e_f:
+                print(f"Cảnh báo: không tải được risk_features.parquet ({e_f})")
+                df_risk_features = pd.DataFrame()
+                
+            try:
+                df_bkt_mastery = load_parquet_file("bkt_mastery.parquet")
+            except Exception as e_b:
+                print(f"Cảnh báo: không tải được bkt_mastery.parquet ({e_b})")
+                df_bkt_mastery = pd.DataFrame()
             
             # Áp dụng các thay đổi từ submit-assessment đã lưu
             if df_risk is not None and not df_risk.empty:
@@ -309,7 +502,9 @@ def get_cached_data():
                 df_item_emb = pd.DataFrame()
                 df_risk = pd.DataFrame()
                 df_lms_meta = pd.DataFrame()
-    return df_user_emb, df_item_emb, df_risk, df_lms_meta
+                df_risk_features = pd.DataFrame()
+                df_bkt_mastery = pd.DataFrame()
+    return df_user_emb, df_item_emb, df_risk, df_lms_meta, df_risk_features, df_bkt_mastery
 
 # Bảo mật và JWT logic
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -363,6 +558,25 @@ def track_click(
     """Nhận clickstream từ frontend và đẩy Kafka ở nền để tránh chặn UI."""
     record = _build_click_event(payload, current_user)
     background_tasks.add_task(_publish_click_event, record)
+    
+    # Cập nhật Online Feature Extractor cho LightGBM Live Inference
+    if payload.student_id_hash:
+        try:
+            feats = get_student_features(payload.student_id_hash)
+            clicks = float(payload.sum_click)
+            feats["total_clicks"] += clicks
+            feats["active_days"] = max(1.0, feats["active_days"] + 0.1) # Tăng nhẹ active days
+            feats["avg_daily_clicks"] = feats["total_clicks"] / feats["active_days"]
+            feats["max_clicks_day"] = max(feats["max_clicks_day"], clicks)
+            feats["engagement_span"] += 1.0
+            feats["recent_weekly_rate"] = (feats["recent_weekly_rate"] * 6.0 + clicks) / 7.0
+            feats["engagement_momentum"] = feats["recent_weekly_rate"] - feats["avg_daily_clicks"]
+            
+            # Khởi chạy Live Inference ngầm
+            background_tasks.add_task(_run_live_risk_inference, payload.student_id_hash, feats)
+        except Exception as e_click_feat:
+            print(f"Lỗi cập nhật click features cho LGBM: {e_click_feat}")
+            
     return {
         "accepted": True,
         "queued": True,
@@ -373,7 +587,7 @@ def track_click(
 @app.get("/recommendations/{student_id_hash}")
 def get_recommendations(student_id_hash: str, current_user: dict = Depends(verify_token)):
     """Tính toán RecSys realtime dựa trên vector nhúng LightGCN."""
-    u_emb_df, i_emb_df, risk_df, lms_meta_df = get_cached_data()
+    u_emb_df, i_emb_df, risk_df, lms_meta_df, _, _ = get_cached_data()
     
     if u_emb_df.empty or i_emb_df.empty:
         raise HTTPException(status_code=503, detail="Dịch vụ lưu trữ dữ liệu Serving chưa sẵn sàng.")
@@ -401,10 +615,14 @@ def get_recommendations(student_id_hash: str, current_user: dict = Depends(verif
     student_risk_row = risk_df[risk_df['student_id_hash'] == student_id_hash]
     dropout_prob = float(student_risk_row.iloc[0]['dropout_probability']) if not student_risk_row.empty else 0.0
     
+    # Live BKT mastery lookup
+    bkt_mastery = get_student_bkt_mastery(student_id_hash)
+    
     return {
         "student_id_hash": student_id_hash,
         "dropout_probability": dropout_prob,
         "recommendations": recs,
+        "bkt_mastery": bkt_mastery,
         "served_by": "FastAPI Gateway",
         "client_role": current_user.get("role"),
         "timestamp": datetime.datetime.now().isoformat()
@@ -417,45 +635,94 @@ def submit_assessment(
     current_user: dict = Depends(verify_token),
 ):
     """
-    Nhận kết quả bài tập của học viên, cập nhật động cache bộ nhớ đệm (df_risk)
-    bằng cách tăng tiến độ học tập và thay đổi tỷ lệ rủi ro bỏ học theo điểm số,
-    đồng thời gửi thông điệp thô vào Kafka.
+    Nhận kết quả bài tập của học viên, chạy công thức Bayesian BKT cập nhật
+    trạng thái thấu hiểu kiến thức, chạy Online Feature Extractor + LightGBM Live Inference
+    để tính xác suất rủi ro bỏ học, đồng thời gửi thông điệp thô vào Kafka.
     """
     global df_risk, _assessment_shifts
     
-    # 1. Ghi lại lượng dịch chuyển (reduction) cho sinh viên này dựa trên điểm số
     score_rate = float(payload.score)
-    if score_rate >= 50.0:
-        reduction = 0.05
-        message_alert = f"Nộp bài thành công! Điểm của bạn: {score_rate}%. Năng lực cải thiện, rủi ro bỏ học đã giảm xuống!"
-    else:
-        reduction = -0.10
-        message_alert = f"Nộp bài thành công! Điểm của bạn: {score_rate}%. Cảnh báo: Kết quả dưới trung bình, nguy cơ bỏ học tăng cao!"
-        
-    _assessment_shifts[payload.student_id_hash] = _assessment_shifts.get(payload.student_id_hash, 0.0) + reduction
     
-    # 2. Cập nhật trực tiếp cache df_risk hiện tại để có hiệu lực ngay lập tức
-    user_emb_df, item_emb_df, risk_df, lms_meta_df = get_cached_data()
-    if risk_df is not None and not risk_df.empty:
-        idx_list = risk_df[risk_df['student_id_hash'] == payload.student_id_hash].index
-        for idx in idx_list:
-            risk_df.loc[idx, 'dropout_probability'] = max(0.0, min(1.0, float(risk_df.loc[idx, 'dropout_probability']) - reduction))
-            print(f"[Closed-Loop Cache Shift] Updated student {payload.student_id_hash} in-memory dropout probability by reduction {reduction}.")
+    # 1. 🧠 PHASE 1: CẬP NHẬT TRẠNG THÁI KIẾN THỨC BKT QUA CÔNG THỨC BAYES
+    chapter_id = "C1"
+    for ch in ["C1", "C2", "C3", "C4", "C5", "C6"]:
+        if ch.lower() in payload.assignment_id.lower() or payload.assignment_id in ["546803", "546652", "546732"]:
+            if payload.assignment_id == "546803":
+                chapter_id = "C1"
+            elif payload.assignment_id == "546652":
+                chapter_id = "C2"
+            elif payload.assignment_id == "546732":
+                chapter_id = "C3"
+            else:
+                chapter_id = ch
+            break
+            
+    # BKT coefficients
+    P_L0 = 0.40
+    P_T = 0.15
+    P_G = 0.20
+    P_S = 0.10
+    
+    masteries = get_student_bkt_mastery(payload.student_id_hash)
+    p_L = masteries.get(chapter_id, P_L0)
+    
+    # Giả lập 20 câu hỏi tương ứng với điểm số
+    correct_count = int(round(20 * (score_rate / 100.0)))
+    incorrect_count = 20 - correct_count
+    
+    for _ in range(correct_count):
+        p_L_cond = (p_L * (1.0 - P_S)) / ((p_L * (1.0 - P_S)) + ((1.0 - p_L) * P_G))
+        p_L = p_L_cond + (1.0 - p_L_cond) * P_T
+        
+    for _ in range(incorrect_count):
+        p_L_cond = (p_L * P_S) / ((p_L * P_S) + ((1.0 - p_L) * (1.0 - P_G)))
+        p_L = p_L_cond + (1.0 - p_L_cond) * P_T
+        
+    masteries[chapter_id] = float(p_L)
+    _student_bkt_mastery[payload.student_id_hash] = masteries
+    print(f"[BKT Bayes Update] Student {payload.student_id_hash} skill {chapter_id} mastery updated to {p_L:.4f}")
+    
+    # 2. 📉 PHASE 2: CẬP NHẬT DỰ BÁO RỦI RO LIVE INFERENCE LIGHTGBM
+    feats = get_student_features(payload.student_id_hash)
+    feats["submission_count"] += 1.0
+    total_prev_score = feats["avg_score"] * (feats["submission_count"] - 1.0)
+    feats["avg_score"] = (total_prev_score + score_rate) / feats["submission_count"]
+    feats["min_score"] = min(feats["min_score"] if feats["submission_count"] > 1.0 else 100.0, score_rate)
+    feats["weighted_avg"] = feats["avg_score"]
+    
+    # Thực hiện Live Inference
+    live_dropout_prob = _run_live_risk_inference(payload.student_id_hash, feats)
+    
+    # Fallback nếu mô hình LGBM chưa được nạp
+    if live_dropout_prob is None:
+        reduction = 0.05 if score_rate >= 50.0 else -0.10
+        _assessment_shifts[payload.student_id_hash] = _assessment_shifts.get(payload.student_id_hash, 0.0) + reduction
+        user_emb_df, item_emb_df, risk_df, lms_meta_df, _, _ = get_cached_data()
+        if risk_df is not None and not risk_df.empty:
+            idx_list = risk_df[risk_df['student_id_hash'] == payload.student_id_hash].index
+            for idx in idx_list:
+                risk_df.loc[idx, 'dropout_probability'] = max(0.0, min(1.0, float(risk_df.loc[idx, 'dropout_probability']) - reduction))
+        message_alert = f"Nộp bài thành công! Điểm của bạn: {score_rate}%. (Fallback Risk Shift áp dụng)"
+    else:
+        message_alert = f"Nộp bài thành công! Điểm của bạn: {score_rate}%. Live Inference tính toán nguy cơ bỏ học là {(live_dropout_prob * 100):.1f}%."
 
-    # 3. Bắn bản tin thô vào Kafka để lưu vết lịch sử lâu dài
+    # 3. 🗄️ Bắn bản tin thô vào Kafka để Spark Structured Streaming lưu vết Silver Layer
     record = {
         "student_id_hash": payload.student_id_hash,
         "assignment_id": payload.assignment_id,
         "score": score_rate,
         "event_type": "assessment_submission",
         "event_time": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "code_module": "AAA",
+        "code_presentation": "2014J",
         "client_user": current_user.get("username"),
         "client_role": current_user.get("role"),
     }
     background_tasks.add_task(_publish_click_event, record)
     
-    # Lấy dropout prob mới để phản hồi
+    # Lấy dropout prob hiện tại của student để trả về
     new_prob = 0.0
+    user_emb_df, item_emb_df, risk_df, lms_meta_df, _, _ = get_cached_data()
     if risk_df is not None and not risk_df.empty:
         matching_rows = risk_df[risk_df['student_id_hash'] == payload.student_id_hash]
         if not matching_rows.empty:

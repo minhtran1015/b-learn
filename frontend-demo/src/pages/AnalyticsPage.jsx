@@ -86,6 +86,14 @@ export default function AnalyticsPage() {
   const course = courses.find((item) => item.id === courseId) ?? courses[0];
   const { currentUser } = useAuth();
   const [dropoutProbability, setDropoutProbability] = useState(0.15); // Mặc định là 15% rủi ro (đỗ 85%)
+  const [scores, setScores] = useState([
+    { label: 'Chương 1', value: 86 },
+    { label: 'Chương 2', value: 72 },
+    { label: 'Chương 3', value: 91 },
+    { label: 'Chương 4', value: 64 },
+    { label: 'Chương 5', value: 78 },
+    { label: 'Chương 6', value: 69 },
+  ]);
   const passRate = (1 - dropoutProbability) * 100;
 
   useEffect(() => {
@@ -95,6 +103,17 @@ export default function AnalyticsPage() {
         const payload = await fetchRecommendations(studentHash);
         if (payload && payload.dropout_probability !== undefined) {
           setDropoutProbability(payload.dropout_probability);
+        }
+        if (payload && payload.bkt_mastery) {
+          const bkt = payload.bkt_mastery;
+          setScores([
+            { label: 'Chương 1', value: Math.round((bkt.C1 ?? 0.86) * 100) },
+            { label: 'Chương 2', value: Math.round((bkt.C2 ?? 0.72) * 100) },
+            { label: 'Chương 3', value: Math.round((bkt.C3 ?? 0.91) * 100) },
+            { label: 'Chương 4', value: Math.round((bkt.C4 ?? 0.64) * 100) },
+            { label: 'Chương 5', value: Math.round((bkt.C5 ?? 0.78) * 100) },
+            { label: 'Chương 6', value: Math.round((bkt.C6 ?? 0.69) * 100) },
+          ]);
         }
       } catch (err) {
         console.error("Failed to load prediction stats:", err);
@@ -113,7 +132,7 @@ export default function AnalyticsPage() {
       <section className="analytics-grid">
         <div className="card radar-card">
           <h2>Mức độ thành thạo <Info size={18} /></h2>
-          <RadarChart scores={skillScores} />
+          <RadarChart scores={scores} />
         </div>
         <div className="card heatmap-card">
           <div className="card-heading">

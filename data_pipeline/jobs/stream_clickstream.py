@@ -37,6 +37,9 @@ def build_streaming_spark():
             .config("spark.sql.catalog.bronze_catalog", "org.apache.iceberg.spark.SparkCatalog")
             .config("spark.sql.catalog.bronze_catalog.type", "hadoop")
             .config("spark.sql.catalog.bronze_catalog.warehouse", f"abfss://bronze@{storage_account}.dfs.core.windows.net/iceberg_warehouse")
+            .config("spark.sql.catalog.silver_catalog", "org.apache.iceberg.spark.SparkCatalog")
+            .config("spark.sql.catalog.silver_catalog.type", "hadoop")
+            .config("spark.sql.catalog.silver_catalog.warehouse", f"abfss://silver@{storage_account}.dfs.core.windows.net/iceberg_warehouse")
         )
     return builder.getOrCreate()
 
@@ -56,53 +59,70 @@ def main():
         .option("kafka.bootstrap.servers", kafka_bootstrap_servers)
         .option("subscribe", kafka_topic)
         .option("startingOffsets", "latest")
-        .option("failOnDataLoss", "false")  # GreenOps: broker restarts may reset offsets safely
+        .option("failOnDataLoss", "false")
         .load()
     )
     
-    # 2. Define schema for clickstream JSON payloads
+    # 2. Define schema for both click and assessment JSON payloads
+    from pyspark.sql.types import DoubleType
     payload_schema = StructType([
+        StructField("student_id_hash", StringType(), True),
+        StructField("id_student", StringType(), True),
+        StructField("id_site", StringType(), True),
+        StructField("sum_click", IntegerType(), True),
+        StructField("event_type", StringType(), True),
+        StructField("assignment_id", StringType(), True),
+        StructField("score", DoubleType(), True),
         StructField("code_module", StringType(), True),
         StructField("code_presentation", StringType(), True),
-        StructField("id_student", StringType(), True),
-        StructField("id_site", IntegerType(), True),
         StructField("date", IntegerType(), True),
-        StructField("sum_click", IntegerType(), True),
-        StructField("_corrupt_record", StringType(), True),
+        StructField("event_time", StringType(), True),
     ])
     
-    # 3. Deserialize JSON string payload and capture event_time (from Kafka native timestamp)
+    # 3. Deserialize JSON payload and normalize student ID
     parsed_df = (
         kafka_df
-        .selectExpr("CAST(value AS STRING) as json_payload", "timestamp as event_time")
+        .selectExpr("CAST(value AS STRING) as json_payload", "timestamp as kafka_time")
         .select(
             F.from_json(
                 F.col("json_payload"),
                 payload_schema,
-                {"mode": "PERMISSIVE", "columnNameOfCorruptRecord": "_corrupt_record"},
+                {"mode": "PERMISSIVE"}
             ).alias("data"),
-            "event_time",
+            "kafka_time",
         )
-        .select("data.*", "event_time")
+        .select("data.*", "kafka_time")
+    )
+    
+    # Coalesce student ID
+    parsed_df = parsed_df.withColumn(
+        "effective_student_id",
+        F.coalesce(F.col("student_id_hash"), F.col("id_student"))
     )
 
-    clean_df = parsed_df.filter(F.col("_corrupt_record").isNull())
+    # 4. Stream A: Clickstream (event_type != 'assessment_submission')
+    click_df = parsed_df.filter(
+        (F.col("event_type").isNull()) | (F.col("event_type") != F.lit("assessment_submission"))
+    )
     
-    # 4. Add Watermark to handle out-of-order logs (10 minutes)
-    watermarked_df = clean_df.withWatermark("event_time", "10 minutes")
+    # Parse event time or fallback to kafka timestamp
+    click_ts_df = click_df.withColumn(
+        "ts",
+        F.coalesce(F.to_timestamp(F.col("event_time")), F.col("kafka_time"))
+    )
+    watermarked_df = click_ts_df.withWatermark("ts", "10 minutes")
     
-    # 5. Sessionize clickstream data: group by student and 30-minute session window
     sessionized_df = (
         watermarked_df.groupBy(
-            F.session_window(F.col("event_time"), "30 minutes"),
-            F.col("id_student")
+            F.session_window(F.col("ts"), "30 minutes"),
+            F.col("effective_student_id").alias("id_student")
         )
         .agg(
-            F.sum("sum_click").alias("sum_click"),
-            F.first("code_module").alias("code_module"),
-            F.first("code_presentation").alias("code_presentation"),
-            F.first("id_site").alias("id_site"),
-            F.first("date").alias("date")
+            F.sum(F.coalesce(F.col("sum_click"), F.lit(1))).alias("sum_click"),
+            F.first(F.coalesce(F.col("code_module"), F.lit("AAA"))).alias("code_module"),
+            F.first(F.coalesce(F.col("code_presentation"), F.lit("2014J"))).alias("code_presentation"),
+            F.first(F.coalesce(F.col("id_site"), F.lit("546803"))).alias("id_site"),
+            F.first(F.coalesce(F.col("date"), F.lit(18))).alias("date")
         )
         .select(
             F.col("code_module"),
@@ -114,7 +134,6 @@ def main():
         )
     )
     
-    # 6. Add Bronze Layer Metadata Columns
     bronze_stream_df = (
         sessionized_df
         .withColumn("_ingest_at", F.current_timestamp())
@@ -123,24 +142,54 @@ def main():
         .withColumn("_source_dataset", F.lit("oulad"))
     )
     
-    # 7. Write to Iceberg Bronze Table in Append Mode
-    checkpoint_path = f"abfss://bronze@{storage_account}.dfs.core.windows.net/checkpoints/oulad_studentvle_stream"
-    if not os.getenv("AZURE_STORAGE_KEY"):
-        # Fallback local path if running locally/offline
-        checkpoint_path = "/tmp/spark-kafka-checkpoint"
-        
-    print(f"Streaming output checkpoint path: {checkpoint_path}")
+    # 5. Stream B: Assessment Submissions (event_type == 'assessment_submission')
+    assess_df = parsed_df.filter(
+        F.col("event_type") == F.lit("assessment_submission")
+    )
     
-    query = (
+    assess_stream_df = (
+        assess_df
+        .select(
+            F.col("assignment_id").cast("int").alias("id_assessment"),
+            F.col("effective_student_id").alias("id_student"),
+            F.col("score").cast("double").alias("score"),
+            F.coalesce(F.col("date"), F.lit(18)).cast("int").alias("date_submitted"),
+            F.lit(0).cast("int").alias("is_banked")
+        )
+        .withColumn("_silver_updated_at", F.current_timestamp())
+    )
+    
+    # 6. Configure checkpoints
+    checkpoint_path_vle = f"abfss://bronze@{storage_account}.dfs.core.windows.net/checkpoints/oulad_studentvle_stream"
+    checkpoint_path_assess = f"abfss://silver@{storage_account}.dfs.core.windows.net/checkpoints/oulad_studentassessment_stream"
+    if not os.getenv("AZURE_STORAGE_KEY"):
+        checkpoint_path_vle = "/tmp/spark-kafka-checkpoint-vle"
+        checkpoint_path_assess = "/tmp/spark-kafka-checkpoint-assess"
+        
+    print(f"VLE Checkpoint: {checkpoint_path_vle}")
+    print(f"Assessment Checkpoint: {checkpoint_path_assess}")
+    
+    # 7. Start both streaming queries
+    query_vle = (
         bronze_stream_df.writeStream
         .format("iceberg")
         .outputMode("append")
-        .option("checkpointLocation", checkpoint_path)
+        .option("checkpointLocation", checkpoint_path_vle)
         .trigger(processingTime="10 seconds")
         .toTable("bronze_catalog.full_db.oulad_studentvle")
     )
     
-    query.awaitTermination()
+    query_assess = (
+        assess_stream_df.writeStream
+        .format("iceberg")
+        .outputMode("append")
+        .option("checkpointLocation", checkpoint_path_assess)
+        .trigger(processingTime="10 seconds")
+        .toTable("silver_catalog.silver_db.oulad_studentassessment")
+    )
+    
+    # Wait for either to terminate
+    spark.streams.awaitAnyTermination()
 
 if __name__ == "__main__":
     main()

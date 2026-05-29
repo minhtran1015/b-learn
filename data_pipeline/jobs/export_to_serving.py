@@ -78,6 +78,17 @@ def main():
             
         df_risk.write.mode("overwrite").parquet(f"{serving_path}/risk_predictions.parquet")
 
+        # 1b. Đọc và xuất các feature của LightGBM để phục vụ Online Feature Extractor
+        try:
+            print("➡️ Exporting risk features...")
+            df_features = spark.read.table("gold_catalog.gold_db.oulad_at_risk_features")
+            if "id_student" in df_features.columns:
+                df_features = df_features.withColumnRenamed("id_student", "student_id_hash")
+            df_features.write.mode("overwrite").parquet(f"{serving_path}/risk_features.parquet")
+            print("Successfully exported risk features to Serving Parquet.")
+        except Exception as e_feat:
+            print(f"⚠️ Warning: Failed to export risk features: {e_feat}")
+
             
         # 2. Đọc và xuất kết quả đo lường kiến thức pyBKT
         print("➡️ Exporting BKT mastery predictions...")
