@@ -49,7 +49,9 @@ export default function MaterialsPage() {
   const hasMaterials = useMemo(() => materials.length > 0, [materials]);
 
   const handleMaterialClick = async (item) => {
-    await trackStudentClick(studentHash, item.id_site);
+    const rawId = item.id_site || item.id;
+    const cleanedSiteId = String(rawId).replace(/\D/g, '');
+    await trackStudentClick(studentHash, cleanedSiteId);
   };
 
   return (

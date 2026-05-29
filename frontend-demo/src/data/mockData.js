@@ -39,8 +39,9 @@ export const courses = [
 
 export const materials = [
   {
-    id: 'm1',
-    title: 'Giới thiệu về Neural Networks',
+    id: '546803',
+    id_site: '546803',
+    title: 'Giới thiệu về Neural Networks (Học phần #546803)',
     type: 'Video bài giảng',
     duration: '45:20',
     views: '1.2k',
@@ -48,8 +49,9 @@ export const materials = [
     chapter: 'Chương 1: Nền tảng Học máy',
   },
   {
-    id: 'm2',
-    title: 'Tài liệu tóm tắt: Các thuật toán cốt lõi',
+    id: '546652',
+    id_site: '546652',
+    title: 'Tài liệu tóm tắt: Các thuật toán cốt lõi (Học phần #546652)',
     type: 'PDF',
     duration: '15 trang',
     views: '856',
@@ -57,8 +59,9 @@ export const materials = [
     chapter: 'Chương 1: Nền tảng Học máy',
   },
   {
-    id: 'm3',
-    title: 'Tối ưu hóa Mô hình Học máy Cơ bản',
+    id: '546732',
+    id_site: '546732',
+    title: 'Tối ưu hóa Mô hình Học máy Cơ bản (Học phần #546732)',
     type: 'Video',
     duration: '12 phút',
     views: '932',

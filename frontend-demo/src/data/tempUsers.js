@@ -4,6 +4,7 @@ export const tempUsers = [
     email: 'quan@blearn.test',
     passwordHash: 'd5bc66f1c8ca5d48d99450960da8f68d96757d118df680ae951b65689f853271',
     salt: 'blearn-demo-salt',
+    student_id_hash: '79d86f4d0c556c37c879fb9ba278f9996d5f1f50468d8e26e13a19ba6b09c219',
     profile: {
       fullName: 'Minh Quân',
       role: 'Sinh viên năm 3',

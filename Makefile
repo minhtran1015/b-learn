@@ -356,6 +356,8 @@ kafka-topics-list:
 
 # 2. Lắng nghe trực tiếp dòng sự kiện click chuột thời gian thực (Live Clickstream Monitor)
 kafka-consume-stream:
+	@echo "🔧 Đang tự động kiểm tra và đảm bảo topic 'learning-events' tồn tại..."
+	kubectl exec kafka-stream-0 -n blearn-medallion -- /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --topic learning-events --partitions 1 --replication-factor 1 --if-not-exists 2>/dev/null || true
 	@echo "📺 Đang theo dõi luồng dữ liệu thời gian thực từ topic 'learning-events'..."
 	@echo "💡 Bấm click chuột trên Streamlit Dashboard để thấy sự kiện nhảy về đây real-time."
 	kubectl exec -it kafka-stream-0 -n blearn-medallion -- /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic learning-events --from-beginning
