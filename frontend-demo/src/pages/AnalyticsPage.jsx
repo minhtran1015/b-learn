@@ -29,6 +29,9 @@ const recentSessions = [
 ];
 
 function RadarChart({ scores }) {
+  if (!scores || scores.length === 0) {
+    return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '250px', opacity: 0.6, fontSize: '14px' }}>Chưa có dữ liệu phân tích thành thạo.</div>;
+  }
   const center = 150;
   const maxRadius = 104;
   const angleStep = (Math.PI * 2) / scores.length;
@@ -87,7 +90,14 @@ export default function AnalyticsPage() {
   const { currentUser, token: contextToken, currentStudentHash: contextHash } = useAuth();
   
   const [dropoutProbability, setDropoutProbability] = useState(null);
-  const [radarScores, setRadarScores] = useState([]);
+  const [radarScores, setRadarScores] = useState([
+    { label: 'Chương 1', value: 50 },
+    { label: 'Chương 2', value: 50 },
+    { label: 'Chương 3', value: 50 },
+    { label: 'Chương 4', value: 50 },
+    { label: 'Chương 5', value: 50 },
+    { label: 'Chương 6', value: 50 },
+  ]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
