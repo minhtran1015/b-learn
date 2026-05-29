@@ -85,13 +85,15 @@ export default function AnalyticsPage() {
   const { courseId } = useParams();
   const course = courses.find((item) => item.id === courseId) ?? courses[0];
   const { currentUser, token: contextToken, currentStudentHash: contextHash } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [performanceData, setPerformanceData] = useState(null);
+  
+  const [dropoutProbability, setDropoutProbability] = useState(null);
+  const [radarScores, setRadarScores] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadStats() {
       try {
-        setLoading(true);
+        setIsLoading(true);
         const { token, studentHash } = await ensureGatewaySession(currentUser);
         const currentStudentHash = studentHash || contextHash;
         const finalToken = token || contextToken;
@@ -112,12 +114,21 @@ export default function AnalyticsPage() {
           throw new Error(`Failed to fetch recommendations: ${response.status}`);
         }
 
-        const apiResponse = await response.json();
-        setPerformanceData(apiResponse);
+        const payload = await response.json();
+        if (payload.dropout_probability !== undefined) {
+          setDropoutProbability(payload.dropout_probability);
+        }
+        if (payload.bkt_mastery) {
+          const mapped = Object.entries(payload.bkt_mastery).map(([key, val]) => ({
+            label: key.replace('C', 'Chương '),
+            value: Math.round(val * 100)
+          }));
+          setRadarScores(mapped);
+        }
       } catch (err) {
         console.error("Failed to load prediction stats:", err);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     }
     if (currentUser) {
@@ -125,31 +136,7 @@ export default function AnalyticsPage() {
     }
   }, [currentUser, contextToken, contextHash]);
 
-  const apiResponse = performanceData || {};
-  const keyMap = {
-    C1: 'Chương 1',
-    C2: 'Chương 2',
-    C3: 'Chương 3',
-    C4: 'Chương 4',
-    C5: 'Chương 5',
-    C6: 'Chương 6',
-  };
-  const dynamicSkillScores = Object.entries(apiResponse.bkt_mastery || {}).map(([key, val]) => ({
-    label: keyMap[key] || key,
-    value: Math.round(val * 100) // Chuyển xác suất thập phân sang phần trăm %
-  }));
-
-  const scores = dynamicSkillScores.length > 0 ? dynamicSkillScores : [
-    { label: 'Chương 1', value: 86 },
-    { label: 'Chương 2', value: 72 },
-    { label: 'Chương 3', value: 91 },
-    { label: 'Chương 4', value: 64 },
-    { label: 'Chương 5', value: 78 },
-    { label: 'Chương 6', value: 69 },
-  ];
-
-  const dropoutProb = apiResponse.dropout_probability !== undefined ? apiResponse.dropout_probability : 0.15;
-  const passRate = (1 - dropoutProb) * 100;
+  const passRate = dropoutProbability !== null ? (1 - dropoutProbability) * 100 : null;
 
   return (
     <div className="page-stack">
@@ -161,7 +148,13 @@ export default function AnalyticsPage() {
       <section className="analytics-grid">
         <div className="card radar-card">
           <h2>Mức độ thành thạo <Info size={18} /></h2>
-          <RadarChart scores={scores} />
+          {isLoading ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '250px', fontSize: '14px', opacity: 0.8 }}>
+              Đang tính toán Live Inference từ mô hình AI...
+            </div>
+          ) : (
+            <RadarChart scores={radarScores} />
+          )}
         </div>
         <div className="card heatmap-card">
           <div className="card-heading">
@@ -184,8 +177,14 @@ export default function AnalyticsPage() {
         <div className="stat-wide"><Trophy /><span>Số bài kiểm tra đã xong</span><strong>128 bài</strong><small>Top 5% học viên</small></div>
         <div className="card prediction-card">
           <h2>Dự đoán khả năng trượt/đỗ</h2>
-          <div className="pass-box">Đỗ {passRate.toFixed(0)}%</div>
-          <p>Dựa trên hiệu suất học tập 30 ngày qua, hệ thống dự báo bạn có khả năng cao hoàn thành khóa học xuất sắc.</p>
+          {isLoading ? (
+            <p style={{ opacity: 0.8, fontSize: '14px' }}>Đang tính toán Live Inference từ mô hình AI...</p>
+          ) : (
+            <>
+              <div className="pass-box">Đỗ {passRate !== null ? passRate.toFixed(0) : '85'}%</div>
+              <p>Dựa trên hiệu suất học tập 30 ngày qua, hệ thống dự báo bạn có khả năng cao hoàn thành khóa học xuất sắc.</p>
+            </>
+          )}
         </div>
         <div className="card session-table">
           <h2>Chi tiết phiên học gần đây</h2>
