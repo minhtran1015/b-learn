@@ -1,6 +1,9 @@
 import os
 import sys
 import random
+import json
+import tempfile
+import time
 from pathlib import Path
 
 # Add data_pipeline to sys.path to resolve imports cleanly
@@ -14,6 +17,7 @@ random.randint = lambda a, b: _orig_randint(int(a), int(b))
 
 import numpy as np
 import pandas as pd
+from azure.storage.blob import BlobServiceClient
 from sklearn.model_selection import train_test_split
 from pyBKT.models import Model
 
@@ -30,6 +34,16 @@ def build_spark_session(app_name="B-Learn_Gold_BKT_Pipeline"):
         iceberg_catalogs={"silver_catalog": "silver", "gold_catalog": "gold"},
         default_catalog_name="gold_catalog"
     )
+
+
+def _upload_blob(storage_account: str, storage_key: str, container: str, blob_name: str, payload_path: Path) -> None:
+    service = BlobServiceClient(
+        account_url=f"https://{storage_account}.blob.core.windows.net",
+        credential=storage_key,
+    )
+    blob_client = service.get_blob_client(container=container, blob=blob_name)
+    with payload_path.open("rb") as handle:
+        blob_client.upload_blob(handle, overwrite=True)
 
 def main():
     print("⚡ Starting Automated Cloud BKT Pipeline for OULAD...")
@@ -79,6 +93,8 @@ def main():
         print(f"Found {len(unique_courses)} distinct courses to process: {unique_courses}")
         
         all_course_predictions = []
+        course_auc_scores = []
+        train_started_at = time.perf_counter()
         silver_assessments_raw = silver_assessments.copy()
         silver_student_assess_raw = silver_student_assess.copy()
 
@@ -171,6 +187,7 @@ def main():
                 try:
                     auc_test = bkt_model.evaluate(data=test_df, metric='auc')
                     print(f"🏁 Held-Out Test Set Metrics for {course} -> ROC-AUC: {auc_test:.4f}")
+                    course_auc_scores.append(float(auc_test))
                 except Exception as eval_ex:
                     print(f"⚠️ Failed to evaluate metrics for {course}: {eval_ex}")
             
@@ -193,6 +210,20 @@ def main():
             (spark_bkt_preds.writeTo("gold_catalog.gold_db.oulad_bkt_mastery")
                 .tableProperty("write.format.default", "parquet")
                 .createOrReplace())
+
+        metrics = {
+            "test_auc": float(np.mean(course_auc_scores)) if course_auc_scores else 0.0,
+            "train_seconds": float(time.perf_counter() - train_started_at),
+            "gate_passed": float((float(np.mean(course_auc_scores)) if course_auc_scores else 0.0) >= 0.60),
+        }
+
+        storage_account = os.getenv("AZURE_STORAGE_ACCOUNT", "stblearnminhdata2026")
+        storage_key = os.getenv("AZURE_STORAGE_KEY")
+        if storage_key:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                metrics_path = Path(temp_dir) / "oulad_bkt_metrics.json"
+                metrics_path.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
+                _upload_blob(storage_account, storage_key, "gold", "models/oulad_bkt_metrics.json", metrics_path)
         
         print("🎉 Gold BKT Pipeline integrated successfully!")
         

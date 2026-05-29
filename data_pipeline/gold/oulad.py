@@ -5,6 +5,7 @@ import json
 import os
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 os.environ.setdefault("SPARK_LOCAL_HOSTNAME", "localhost")
@@ -290,6 +291,7 @@ def _train_lgbm(features: pd.DataFrame) -> tuple[Pipeline, dict[str, float], Lab
         verbosity=-1,
         n_jobs=-1,
     )
+    train_started_at = time.perf_counter()
     lgbm_es.fit(
         X_fit_proc,
         y_fit,
@@ -317,6 +319,7 @@ def _train_lgbm(features: pd.DataFrame) -> tuple[Pipeline, dict[str, float], Lab
         ]
     )
     final_pipeline.fit(X_train, y_train)
+    train_seconds = time.perf_counter() - train_started_at
 
     proba = final_pipeline.predict_proba(X_test)
     preds = np.argmax(proba, axis=1)
@@ -326,6 +329,11 @@ def _train_lgbm(features: pd.DataFrame) -> tuple[Pipeline, dict[str, float], Lab
             for class_idx in range(proba.shape[1])
         ])),
         "best_n_estimators": float(best_n_estimators),
+        "train_seconds": float(train_seconds),
+        "gate_passed": float(np.nanmean([
+            average_precision_score((y_test == class_idx).astype(int), proba[:, class_idx])
+            for class_idx in range(proba.shape[1])
+        ]) >= 0.55),
     }
     print(classification_report(y_test, preds, target_names=label_encoder.classes_))
     print(f"LightGBM PR-AUC={metrics['test_pr_auc']:.4f}")

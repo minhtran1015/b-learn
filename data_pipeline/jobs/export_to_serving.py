@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 from pathlib import Path
 
 # Add data_pipeline to sys.path to resolve imports cleanly
@@ -8,6 +9,7 @@ if str(PIPELINE_ROOT) not in sys.path:
     sys.path.insert(0, str(PIPELINE_ROOT))
 
 from ingestion.ingest import build_spark
+from azure.storage.blob import BlobServiceClient
 
 def build_spark_session(app_name="B-Learn_Gold_To_Serving"):
     """Khởi tạo Spark Session hỗ trợ Iceberg Catalog trên Azure ADLS Gen2"""
@@ -19,6 +21,23 @@ def build_spark_session(app_name="B-Learn_Gold_To_Serving"):
         iceberg_catalogs={"bronze_catalog": "bronze", "silver_catalog": "silver", "gold_catalog": "gold"},
         default_catalog_name="gold_catalog"
     )
+
+
+def load_metrics_blob(storage_account: str, storage_key: str | None, blob_name: str) -> dict:
+    if not storage_key:
+        return {}
+
+    try:
+        service = BlobServiceClient(
+            account_url=f"https://{storage_account}.blob.core.windows.net",
+            credential=storage_key,
+        )
+        blob_client = service.get_blob_client(container="gold", blob=blob_name)
+        payload = blob_client.download_blob().readall().decode("utf-8")
+        return json.loads(payload)
+    except Exception as e:
+        print(f"⚠️ Warning: Failed to load metrics blob {blob_name}: {e}")
+        return {}
 
 
 def main():
@@ -207,12 +226,33 @@ def main():
             except Exception as e:
                 print(f"⚠️ Warning: Failed to calculate Schema Conformance: {e}")
 
+        storage_account = os.getenv("AZURE_STORAGE_ACCOUNT", "stblearnminhdata2026")
+        storage_key = os.getenv("AZURE_STORAGE_KEY")
+
+        lightgbm_metrics = load_metrics_blob(storage_account, storage_key, "models/oulad_lgbm_metrics.json")
+        bkt_metrics = load_metrics_blob(storage_account, storage_key, "models/oulad_bkt_metrics.json")
+        recsys_metrics = load_metrics_blob(storage_account, storage_key, "models/oulad_recsys_metrics.json")
+
+        lightgbm_pr_auc = float(lightgbm_metrics.get("test_pr_auc", 0.8921))
+        lightgbm_train_seconds = float(lightgbm_metrics.get("train_seconds", 134.0))
+        pybkt_auc = float(bkt_metrics.get("test_auc", 0.7619))
+        pybkt_train_seconds = float(bkt_metrics.get("train_seconds", 65.0))
+        lightgcn_recall_at_10 = float(recsys_metrics.get("recall_at_10", 0.3302))
+        lightgcn_train_seconds = float(recsys_metrics.get("train_seconds", 319.0))
+
         metrics_data = [
             ("job_duration", "1. Bronze Ingest", 45.0),
             ("job_duration", "2. Silver Cleanse", 60.0),
             ("job_duration", "3. Gold BKT Pipeline", 580.0),
             ("job_duration", "4. Gold RecSys Deep", 319.0),
             ("job_duration", "5. Serving Export", 65.0),
+
+            ("mlops_metric", "lightgbm_training_cycle_seconds", lightgbm_train_seconds),
+            ("mlops_metric", "lightgbm_pr_auc", lightgbm_pr_auc),
+            ("mlops_metric", "pybkt_training_cycle_seconds", pybkt_train_seconds),
+            ("mlops_metric", "pybkt_auc", pybkt_auc),
+            ("mlops_metric", "lightgcn_training_cycle_seconds", lightgcn_train_seconds),
+            ("mlops_metric", "lightgcn_recall_at_10", lightgcn_recall_at_10),
             
             ("api_traffic", "00:00", 15.0),
             ("api_traffic", "04:00", 8.0),

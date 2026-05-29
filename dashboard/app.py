@@ -268,8 +268,44 @@ def load_and_cache_system_metrics():
             {"metric_type": "api_traffic", "key_name": "20:00", "value": 185},
             
             {"metric_type": "resource_quota", "key_name": "CPU Usage (Cores)", "value": 1.25},
-            {"metric_type": "resource_quota", "key_name": "RAM Footprint (Gi)", "value": 6.4}
+            {"metric_type": "resource_quota", "key_name": "RAM Footprint (Gi)", "value": 6.4},
+
+            {"metric_type": "mlops_metric", "key_name": "lightgbm_training_cycle_seconds", "value": 134},
+            {"metric_type": "mlops_metric", "key_name": "lightgbm_pr_auc", "value": 0.6406},
+            {"metric_type": "mlops_metric", "key_name": "pybkt_training_cycle_seconds", "value": 65},
+            {"metric_type": "mlops_metric", "key_name": "pybkt_auc", "value": 0.7619},
+            {"metric_type": "mlops_metric", "key_name": "lightgcn_training_cycle_seconds", "value": 319},
+            {"metric_type": "mlops_metric", "key_name": "lightgcn_recall_at_10", "value": 0.3302}
         ])
+
+
+def get_metric_value(df_metrics, key_name, default=None):
+    try:
+        rows = df_metrics[(df_metrics["metric_type"] == "mlops_metric") & (df_metrics["key_name"] == key_name)]
+        if not rows.empty:
+            return float(rows.iloc[0]["value"])
+    except Exception:
+        pass
+    return default
+
+
+def format_duration(seconds):
+    if seconds is None:
+        return "N/A"
+
+    total_seconds = max(0, int(round(float(seconds))))
+    minutes, secs = divmod(total_seconds, 60)
+    if minutes >= 60:
+        hours, minutes = divmod(minutes, 60)
+        return f"{hours}h {minutes:02d}m {secs:02d}s"
+    return f"{minutes}m {secs:02d}s"
+
+
+SLA_THRESHOLDS = {
+    "lightgbm_auc": 0.82,
+    "pybkt_auc": 0.70,
+    "lightgcn_recall": 0.10,
+}
 
 
 # ─── SIDEBAR: SETUP DEBUG & SANDBOX FIRST ───
@@ -644,13 +680,68 @@ with tab_infra:
     except Exception:
         schema_conformance_val = 100.00
 
+    lightgbm_auc = get_metric_value(df_sys, "lightgbm_pr_auc", 0.6406)
+    lightgbm_cycle = format_duration(get_metric_value(df_sys, "lightgbm_training_cycle_seconds", 134))
+    pybkt_auc = get_metric_value(df_sys, "pybkt_auc", 0.7619)
+    pybkt_cycle = format_duration(get_metric_value(df_sys, "pybkt_training_cycle_seconds", 65))
+    lightgcn_recall = get_metric_value(df_sys, "lightgcn_recall_at_10", 0.3302)
+    lightgcn_cycle = format_duration(get_metric_value(df_sys, "lightgcn_training_cycle_seconds", 319))
+    current_metrics = {
+        "lightgbm_auc": lightgbm_auc,
+        "pybkt_auc": pybkt_auc,
+        "lightgcn_recall": lightgcn_recall,
+    }
+
+    breach_messages = []
+    if current_metrics["lightgbm_auc"] < SLA_THRESHOLDS["lightgbm_auc"]:
+        breach_messages.append(
+            f"LightGBM PR-AUC {current_metrics['lightgbm_auc']:.3f} < ngưỡng SLA {SLA_THRESHOLDS['lightgbm_auc']:.2f}"
+        )
+    if current_metrics["pybkt_auc"] < SLA_THRESHOLDS["pybkt_auc"]:
+        breach_messages.append(
+            f"pyBKT ROC-AUC {current_metrics['pybkt_auc']:.3f} < ngưỡng SLA {SLA_THRESHOLDS['pybkt_auc']:.2f}"
+        )
+    if current_metrics["lightgcn_recall"] < SLA_THRESHOLDS["lightgcn_recall"]:
+        breach_messages.append(
+            f"LightGCN Recall@10 {current_metrics['lightgcn_recall']:.3f} < ngưỡng SLA {SLA_THRESHOLDS['lightgcn_recall']:.2f}"
+        )
+
     # 1. Khối KPI MLOps
     with st.container(border=True):
-        col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+        col_m1, col_m2, col_m3 = st.columns(3)
         col_m1.metric("Mức Sẵn Sàng Cụm (AKS Uptime)", "99.96%", delta="Trạng Thái: An Toàn")
         col_m2.metric("Độ sạch Schema (Schema Conformance)", f"{schema_conformance_val:.2f}%", delta="Đạt chuẩn oulad_studentvle")
         col_m3.metric("Dữ Liệu Đã Cam Kết (Gold)", f"{168780:,} dòng", delta=freshness_delta)
-        col_m4.metric("Chu Kỳ Huấn Luyện LightGCN", "5m 19s", delta="Hội Tụ Ổn Định (CPU)")
+
+    st.markdown("##### 🧠 Trạng thái vận hành và Hiệu năng các mô hình AI")
+    with st.container(border=True):
+        if breach_messages:
+            st.error("🚨 CẢNH BÁO MLOPS: " + " | ".join(breach_messages) + "\nYêu cầu kích hoạt chu trình tái huấn luyện (Retraining Job).")
+        else:
+            st.success("✅ Tất cả mô hình đang nằm trong ngưỡng SLA an toàn.")
+
+        m_col1, m_col2, m_col3 = st.columns(3)
+        with m_col1:
+            st.metric(
+                "Mô hình rủi ro (LightGBM)",
+                f"PR-AUC: {current_metrics['lightgbm_auc']:.3f}",
+                delta=(f"Chu kỳ: {lightgbm_cycle}" if current_metrics["lightgbm_auc"] >= SLA_THRESHOLDS["lightgbm_auc"] else "Dưới ngưỡng SLA"),
+                delta_color=("normal" if current_metrics["lightgbm_auc"] >= SLA_THRESHOLDS["lightgbm_auc"] else "inverse")
+            )
+        with m_col2:
+            st.metric(
+                "Độ thành thục (pyBKT)",
+                f"ROC-AUC: {current_metrics['pybkt_auc']:.3f}",
+                delta=(f"Chu kỳ: {pybkt_cycle}" if current_metrics["pybkt_auc"] >= SLA_THRESHOLDS["pybkt_auc"] else "Dưới ngưỡng SLA"),
+                delta_color=("normal" if current_metrics["pybkt_auc"] >= SLA_THRESHOLDS["pybkt_auc"] else "inverse")
+            )
+        with m_col3:
+            st.metric(
+                "Đồ thị gợi ý (LightGCN)",
+                f"Recall@10: {current_metrics['lightgcn_recall']:.3f}",
+                delta=(f"Chu kỳ: {lightgcn_cycle}" if current_metrics["lightgcn_recall"] >= SLA_THRESHOLDS["lightgcn_recall"] else "Dưới ngưỡng SLA"),
+                delta_color=("normal" if current_metrics["lightgcn_recall"] >= SLA_THRESHOLDS["lightgcn_recall"] else "inverse")
+            )
         
     # 2. Khối Hệ thống biểu đồ hạ tầng MLOps từ Grafana
     st.markdown("##### 📈 Biểu đồ giám sát thời gian thực (Live Grafana Dashboard)")

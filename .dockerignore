@@ -1,31 +1,11 @@
-# Exclude large zip files and data sets
-*.zip
-*.tar.gz
-*.tgz
-large-data/
-small-data/
-abfss/
+# Ignore everything by default and only keep files that the Dockerfile actually copies.
+**
 
-# Exclude git directories
-.git
-.github
-
-# Exclude python virtual environment and caches
-.venv/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Exclude local build artifacts and Terraform states
-.terraform/
-terraform.tfstate*
-*.tfstate*
-tfplan
-
-# Exclude macOS system files
-.DS_Store
-
-# Exclude React frontend dashboard files
-frontend-dashboard/
+!.dockerignore
+!Dockerfile
+!data_pipeline/
+!data_pipeline/**
+!dashboard/
+!dashboard/**
+!*manifest.json
 
