@@ -293,7 +293,7 @@ def get_cached_data():
                 for shash, reduction in _assessment_shifts.items():
                     idx_list = df_risk[df_risk['student_id_hash'] == shash].index
                     for idx in idx_list:
-                        df_risk.loc[idx, 'dropout_probability'] = max(0.0, float(df_risk.loc[idx, 'dropout_probability']) - reduction)
+                        df_risk.loc[idx, 'dropout_probability'] = max(0.0, min(1.0, float(df_risk.loc[idx, 'dropout_probability']) - reduction))
             try:
                 df_lms_meta = load_parquet_file("lms_simulator.parquet")
             except Exception as lms_error:
@@ -418,28 +418,35 @@ def submit_assessment(
 ):
     """
     Nhận kết quả bài tập của học viên, cập nhật động cache bộ nhớ đệm (df_risk)
-    bằng cách tăng tiến độ học tập và hạ tỷ lệ rủi ro bỏ học xuống,
+    bằng cách tăng tiến độ học tập và thay đổi tỷ lệ rủi ro bỏ học theo điểm số,
     đồng thời gửi thông điệp thô vào Kafka.
     """
     global df_risk, _assessment_shifts
     
-    # 1. Ghi lại lượng dịch chuyển (reduction) cho sinh viên này
-    # Giảm dropout probability đi 15% (0.15)
-    _assessment_shifts[payload.student_id_hash] = _assessment_shifts.get(payload.student_id_hash, 0.0) + 0.15
+    # 1. Ghi lại lượng dịch chuyển (reduction) cho sinh viên này dựa trên điểm số
+    score_rate = float(payload.score)
+    if score_rate >= 50.0:
+        reduction = 0.05
+        message_alert = f"Nộp bài thành công! Điểm của bạn: {score_rate}%. Năng lực cải thiện, rủi ro bỏ học đã giảm xuống!"
+    else:
+        reduction = -0.10
+        message_alert = f"Nộp bài thành công! Điểm của bạn: {score_rate}%. Cảnh báo: Kết quả dưới trung bình, nguy cơ bỏ học tăng cao!"
+        
+    _assessment_shifts[payload.student_id_hash] = _assessment_shifts.get(payload.student_id_hash, 0.0) + reduction
     
     # 2. Cập nhật trực tiếp cache df_risk hiện tại để có hiệu lực ngay lập tức
     user_emb_df, item_emb_df, risk_df, lms_meta_df = get_cached_data()
     if risk_df is not None and not risk_df.empty:
         idx_list = risk_df[risk_df['student_id_hash'] == payload.student_id_hash].index
         for idx in idx_list:
-            risk_df.loc[idx, 'dropout_probability'] = max(0.0, float(risk_df.loc[idx, 'dropout_probability']) - 0.15)
-            print(f"[Closed-Loop Cache Shift] Updated student {payload.student_id_hash} in-memory dropout probability.")
+            risk_df.loc[idx, 'dropout_probability'] = max(0.0, min(1.0, float(risk_df.loc[idx, 'dropout_probability']) - reduction))
+            print(f"[Closed-Loop Cache Shift] Updated student {payload.student_id_hash} in-memory dropout probability by reduction {reduction}.")
 
     # 3. Bắn bản tin thô vào Kafka để lưu vết lịch sử lâu dài
     record = {
         "student_id_hash": payload.student_id_hash,
         "assignment_id": payload.assignment_id,
-        "score": float(payload.score),
+        "score": score_rate,
         "event_type": "assessment_submission",
         "event_time": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "client_user": current_user.get("username"),
@@ -456,10 +463,23 @@ def submit_assessment(
 
     return {
         "status": "success",
-        "message": f"Assessment {payload.assignment_id} submitted successfully with score {payload.score}%",
+        "message": message_alert,
         "student_id_hash": payload.student_id_hash,
         "new_dropout_probability": new_prob
     }
+
+
+@app.post("/reset-assessment-shifts")
+def reset_assessment_shifts(current_user: dict = Depends(verify_token)):
+    """Reset các thay đổi rủi ro bỏ học (phục vụ việc chạy lại demo)."""
+    global _assessment_shifts, df_risk
+    _assessment_shifts.clear()
+    try:
+        df_risk = load_parquet_file("risk_predictions.parquet")
+        print("[Closed-Loop Reset] In-memory dropout shifts cleared and predictions reloaded.")
+        return {"status": "success", "message": "Trạng thái demo đã được reset thành công."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Không thể reload dữ liệu dự báo rủi ro: {str(e)}")
 
 @app.get("/health")
 def health():

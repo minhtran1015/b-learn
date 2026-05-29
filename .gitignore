@@ -28,6 +28,8 @@ Thumbs.db
 *.crc
 *.pdf
 *.md
+!README.md
+!docs/*.md
 full_data_manifest.json
 *.ipynb
 /RecSys-Output

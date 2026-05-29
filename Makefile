@@ -429,3 +429,49 @@ cluster-start:
 	@echo "⚡ Đang khởi động lại nguồn vật lý hệ thống máy chủ AKS..."
 	az aks start --name aks-blearn-dev --resource-group RG-BLEarn-Compute
 	@echo "🚀 Cụm AKS đã trực tuyến trở lại! Hãy chạy 'make streaming-resume' sau khi các Node sẵn sàng."
+
+# ====================================================================
+# 🎯 LIVE DEMO & TESTING WORKFLOW UTILITIES
+# ====================================================================
+.PHONY: demo-prep demo-connect demo-smoke-test demo-reset
+
+# 1. Chuẩn bị môi trường, kiểm tra tính sẵn sàng của cụm hạ tầng
+demo-prep:
+	@echo "🔋 Đang kiểm tra trạng thái và đánh thức toàn bộ tài nguyên..."
+	az aks start --name aks-blearn-dev --resource-group RG-BLEarn-Compute
+	kubectl scale deployment blearn-api-gateway -n blearn-medallion --replicas=1
+	kubectl scale deployment blearn-frontend-demo -n blearn-medallion --replicas=1
+	kubectl scale statefulset kafka-stream -n blearn-medallion --replicas=1
+	kubectl scale deployment spark-streaming-job -n blearn-medallion --replicas=1
+	@echo "✅ Các cấu phần cốt lõi đã được đặt tỷ lệ replica = 1."
+
+# 2. Mở cổng kết nối nhanh API Gateway và Frontend nội bộ về máy Mac
+demo-connect:
+	@echo "🔌 Đang kết nối và chuyển tiếp cổng về máy Mac..."
+	@echo "   • API Gateway: http://localhost:8000"
+	@echo "   • Frontend Demo: http://localhost:8080"
+	-pkill -f "port-forward" || true
+	@nohup kubectl port-forward deployment/blearn-api-gateway 8000:8000 -n blearn-medallion >/dev/null 2>&1 &
+	@nohup kubectl port-forward deployment/blearn-frontend-demo 8080:80 -n blearn-medallion >/dev/null 2>&1 &
+	@sleep 2
+	@echo "✅ Tunnels established in background."
+
+# 3. Lắng nghe tức thì phản hồi nộp bài tập từ phía sinh viên
+demo-smoke-test:
+	@echo "📺 Đang theo dõi luồng phản hồi khép kín (Closed-Loop Assessment Submissions)..."
+	kubectl exec -it kafka-stream-0 -n blearn-medallion -- /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic learning-events --from-beginning | grep assessment_submission
+
+# 4. Reset trạng thái rủi ro bỏ học (độ dịch chuyển) về mặc định ban đầu để bắt đầu demo mới
+demo-reset:
+	@echo "🔄 Đang gửi tín hiệu reset trạng thái về API Gateway..."
+	@python3 -c "import urllib.request, json, sys; \
+	try: \
+	    req1 = urllib.request.Request('http://localhost:8000/login', data=json.dumps({'username': 'demo-admin', 'role': 'admin'}).encode(), headers={'Content-Type':'application/json'}, method='POST'); \
+	    res1 = urllib.request.urlopen(req1); \
+	    token = json.loads(res1.read().decode())['access_token']; \
+	    req2 = urllib.request.Request('http://localhost:8000/reset-assessment-shifts', headers={'Authorization': f'Bearer {token}'}, method='POST'); \
+	    res2 = urllib.request.urlopen(req2); \
+	    print('✅ ' + json.loads(res2.read().decode())['message']); \
+	except Exception as e: \
+	    print('❌ Lỗi reset:', e); \
+	    sys.exit(1);"
