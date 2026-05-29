@@ -86,6 +86,7 @@ export default function AnalyticsPage() {
   const course = courses.find((item) => item.id === courseId) ?? courses[0];
   const { currentUser } = useAuth();
   const [dropoutProbability, setDropoutProbability] = useState(0.15); // Mặc định là 15% rủi ro (đỗ 85%)
+  const passRate = (1 - dropoutProbability) * 100;
 
   useEffect(() => {
     async function loadStats() {
@@ -135,7 +136,7 @@ export default function AnalyticsPage() {
         <div className="stat-wide"><Trophy /><span>Số bài kiểm tra đã xong</span><strong>128 bài</strong><small>Top 5% học viên</small></div>
         <div className="card prediction-card">
           <h2>Dự đoán khả năng trượt/đỗ</h2>
-          <div className="pass-box">Đỗ {Math.round((1 - dropoutProbability) * 100)}%</div>
+          <div className="pass-box">Đỗ {passRate.toFixed(0)}%</div>
           <p>Dựa trên hiệu suất học tập 30 ngày qua, hệ thống dự báo bạn có khả năng cao hoàn thành khóa học xuất sắc.</p>
         </div>
         <div className="card session-table">

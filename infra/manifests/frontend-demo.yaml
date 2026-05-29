@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blearn-frontend-demo
+  namespace: blearn-medallion
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend-demo
+  template:
+    metadata:
+      labels:
+        app: frontend-demo
+    spec:
+      containers:
+      - name: frontend-container
+        image: acrblearnminh2026.azurecr.io/oulad-frontend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "250m"
+            memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blearn-frontend-service
+  namespace: blearn-medallion
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 80
+  selector:
+    app: frontend-demo

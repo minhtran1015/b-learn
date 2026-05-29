@@ -4,41 +4,97 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { ensureGatewaySession } from '../api/gateway.js';
 
-const questionsList = [
-  {
-    id: 1,
-    question: "Trong phân tích độ phức tạp thuật toán, ký hiệu Big O thể hiện điều gì?",
-    answers: [
-      'Thời gian chạy trung bình của thuật toán trong điều kiện lý tưởng.',
-      'Giới hạn trên của thời gian chạy hoặc không gian bộ nhớ mà thuật toán cần trong trường hợp xấu nhất.',
-      'Giới hạn dưới tối thiểu mà thuật toán chắc chắn phải thực hiện.',
-      'Số lượng dòng code thực tế sau khi biên dịch sang mã máy.',
-    ],
-    correctAnswerIdx: 1
-  },
-  {
-    id: 2,
-    question: "Ưu điểm chính của kiến trúc Microservices so với Monolithic là gì?",
-    answers: [
-      'Dễ dàng deploy và quản lý trong môi trường local.',
-      'Khả năng mở rộng độc lập (Independent Scaling) và phân tách trách nhiệm rõ ràng.',
-      'Hiệu năng gọi hàm nhanh hơn do không có độ trễ mạng.',
-      'Cơ sở dữ liệu tập trung giúp truy vấn join dữ liệu dễ dàng.',
-    ],
-    correctAnswerIdx: 1
-  },
-  {
-    id: 3,
-    question: "Thuật toán đồng thuận (Consensus Algorithm) như Raft hay Paxos giải quyết bài toán gì?",
-    answers: [
-      'Mã hóa dữ liệu truyền tải trên đường truyền internet.',
-      'Nén dữ liệu để truyền tải nhanh hơn.',
-      'Đảm bảo tính nhất quán dữ liệu giữa các node trong hệ thống phân tán khi có sự cố mạng.',
-      'Phân chia tải lượng request đều cho các web servers.',
-    ],
-    correctAnswerIdx: 2
+const questionsList = Array.from({ length: 20 }, (_, idx) => {
+  const qNum = idx + 1;
+  if (qNum === 1) {
+    return {
+      id: 1,
+      question: "Trong phân tích độ phức tạp thuật toán, ký hiệu Big O thể hiện điều gì?",
+      answers: [
+        'Thời gian chạy trung bình của thuật toán trong điều kiện lý tưởng.',
+        'Giới hạn trên của thời gian chạy hoặc không gian bộ nhớ mà thuật toán cần trong trường hợp xấu nhất.',
+        'Giới hạn dưới tối thiểu mà thuật toán chắc chắn phải thực hiện.',
+        'Số lượng dòng code thực tế sau khi biên dịch sang mã máy.',
+      ],
+      correctAnswerIdx: 1
+    };
   }
-];
+  if (qNum === 2) {
+    return {
+      id: 2,
+      question: "Ưu điểm chính của kiến trúc Microservices so với Monolithic là gì?",
+      answers: [
+        'Dễ dàng deploy và quản lý trong môi trường local.',
+        'Khả năng mở rộng độc lập (Independent Scaling) và phân tách trách nhiệm rõ ràng.',
+        'Hiệu năng gọi hàm nhanh hơn do không có độ trễ mạng.',
+        'Cơ sở dữ liệu tập trung giúp truy vấn join dữ liệu dễ dàng.',
+      ],
+      correctAnswerIdx: 1
+    };
+  }
+  if (qNum === 3) {
+    return {
+      id: 3,
+      question: "Thuật toán đồng thuận (Consensus Algorithm) như Raft hay Paxos giải quyết bài toán gì?",
+      answers: [
+        'Mã hóa dữ liệu truyền tải trên đường truyền internet.',
+        'Nén dữ liệu để truyền tải nhanh hơn.',
+        'Đảm bảo tính nhất quán dữ liệu giữa các node trong hệ thống phân tán khi có sự cố mạng.',
+        'Phân chia tải lượng request đều cho các web servers.',
+      ],
+      correctAnswerIdx: 2
+    };
+  }
+  const topics = [
+    {
+      q: `Câu hỏi số ${qNum}: Trong mô hình truyền thông điệp bất đồng bộ (Asynchronous Messaging), thành phần Message Broker đóng vai trò gì?`,
+      a: [
+        'Xử lý trực tiếp database query cho client.',
+        'Lưu giữ và phân phối tin nhắn giữa Producer và Consumer, giảm sự phụ thuộc trực tiếp giữa các service.',
+        'Mã hóa thông tin giao dịch giữa các máy chủ.',
+        'Là công cụ theo dõi log thời gian thực.'
+      ],
+      ans: 1
+    },
+    {
+      q: `Câu hỏi số ${qNum}: Khái niệm "Eventual Consistency" (Nhất quán sau cùng) được hiểu như thế nào?`,
+      a: [
+        'Dữ liệu luôn nhất quán ở tất cả các node tại mọi thời điểm.',
+        'Dữ liệu sẽ đạt trạng thái nhất quán trên toàn hệ thống sau một khoảng thời gian nhất định không có bản ghi mới.',
+        'Dữ liệu không bao giờ đồng bộ để tăng tối đa tốc độ đọc ghi.',
+        'Là cơ chế khóa database khi ghi ghi đè dữ liệu.'
+      ],
+      ans: 1
+    },
+    {
+      q: `Câu hỏi số ${qNum}: Trong Spark, sự khác biệt chính giữa "Transformation" và "Action" là gì?`,
+      a: [
+        'Transformation trả về kết quả lập tức, Action lười biếng (lazy evaluation).',
+        'Transformation tạo RDD mới và lười biếng, trong khi Action kích hoạt việc tính toán thực tế và trả về kết quả.',
+        'Action chỉ chạy trên driver, Transformation chạy trên các worker.',
+        'Không có sự khác biệt về bản chất.'
+      ],
+      ans: 1
+    },
+    {
+      q: `Câu hỏi số ${qNum}: Cơ chế "Circuit Breaker" trong Microservices giúp ích gì cho hệ thống?`,
+      a: [
+        'Ngắt kết nối mạng của toàn bộ hệ thống để bảo mật.',
+        'Ngăn chặn lỗi lan truyền (cascading failure) bằng cách dừng gọi service lỗi và trả về fallback nhanh chóng.',
+        'Tăng tốc độ truy cập database của các service.',
+        'Tự động khởi động lại container bị chết.'
+      ],
+      ans: 1
+    }
+  ];
+  const selectedTopic = topics[idx % topics.length];
+  return {
+    id: qNum,
+    question: selectedTopic.q,
+    answers: selectedTopic.a,
+    correctAnswerIdx: selectedTopic.ans
+  };
+});
 
 export default function DoAssignmentPage() {
   const { courseId, assignmentId } = useParams();
