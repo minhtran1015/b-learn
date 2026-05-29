@@ -92,14 +92,16 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     async function loadStats() {
+      // Lấy thông tin session trước
+      const { token, studentHash } = await ensureGatewaySession(currentUser);
+      const currentStudentHash = studentHash || contextHash;
+      const finalToken = token || contextToken;
+
+      // Nếu chưa có thông tin định danh, giữ nguyên trạng thái loading, KHÔNG tắt sớm
+      if (!currentStudentHash || !finalToken) return;
+
       try {
         setIsLoading(true);
-        const { token, studentHash } = await ensureGatewaySession(currentUser);
-        const currentStudentHash = studentHash || contextHash;
-        const finalToken = token || contextToken;
-
-        if (!currentStudentHash) return;
-
         const rawBaseUrl = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:8000';
         const API_BASE_URL = rawBaseUrl.replace(/\/$/, '');
 
@@ -177,11 +179,11 @@ export default function AnalyticsPage() {
         <div className="stat-wide"><Trophy /><span>Số bài kiểm tra đã xong</span><strong>128 bài</strong><small>Top 5% học viên</small></div>
         <div className="card prediction-card">
           <h2>Dự đoán khả năng trượt/đỗ</h2>
-          {isLoading ? (
+          {isLoading || dropoutProbability === null ? (
             <p style={{ opacity: 0.8, fontSize: '14px' }}>Đang tính toán Live Inference từ mô hình AI...</p>
           ) : (
             <>
-              <div className="pass-box">Đỗ {passRate !== null ? passRate.toFixed(0) : '85'}%</div>
+              <div className="pass-box">Đỗ {((1 - dropoutProbability) * 100).toFixed(0)}%</div>
               <p>Dựa trên hiệu suất học tập 30 ngày qua, hệ thống dự báo bạn có khả năng cao hoàn thành khóa học xuất sắc.</p>
             </>
           )}
