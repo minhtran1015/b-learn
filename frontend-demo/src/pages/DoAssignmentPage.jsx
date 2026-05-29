@@ -4,63 +4,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { ensureGatewaySession } from '../api/gateway.js';
 import { customCourseAssignments } from '../data/mockData.js';
+import questionBank from '../data/Question_Bank.json';
 
 // ─── Constant: ID khóa học tùy chỉnh ────────────────────────────────────────
 const CUSTOM_COURSE_ID = 'big-data-course';
-
-// ─── Câu hỏi từ Question_Bank cho khóa Big Data ─────────────────────────────
-// Được trích xuất từ small-data/Question_Bank.json, ánh xạ theo ChapterID
-const bigDataQuestions = Array.from({ length: 20 }, (_, idx) => {
-  const qNum = idx + 1;
-  const pool = [
-    {
-      id: qNum,
-      question: `Câu ${qNum}: Trong Big Data, "Volume" được hiểu là gì?`,
-      answers: [
-        'Tốc độ sinh ra dữ liệu',
-        'Độ đa dạng định dạng dữ liệu',
-        'Kích thước và khối lượng dữ liệu lớn',
-        'Độ chính xác của dữ liệu',
-      ],
-      correctAnswerIdx: 2,
-    },
-    {
-      id: qNum,
-      question: `Câu ${qNum}: CAP Theorem khẳng định một hệ thống phân tán tối đa đảm bảo được bao nhiêu tính chất cùng lúc?`,
-      answers: ['1', '2', '3', '4'],
-      correctAnswerIdx: 1,
-    },
-    {
-      id: qNum,
-      question: `Câu ${qNum}: Hadoop HDFS là loại lưu trữ nào?`,
-      answers: ['Block-based Storage', 'Object Storage', 'Distributed File System', 'Relational Database'],
-      correctAnswerIdx: 2,
-    },
-    {
-      id: qNum,
-      question: `Câu ${qNum}: Lambda Architecture kết hợp hai tầng xử lý nào?`,
-      answers: [
-        'SQL + NoSQL',
-        'Batch + Stream Processing',
-        'HDFS + S3',
-        'Kafka + Spark SQL',
-      ],
-      correctAnswerIdx: 1,
-    },
-    {
-      id: qNum,
-      question: `Câu ${qNum}: Trong Spark, sự khác biệt giữa Transformation và Action là gì?`,
-      answers: [
-        'Transformation trả về kết quả ngay, Action lười biếng',
-        'Transformation tạo RDD mới (lazy), Action kích hoạt tính toán thực tế',
-        'Không có sự khác biệt',
-        'Action chỉ chạy trên Driver',
-      ],
-      correctAnswerIdx: 1,
-    },
-  ];
-  return pool[idx % pool.length];
-});
 
 const questionsList = Array.from({ length: 20 }, (_, idx) => {
   const qNum = idx + 1;
@@ -163,20 +110,43 @@ export default function DoAssignmentPage() {
 
   const isCustomCourse = courseId === CUSTOM_COURSE_ID;
 
-  // Với khóa tùy chỉnh dùng Question_Bank, với khóa thông thường dùng questionsList mặc định
-  const activeQuestions = isCustomCourse ? bigDataQuestions : questionsList;
-
   // Tìm thông tin assignment trong customCourseAssignments để lấy id_site_mapping
   const customAssignmentMeta = useMemo(() => {
     if (!isCustomCourse) return null;
     return customCourseAssignments.find(a => a.id === assignmentId) ?? customCourseAssignments[0];
   }, [isCustomCourse, assignmentId]);
 
+  // Lấy câu hỏi tương ứng cho chương đó từ Question_Bank.json
+  const activeQuestions = useMemo(() => {
+    if (!isCustomCourse) return questionsList;
+    if (!customAssignmentMeta) return [];
+
+    const chId = customAssignmentMeta.chapterId || 'C1';
+    const chQuestions = questionBank.filter(q => q.ChapterID === chId);
+
+    return chQuestions.slice(0, 20).map((q, idx) => {
+      const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+      const ansIdx = letters.indexOf(q.answerID);
+      return {
+        id: idx + 1,
+        question: `Câu ${idx + 1}: ${q.Content}`,
+        answers: q.Options.map(o => o.text),
+        correctAnswerIdx: ansIdx >= 0 ? ansIdx : 0
+      };
+    });
+  }, [isCustomCourse, customAssignmentMeta]);
+
   // Quiz states
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answersState, setAnswersState] = useState(() => Array(activeQuestions.length).fill(null));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeLeft, setTimeLeft] = useState(isCustomCourse ? 1500 : 2700); // 25m custom / 45m default
+
+  // Reset answersState if questions change dynamically
+  useEffect(() => {
+    setAnswersState(Array(activeQuestions.length).fill(null));
+    setCurrentQuestion(0);
+  }, [activeQuestions]);
 
   // Timer logic with safe cleanup
   useEffect(() => {

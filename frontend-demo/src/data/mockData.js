@@ -1,3 +1,5 @@
+import lectureBank from './Lecture_Bank.json';
+
 export const user = {
   name: 'Minh Quân',
   role: 'Sinh viên năm 3',
@@ -35,19 +37,15 @@ export const courses = [
     description: 'Kiến trúc microservices, giao dịch phân tán và khả năng mở rộng hệ thống lớn.',
     accent: 'System',
   },
-  // ─── KHÓA HỌC TÙY CHỈNH – Lecture_Bank.json & Question_Bank.json ──────────
-  // Mỗi học liệu và bài tập đều mang id_site_mapping trỏ về ID thực của OULAD VLE
-  // để khi người dùng tương tác, frontend âm thầm đẩy OULAD id_site sang Kafka.
   {
     id: 'big-data-course',
-    title: 'Hệ thống Dữ liệu lớn (Big Data)',
-    teacher: 'TS. Đặng Văn D',
+    title: 'Kỹ nghệ Dữ liệu lớn & Streaming',
+    teacher: 'TS. Trần Đình Quang Minh',
     level: 'Khó',
-    progress: 15,
+    progress: 0,
     color: 'purple',
-    description: 'Xử lý dữ liệu phân tán với Hadoop, Spark và các hệ sinh thái dữ liệu lớn.',
+    description: 'Ứng dụng hệ sinh thái Kafka, Spark Streaming và Hồ dữ liệu Iceberg vào luồng phân tích thời gian thực.',
     accent: 'BigData',
-    // Metadata ánh xạ: khóa học ánh xạ sang mô-đun OULAD thực tế
     _source: 'Lecture_Bank',
     _oulad_course_mapping: 'AAA',
   },
@@ -58,7 +56,6 @@ export const materials = [
   {
     id: '546803',
     id_site: '546803',
-    // id_site_mapping: chính là id_site, giữ nhất quán với interface
     id_site_mapping: '546803',
     title: 'Giới thiệu về Neural Networks (Học phần #546803)',
     type: 'Video bài giảng',
@@ -92,308 +89,57 @@ export const materials = [
 ];
 
 // ─── HỌC LIỆU KHÓA HỌC TÙY CHỈNH – Big Data (Lecture_Bank.json) ─────────────
-// Trường id_site_mapping trỏ về các mã ID thực của OULAD VLE resource.
-// Khi người dùng click/hoàn thành, frontend sẽ extract id_site_mapping này
-// và gửi nó sang /track-click thay vì id hiển thị nội bộ.
-export const customCourseMaterials = [
-  // ── Chương 1: Foundations of Big Data ─────────────────────────────────────
-  {
-    id: 'bd-c1-l1',
-    id_site_mapping: '546803', // → OULAD VLE resource ID thực
-    title: 'Bài 1: Concepts – From Data to Intelligence',
-    type: 'Video bài giảng',
-    duration: '38 phút',
-    views: '1.4k',
-    status: 'Đang học',
-    chapter: 'Chương 1: Foundations of Big Data',
-    lecId: 'C1-L1',
-    chapterId: 'C1',
-    _bank_source: 'Lecture_Bank',
-  },
-  {
-    id: 'bd-c1-l2',
-    id_site_mapping: '546652', // → OULAD VLE resource ID thực
-    title: 'Bài 2: When Does Data Become Big?',
-    type: 'PDF',
-    duration: '12 trang',
-    views: '987',
-    status: 'Mở khóa',
-    chapter: 'Chương 1: Foundations of Big Data',
-    lecId: 'C1-L2',
-    chapterId: 'C1',
-    _bank_source: 'Lecture_Bank',
-  },
-  {
-    id: 'bd-c1-l3',
-    id_site_mapping: '546732', // → OULAD VLE resource ID thực
-    title: 'Bài 3: Big Data Characteristics – The 3Vs, 5Vs, 6Vs',
-    type: 'Video bài giảng',
-    duration: '42 phút',
-    views: '1.1k',
-    status: 'Mở khóa',
-    chapter: 'Chương 1: Foundations of Big Data',
-    lecId: 'C1-L3',
-    chapterId: 'C1',
-    _bank_source: 'Lecture_Bank',
-  },
-  {
-    id: 'bd-c1-l4',
-    id_site_mapping: '546803', // → OULAD VLE resource ID thực (tái sử dụng – hợp lệ OULAD)
-    title: 'Bài 4: The Big Data System – Architecture & Components',
-    type: 'PDF',
-    duration: '18 trang',
-    views: '762',
-    status: 'Mở khóa',
-    chapter: 'Chương 1: Foundations of Big Data',
-    lecId: 'C1-L4',
-    chapterId: 'C1',
-    _bank_source: 'Lecture_Bank',
-  },
-  {
-    id: 'bd-c1-l5',
-    id_site_mapping: '546652', // → OULAD VLE resource ID thực
-    title: 'Bài 5: Big Data Jobs – Roles & Career Paths',
-    type: 'Video bài giảng',
-    duration: '25 phút',
-    views: '634',
-    status: 'Mở khóa',
-    chapter: 'Chương 1: Foundations of Big Data',
-    lecId: 'C1-L5',
-    chapterId: 'C1',
-    _bank_source: 'Lecture_Bank',
-  },
-  // ── Chương 2: Big Data Ecosystems ─────────────────────────────────────────
-  {
-    id: 'bd-c2-l1',
-    id_site_mapping: '546732', // → OULAD VLE resource ID thực
-    title: 'Bài 1: Data Modeling in Big Data Systems',
-    type: 'Video bài giảng',
-    duration: '35 phút',
-    views: '891',
-    status: 'Mở khóa',
-    chapter: 'Chương 2: Big Data Ecosystems',
-    lecId: 'C2-L1',
-    chapterId: 'C2',
-    _bank_source: 'Lecture_Bank',
-  },
-  {
-    id: 'bd-c2-l2',
-    id_site_mapping: '546803', // → OULAD VLE resource ID thực
-    title: 'Bài 2: Modern Big Data Stack – Kafka, Spark, Iceberg',
-    type: 'PDF',
-    duration: '20 trang',
-    views: '1.3k',
-    status: 'Mở khóa',
-    chapter: 'Chương 2: Big Data Ecosystems',
-    lecId: 'C2-L2',
-    chapterId: 'C2',
-    _bank_source: 'Lecture_Bank',
-  },
-  {
-    id: 'bd-c2-l3',
-    id_site_mapping: '546652', // → OULAD VLE resource ID thực
-    title: 'Bài 3: Modern Data Platform – Lakehouse Architecture',
-    type: 'Video bài giảng',
-    duration: '40 phút',
-    views: '978',
-    status: 'Mở khóa',
-    chapter: 'Chương 2: Big Data Ecosystems',
-    lecId: 'C2-L3',
-    chapterId: 'C2',
-    _bank_source: 'Lecture_Bank',
-  },
-  {
-    id: 'bd-c2-l4',
-    id_site_mapping: '546732', // → OULAD VLE resource ID thực
-    title: 'Bài 4: Big Data Analysis – Descriptive to Prescriptive',
-    type: 'PDF',
-    duration: '16 trang',
-    views: '745',
-    status: 'Mở khóa',
-    chapter: 'Chương 2: Big Data Ecosystems',
-    lecId: 'C2-L4',
-    chapterId: 'C2',
-    _bank_source: 'Lecture_Bank',
-  },
-  {
-    id: 'bd-c2-l5',
-    id_site_mapping: '546803', // → OULAD VLE resource ID thực
-    title: 'Bài 5: Big Data Applications & Landscape',
-    type: 'Video bài giảng',
-    duration: '30 phút',
-    views: '612',
-    status: 'Mở khóa',
-    chapter: 'Chương 2: Big Data Ecosystems',
-    lecId: 'C2-L5',
-    chapterId: 'C2',
-    _bank_source: 'Lecture_Bank',
-  },
-  // ── Chương 3: Big Data Storage ─────────────────────────────────────────────
-  {
-    id: 'bd-c3-l1',
-    id_site_mapping: '546652', // → OULAD VLE resource ID thực
-    title: 'Bài 1: Introduction Big Data Storage – Block, File, Object',
-    type: 'Video bài giảng',
-    duration: '45 phút',
-    views: '1.0k',
-    status: 'Mở khóa',
-    chapter: 'Chương 3: Big Data Storage',
-    lecId: 'C3-L1',
-    chapterId: 'C3',
-    _bank_source: 'Lecture_Bank',
-  },
-  {
-    id: 'bd-c3-l2',
-    id_site_mapping: '546732', // → OULAD VLE resource ID thực
-    title: 'Bài 2: Decisive Principles – CAP, ACID, BASE',
-    type: 'PDF',
-    duration: '14 trang',
-    views: '822',
-    status: 'Mở khóa',
-    chapter: 'Chương 3: Big Data Storage',
-    lecId: 'C3-L2',
-    chapterId: 'C3',
-    _bank_source: 'Lecture_Bank',
-  },
-  {
-    id: 'bd-c3-l3',
-    id_site_mapping: '546803', // → OULAD VLE resource ID thực
-    title: 'Bài 3: Big Data Storage Solutions – HDFS, S3, Ceph',
-    type: 'Video bài giảng',
-    duration: '38 phút',
-    views: '789',
-    status: 'Mở khóa',
-    chapter: 'Chương 3: Big Data Storage',
-    lecId: 'C3-L3',
-    chapterId: 'C3',
-    _bank_source: 'Lecture_Bank',
-  },
-  // ── Chương 4: Big Data Paradigms ──────────────────────────────────────────
-  {
-    id: 'bd-c4-l1',
-    id_site_mapping: '546652', // → OULAD VLE resource ID thực
-    title: 'Bài 1: Big Data Processing Paradigms – Batch vs Stream',
-    type: 'Video bài giảng',
-    duration: '36 phút',
-    views: '1.2k',
-    status: 'Mở khóa',
-    chapter: 'Chương 4: Big Data Paradigms',
-    lecId: 'C4-L1',
-    chapterId: 'C4',
-    _bank_source: 'Lecture_Bank',
-  },
-  {
-    id: 'bd-c4-l2',
-    id_site_mapping: '546732', // → OULAD VLE resource ID thực
-    title: 'Bài 2: MapReduce Fundamentals',
-    type: 'PDF',
-    duration: '22 trang',
-    views: '956',
-    status: 'Mở khóa',
-    chapter: 'Chương 4: Big Data Paradigms',
-    lecId: 'C4-L2',
-    chapterId: 'C4',
-    _bank_source: 'Lecture_Bank',
-  },
-  // ── Chương 5: Spark ────────────────────────────────────────────────────────
-  {
-    id: 'bd-c5-l1',
-    id_site_mapping: '546803', // → OULAD VLE resource ID thực
-    title: 'Bài 1: From MapReduce to Spark – Motivation & Overview',
-    type: 'Video bài giảng',
-    duration: '48 phút',
-    views: '1.6k',
-    status: 'Mở khóa',
-    chapter: 'Chương 5: Spark',
-    lecId: 'C5-L1',
-    chapterId: 'C5',
-    _bank_source: 'Lecture_Bank',
-  },
-  {
-    id: 'bd-c5-l2',
-    id_site_mapping: '546652', // → OULAD VLE resource ID thực
-    title: 'Bài 2: Spark Programming Model – RDD, DataFrame, Dataset',
-    type: 'PDF',
-    duration: '25 trang',
-    views: '1.1k',
-    status: 'Mở khóa',
-    chapter: 'Chương 5: Spark',
-    lecId: 'C5-L2',
-    chapterId: 'C5',
-    _bank_source: 'Lecture_Bank',
-  },
-];
+const ouladVleIds = ['546803', '546652', '546732'];
+let vleIdCounter = 0;
+
+export const customCourseMaterials = [];
+
+lectureBank.Chapters.forEach((chapter) => {
+  chapter.Lectures.forEach((lec) => {
+    const vleId = ouladVleIds[vleIdCounter % ouladVleIds.length];
+    vleIdCounter++;
+    
+    let displayType = 'Video bài giảng';
+    if (vleId === '546652') {
+      displayType = 'PDF';
+    } else if (vleId === '546732') {
+      displayType = 'Tài liệu đọc';
+    }
+
+    customCourseMaterials.push({
+      id: `bd-${chapter.ChapterID.toLowerCase()}-${lec.LecID.split('-')[1].toLowerCase()}`,
+      id_site_mapping: vleId,
+      title: `${lec.LecID}: ${lec.Name}`,
+      type: displayType,
+      duration: displayType === 'PDF' ? '15 trang' : '35 phút',
+      views: String(Math.floor(Math.random() * 1000) + 500),
+      status: customCourseMaterials.length === 0 ? 'Đang học' : 'Mở khóa',
+      chapter: `Chương ${chapter.Order}: ${chapter.Name}`,
+      lecId: lec.LecID,
+      chapterId: chapter.ChapterID,
+      _bank_source: 'Lecture_Bank',
+    });
+  });
+});
 
 // ─── BÀI TẬP KHÓA HỌC TÙY CHỈNH – Big Data (Question_Bank.json) ─────────────
-// Trường id_site_mapping trỏ về OULAD id_assessment thực.
-// Khi nộp bài, DoAssignmentPage sẽ extract id_site_mapping làm assignment_id gửi sang API.
-export const customCourseAssignments = [
-  {
-    id: 'bd-quiz-c1',
-    id_site_mapping: '546803', // → OULAD assessment ID thực (ánh xạ sang C1 assessment)
-    title: 'Quiz Chương 1: Foundations of Big Data',
-    summary: 'Kiểm tra kiến thức nền tảng: 3Vs, kiến trúc hệ thống, các vai trò Big Data.',
-    duration: '20m',
-    difficulty: 'Dễ',
-    status: 'active',
-    chapter: 'Chương 1: Foundations of Big Data',
-    chapterId: 'C1',
+export const customCourseAssignments = lectureBank.Chapters.map((chapter, index) => {
+  const vleId = ouladVleIds[index % ouladVleIds.length];
+  
+  return {
+    id: `bd-quiz-${chapter.ChapterID.toLowerCase()}`,
+    id_site_mapping: vleId,
+    title: `Quiz Chương ${chapter.Order}: ${chapter.Name}`,
+    summary: `Kiểm tra kiến thức: ${chapter.Description}`,
+    duration: `${15 + index * 5}m`,
+    difficulty: index < 2 ? 'Dễ' : index < 4 ? 'Trung bình' : 'Khó',
+    status: index === 0 ? 'active' : 'todo',
+    chapter: `Chương ${chapter.Order}: ${chapter.Name}`,
+    chapterId: chapter.ChapterID,
     questionCount: 20,
     _bank_source: 'Question_Bank',
-  },
-  {
-    id: 'bd-quiz-c2',
-    id_site_mapping: '546652', // → OULAD assessment ID thực (ánh xạ sang C2 assessment)
-    title: 'Quiz Chương 2: Big Data Ecosystems & Modern Stack',
-    summary: 'Kiểm tra hiểu biết về Kafka, Spark, Lakehouse, Lambda/Kappa Architecture.',
-    duration: '25m',
-    difficulty: 'Trung bình',
-    status: 'todo',
-    chapter: 'Chương 2: Big Data Ecosystems',
-    chapterId: 'C2',
-    questionCount: 20,
-    _bank_source: 'Question_Bank',
-  },
-  {
-    id: 'bd-quiz-c3',
-    id_site_mapping: '546732', // → OULAD assessment ID thực (ánh xạ sang C3 assessment)
-    title: 'Quiz Chương 3: Big Data Storage – Block, Object, HDFS',
-    summary: 'Kiểm tra kiến thức về CAP theorem, các loại storage, sharding và replication.',
-    duration: '30m',
-    difficulty: 'Trung bình',
-    status: 'todo',
-    chapter: 'Chương 3: Big Data Storage',
-    chapterId: 'C3',
-    questionCount: 20,
-    _bank_source: 'Question_Bank',
-  },
-  {
-    id: 'bd-quiz-c4',
-    id_site_mapping: '546803', // → OULAD assessment ID thực (tái sử dụng hợp lệ)
-    title: 'Quiz Chương 4: MapReduce & Processing Paradigms',
-    summary: 'Kiểm tra hiểu biết về MapReduce, Lambda Architecture, Batch và Stream Processing.',
-    duration: '35m',
-    difficulty: 'Khó',
-    status: 'todo',
-    chapter: 'Chương 4: Big Data Paradigms',
-    chapterId: 'C4',
-    questionCount: 20,
-    _bank_source: 'Question_Bank',
-  },
-  {
-    id: 'bd-quiz-c5',
-    id_site_mapping: '546652', // → OULAD assessment ID thực
-    title: 'Quiz Chương 5: Apache Spark Deep Dive',
-    summary: 'Kiểm tra kiến thức về RDD, Transformation/Action, Spark Architecture và UDFs.',
-    duration: '40m',
-    difficulty: 'Khó',
-    status: 'todo',
-    chapter: 'Chương 5: Spark',
-    chapterId: 'C5',
-    questionCount: 20,
-    _bank_source: 'Question_Bank',
-  },
-];
+  };
+});
 
 export const assignments = [
   {
@@ -478,7 +224,7 @@ export const calendarEvents = [
     date: '2026-06-07',
     time: '23:59',
     title: 'Quiz Chương 1 – Big Data Foundations',
-    course: 'Hệ thống Dữ liệu lớn (Big Data)',
+    course: 'Kỹ nghệ Dữ liệu lớn & Streaming',
     type: 'Deadline',
     status: 'urgent',
   },
@@ -523,12 +269,12 @@ export const inboxMessages = [
   },
   {
     id: 'msg-4',
-    sender: 'TS. Đặng Văn D',
+    sender: 'TS. Trần Đình Quang Minh',
     role: 'Giảng viên',
     subject: 'Khai giảng khóa Big Data – Lịch học và tài liệu',
-    preview: 'Khóa Hệ thống Dữ liệu lớn bắt đầu tuần này. Vui lòng xem trước Chương 1.',
-    body: 'Xin chào các em, khóa học Hệ thống Dữ liệu lớn chính thức bắt đầu. Các em hãy vào mục Tài liệu để đọc bài Chương 1 trước buổi học trực tiếp đầu tiên vào thứ Ba. Quiz Chương 1 sẽ mở vào cuối tuần này.',
-    course: 'Hệ thống Dữ liệu lớn (Big Data)',
+    preview: 'Khóa Kỹ nghệ Dữ liệu lớn & Streaming bắt đầu tuần này. Vui lòng xem trước Chương 1.',
+    body: 'Xin chào các em, khóa học Kỹ nghệ Dữ liệu lớn & Streaming chính thức bắt đầu. Các em hãy vào mục Tài liệu để đọc bài Chương 1 trước buổi học trực tiếp đầu tiên vào thứ Ba. Quiz Chương 1 sẽ mở vào cuối tuần này.',
+    course: 'Kỹ nghệ Dữ liệu lớn & Streaming',
     sentAt: 'Hôm nay, 07:30',
     unread: true,
     priority: 'Cao',

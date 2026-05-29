@@ -1,0 +1,4739 @@
+[
+  {
+    "QuestionID": "Q1",
+    "Content": "Which concept describes splitting data across machines?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Partitioning" },
+      { "id": "B", "text": "Replication" },
+      { "id": "C", "text": "Serialization" },
+      { "id": "D", "text": "Aggregation" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C1",
+    "LecID": "C1-L4"
+  },
+  {
+    "QuestionID": "Q2",
+    "Content": "Which step involves collecting data from sensors and social media?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Analytics" },
+      { "id": "B", "text": "Visualization" },
+      { "id": "C", "text": "Storage" },
+      { "id": "D", "text": "Generation" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C1",
+    "LecID": "C1-L1"
+  },
+  {
+    "QuestionID": "Q3",
+    "Content": "Which V describes changes in meaning or structure of data over time?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Variability" },
+      { "id": "B", "text": "Velocity" },
+      { "id": "C", "text": "Volume" },
+      { "id": "D", "text": "Veracity" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C1",
+    "LecID": "C1-L3"
+  },
+  {
+    "QuestionID": "Q4",
+    "Content": "CAP theorem states a distributed system can guarantee at most:",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "2 properties simultaneously" },
+      { "id": "B", "text": "1 property" },
+      { "id": "C", "text": "3 properties simultaneously" },
+      { "id": "D", "text": "4 properties simultaneously" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C1",
+    "LecID": "C1-L4"
+  },
+  {
+    "QuestionID": "Q5",
+    "Content": "Batch processing typically runs:",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Continuously in milliseconds" },
+      { "id": "B", "text": "Only in memory" },
+      { "id": "C", "text": "Only on GPUs" },
+      { "id": "D", "text": "Periodically in scheduled intervals" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C1",
+    "LecID": "C1-L4"
+  },
+  {
+    "QuestionID": "Q6",
+    "Content": "Streaming processing handles data:",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "As it arrives in real time" },
+      { "id": "B", "text": "Only offline" },
+      { "id": "C", "text": "Only once per day" },
+      { "id": "D", "text": "After storing all data" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C1",
+    "LecID": "C1-L4"
+  },
+  {
+    "QuestionID": "Q7",
+    "Content": "Which characteristic describes different data formats?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Value" },
+      { "id": "B", "text": "Variety" },
+      { "id": "C", "text": "Velocity" },
+      { "id": "D", "text": "Volume" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C1",
+    "LecID": "C1-L3"
+  },
+  {
+    "QuestionID": "Q8",
+    "Content": "Which DIKW level answers the question 'What should we do?'",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Data" },
+      { "id": "B", "text": "Wisdom" },
+      { "id": "C", "text": "Information" },
+      { "id": "D", "text": "Knowledge" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C1",
+    "LecID": "C1-L1"
+  },
+  {
+    "QuestionID": "Q9",
+    "Content": "Which system is a distributed storage system?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Hadoop HDFS" },
+      { "id": "B", "text": "Kafka" },
+      { "id": "C", "text": "TensorFlow" },
+      { "id": "D", "text": "Apache Spark" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C1",
+    "LecID": "C1-L4"
+  },
+  {
+    "QuestionID": "Q10",
+    "Content": "Which component corresponds to Knowledge in DIKW system mapping?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Network routing" },
+      { "id": "B", "text": "ETL pipeline" },
+      { "id": "C", "text": "Storage systems" },
+      { "id": "D", "text": "ML/Analytics engines" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C1",
+    "LecID": "C1-L1"
+  },
+  {
+    "QuestionID": "Q11",
+    "Content": "Which engine is used for distributed processing?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "MongoDB" },
+      { "id": "B", "text": "PostgreSQL" },
+      { "id": "C", "text": "Spark" },
+      { "id": "D", "text": "Redis" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C1",
+    "LecID": "C1-L4"
+  },
+  {
+    "QuestionID": "Q12",
+    "Content": "Lambda Architecture combines:",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Batch + Stream processing" },
+      { "id": "B", "text": "Only batch processing" },
+      { "id": "C", "text": "Only relational databases" },
+      { "id": "D", "text": "Machine learning + storage" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C1",
+    "LecID": "C1-L4"
+  },
+  {
+    "QuestionID": "Q13",
+    "Content": "Which scaling strategy adds more machines to handle workload?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Linear scaling" },
+      { "id": "B", "text": "Horizontal scaling" },
+      { "id": "C", "text": "Vertical scaling" },
+      { "id": "D", "text": "Manual scaling" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C1",
+    "LecID": "C1-L4"
+  },
+  {
+    "QuestionID": "Q14",
+    "Content": "Which component handles data collection from sensors and logs?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Analytics" },
+      { "id": "B", "text": "Storage" },
+      { "id": "C", "text": "Decision systems" },
+      { "id": "D", "text": "Data sources" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C1",
+    "LecID": "C1-L4"
+  },
+  {
+    "QuestionID": "Q15",
+    "Content": "The classic definition of Big Data is based on:",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "5Vs" },
+      { "id": "B", "text": "2Vs" },
+      { "id": "C", "text": "7Vs" },
+      { "id": "D", "text": "3Vs" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C1",
+    "LecID": "C1-L2"
+  },
+  {
+    "QuestionID": "Q16",
+    "Content": "Which scaling strategy increases CPU/RAM of a single server?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Parallel scaling" },
+      { "id": "B", "text": "Scale-up" },
+      { "id": "C", "text": "Horizontal scaling" },
+      { "id": "D", "text": "Scale-out" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C1",
+    "LecID": "C1-L4"
+  },
+  {
+    "QuestionID": "Q17",
+    "Content": "Which tool is commonly used for resource management?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Tableau" },
+      { "id": "B", "text": "Kafka" },
+      { "id": "C", "text": "MySQL" },
+      { "id": "D", "text": "Kubernetes" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C1",
+    "LecID": "C1-L4"
+  },
+  {
+    "QuestionID": "Q18",
+    "Content": "The speed layer in Lambda architecture handles:",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Backup data" },
+      { "id": "B", "text": "Real-time data" },
+      { "id": "C", "text": "Historical data" },
+      { "id": "D", "text": "Archived data" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C1",
+    "LecID": "C1-L4"
+  },
+  {
+    "QuestionID": "Q19",
+    "Content": "Which stage follows Data Ingestion in the Big Data pipeline?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Storage" },
+      { "id": "B", "text": "Visualization" },
+      { "id": "C", "text": "Analytics" },
+      { "id": "D", "text": "Decision" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C1",
+    "LecID": "C1-L4"
+  },
+  {
+    "QuestionID": "Q20",
+    "Content": "A distributed system typically consists of:",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Only cloud services" },
+      { "id": "B", "text": "One powerful server" },
+      { "id": "C", "text": "Many machines communicating over network" },
+      { "id": "D", "text": "Only databases" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C1",
+    "LecID": "C1-L4"
+  },
+  {
+    "QuestionID": "Q21",
+    "Content": "What is the primary definition of \"Volume\" in Big Data?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "The speed at which data is generated" },
+      { "id": "B", "text": "The size and amount of data" },
+      { "id": "C", "text": "The different types of data" },
+      { "id": "D", "text": "The accuracy of data" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C1",
+    "LecID": "C1-L3"
+  },
+  {
+    "QuestionID": "Q22",
+    "Content": "Which of the following is NOT one of the original 3Vs of Big Data defined by IBM?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Volume" },
+      { "id": "B", "text": "Velocity" },
+      { "id": "C", "text": "Variety" },
+      { "id": "D", "text": "Veracity" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C1",
+    "LecID": "C1-L3"
+  },
+  {
+    "QuestionID": "Q23",
+    "Content": "In the context of Big Data, what does \"Velocity\" refer to?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "The amount of data generated" },
+      { "id": "B", "text": "The speed at which data is generated and processed" },
+      { "id": "C", "text": "The truthfulness of the data" },
+      { "id": "D", "text": "The number of different data formats" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C1",
+    "LecID": "C1-L3"
+  },
+  {
+    "QuestionID": "Q24",
+    "Content": "Which \"V\" describes the uncertainty, quality, and accuracy of data?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Value" },
+      { "id": "B", "text": "Veracity" },
+      { "id": "C", "text": "Virality" },
+      { "id": "D", "text": "Viscosity" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C1",
+    "LecID": "C1-L3"
+  },
+  {
+    "QuestionID": "Q25",
+    "Content": "What does \"Variability\" refer to in the extended 6Vs of Big Data?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "The latency or lag time in data" },
+      { "id": "B", "text": "How often the data spreads" },
+      { "id": "C", "text": "How often changes or drifts in data happen" },
+      { "id": "D", "text": "How long data should be stored" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C1",
+    "LecID": "C1-L3"
+  },
+  {
+    "QuestionID": "Q26",
+    "Content": "Which of the following best describes \"Scale Out\" (horizontal scaling)?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Adding more RAM/CPU to a single resource" },
+      { "id": "B", "text": "Increasing capacity by adding more resources/machines" },
+      { "id": "C", "text": "Moving the analysis to the data" },
+      { "id": "D", "text": "Reducing the data size" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C1",
+    "LecID": "C1-L4"
+  },
+  {
+    "QuestionID": "Q27",
+    "Content": "According to Jim Gray's advice, what is the recommended approach for analyzing big data?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Use scale-up solutions" },
+      { "id": "B", "text": "Move the data to the analysis" },
+      { "id": "C", "text": "Use scale-out solutions" },
+      { "id": "D", "text": "Convert all data to a structured format" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C1",
+    "LecID": "C1-L4"
+  },
+  {
+    "QuestionID": "Q28",
+    "Content": "Which State-Of-The-Art (SOTA) data model is best suited for relationship-heavy data?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "RDBMS" },
+      { "id": "B", "text": "Graph DB" },
+      { "id": "C", "text": "Vector DB" },
+      { "id": "D", "text": "Realtime DB" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C1",
+    "LecID": "C1-L4"
+  },
+  {
+    "QuestionID": "Q29",
+    "Content": "Pinecone and FAISS are examples of which type of database?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "NewSQL" },
+      { "id": "B", "text": "Multi-Model DB" },
+      { "id": "C", "text": "Graph DB" },
+      { "id": "D", "text": "Vector DB" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C1",
+    "LecID": "C1-L4"
+  },
+  {
+    "QuestionID": "Q30",
+    "Content": "In the Data Science Application Process, what is typically the first step?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Cleaning the wrangled data" },
+      { "id": "B", "text": "What techniques are you going to try?" },
+      { "id": "C", "text": "What question are you answering?" },
+      { "id": "D", "text": "How will you evaluate your results?" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C1",
+    "LecID": "C1-L1"
+  },
+  {
+    "QuestionID": "Q31",
+    "Content": "In Big Data Analytics, which type of analytics answers the question \"Why Did It Happen?\"?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Descriptive Analytics" },
+      { "id": "B", "text": "Diagnostic Analytics" },
+      { "id": "C", "text": "Predictive Analytics" },
+      { "id": "D", "text": "Prescriptive Analytics" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C1",
+    "LecID": "C1-L1"
+  },
+  {
+    "QuestionID": "Q32",
+    "Content": "Prescriptive Analytics is used to answer which of the following questions?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "What Happened?" },
+      { "id": "B", "text": "Why Did It Happen?" },
+      { "id": "C", "text": "What Will Happen?" },
+      { "id": "D", "text": "What Should I Do?" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C1",
+    "LecID": "C1-L1"
+  },
+  {
+    "QuestionID": "Q33",
+    "Content": "Which of the following is considered Unstructured Data?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "RDBMS" },
+      { "id": "B", "text": "JSON" },
+      { "id": "C", "text": "XML" },
+      { "id": "D", "text": "Text, Images, and Videos" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C1",
+    "LecID": "C1-L3"
+  },
+  {
+    "QuestionID": "Q34",
+    "Content": "In the Big Data Stack, Apache Kafka and Apache NiFi are primarily used for:",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Batch Processing Ingestion" },
+      { "id": "B", "text": "Streaming Processing Ingestion" },
+      { "id": "C", "text": "Data Storage" },
+      { "id": "D", "text": "Data Visualization" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C1",
+    "LecID": "C1-L4"
+  },
+  {
+    "QuestionID": "Q35",
+    "Content": "Which of the following databases is classified as a NoSQL Database?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "MySQL" },
+      { "id": "B", "text": "PostgreSQL" },
+      { "id": "C", "text": "MongoDB" },
+      { "id": "D", "text": "Amazon RedShift" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C1",
+    "LecID": "C1-L4"
+  },
+  {
+    "QuestionID": "Q36",
+    "Content": "In the Big Data Processing layer, which tool is commonly used for Real-Time Processing?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Hadoop MapReduce" },
+      { "id": "B", "text": "Apache Flink" },
+      { "id": "C", "text": "Apache Sqoop" },
+      { "id": "D", "text": "Tableau" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C1",
+    "LecID": "C1-L4"
+  },
+  {
+    "QuestionID": "Q37",
+    "Content": "Which \"V\" describes the latency or lag time in the data relative to the event being described?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Viscosity" },
+      { "id": "B", "text": "Virality" },
+      { "id": "C", "text": "Volatility" },
+      { "id": "D", "text": "Visibility" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C1",
+    "LecID": "C1-L3"
+  },
+  {
+    "QuestionID": "Q38",
+    "Content": "What does \"Virality\" mean in the context of Big Data?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "The rate at which data spreads and is repeated by other users" },
+      { "id": "B", "text": "How long data should be stored" },
+      { "id": "C", "text": "The way data is presented visually" },
+      { "id": "D", "text": "The accuracy of the data" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C1",
+    "LecID": "C1-L3"
+  },
+  {
+    "QuestionID": "Q39",
+    "Content": "Which term describes how long data is valid and should be stored before it is no longer relevant?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Veracity" },
+      { "id": "B", "text": "Variability" },
+      { "id": "C", "text": "Volatility" },
+      { "id": "D", "text": "Viscosity" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C1",
+    "LecID": "C1-L3"
+  },
+  {
+    "QuestionID": "Q40",
+    "Content": "By the end of 2025, the total amount of data was estimated by IDC to reach what size?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "1 Zettabyte (ZB)" },
+      { "id": "B", "text": "100 Petabytes (PB)" },
+      { "id": "C", "text": "175 Zettabytes (ZB)" },
+      { "id": "D", "text": "2000 Petabytes (PB)" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C1",
+    "LecID": "C1-L2"
+  },
+  {
+    "QuestionID": "Q41",
+    "Content": "What is Big Data storage primarily designed to manage?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Only structured data" },
+      { "id": "B", "text": "Only relational databases" },
+      { "id": "C", "text": "Structured, semi-structured, and unstructured data efficiently" },
+      { "id": "D", "text": "Only metadata" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C2",
+    "LecID": "C2-L1"
+  },
+  {
+    "QuestionID": "Q42",
+    "Content": "Which of the following is considered a Traditional Storage type?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Amazon S3" },
+      { "id": "B", "text": "Block Storage" },
+      { "id": "C", "text": "Google Cloud Storage" },
+      { "id": "D", "text": "Ceph" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C2",
+    "LecID": "C2-L1"
+  },
+  {
+    "QuestionID": "Q43",
+    "Content": "In a Block-Based Storage model, how is data stored?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "As objects with detailed metadata" },
+      { "id": "B", "text": "In a hierarchical file structure" },
+      { "id": "C", "text": "As fixed-size blocks with no additional metadata, using a unique identifier" },
+      { "id": "D", "text": "As key-value pairs" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C2",
+    "LecID": "C2-L1"
+  },
+  {
+    "QuestionID": "Q44",
+    "Content": "Which storage model organizes data in a hierarchical directory structure?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Block-based Storage" },
+      { "id": "B", "text": "File-based Storage" },
+      { "id": "C", "text": "Object-based Storage" },
+      { "id": "D", "text": "Column-based Store" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C2",
+    "LecID": "C2-L1"
+  },
+  {
+    "QuestionID": "Q45",
+    "Content": "What are the key components of data in Object Storage?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Data, file path, and hierarchy" },
+      { "id": "B", "text": "Data, metadata, and a unique identifier (OID)" },
+      { "id": "C", "text": "Data, block ID, and sector" },
+      { "id": "D", "text": "Data, relational schema, and timestamp" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C2",
+    "LecID": "C2-L1"
+  },
+  {
+    "QuestionID": "Q46",
+    "Content": "Which of the following is a major disadvantage of Object Storage?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Lack of scalability" },
+      { "id": "B", "text": "High latency, making it slower for real-time applications" },
+      { "id": "C", "text": "Inability to store unstructured data" },
+      { "id": "D", "text": "Requires constant rebalancing" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C2",
+    "LecID": "C2-L1"
+  },
+  {
+    "QuestionID": "Q47",
+    "Content": "How does Big Data architecture address the issue of copying massive data over a network?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "By increasing the RAM of a single machine" },
+      { "id": "B", "text": "By moving the data to the workers" },
+      { "id": "C", "text": "By moving the workers (computation) to the data" },
+      { "id": "D", "text": "By using only block storage" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C2",
+    "LecID": "C2-L2"
+  },
+  {
+    "QuestionID": "Q48",
+    "Content": "Scaling a database by adding hardware upgrades (like a faster CPU or more memory) to a single machine is known as:",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Horizontal scaling (Scale-out)" },
+      { "id": "B", "text": "Vertical scaling (Scale-up)" },
+      { "id": "C", "text": "Database sharding" },
+      { "id": "D", "text": "Partitioning" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C2",
+    "LecID": "C2-L2"
+  },
+  {
+    "QuestionID": "Q49",
+    "Content": "Horizontal Scaling (Scale-out) typically requires which of the following?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "A single, powerful supercomputer" },
+      { "id": "B", "text": "Database sharding and probably replication" },
+      { "id": "C", "text": "Upgrading the existing RAM" },
+      { "id": "D", "text": "Decreasing the number of nodes" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C2",
+    "LecID": "C2-L2"
+  },
+  {
+    "QuestionID": "Q50",
+    "Content": "According to the CAP Theorem, a distributed database can guarantee at most how many of its three desirable properties simultaneously?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "One" },
+      { "id": "B", "text": "Two" },
+      { "id": "C", "text": "Three" },
+      { "id": "D", "text": "Zero" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C2",
+    "LecID": "C2-L3"
+  },
+  {
+    "QuestionID": "Q51",
+    "Content": "In the CAP Theorem, what does \"Consistency\" mean?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "The system continues to operate despite network partitions" },
+      { "id": "B", "text": "Every request receives a response quickly" },
+      { "id": "C", "text": "Every node always sees the same data at any given instance" },
+      { "id": "D", "text": "Data is always formatted in the same schema" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C2",
+    "LecID": "C2-L3"
+  },
+  {
+    "QuestionID": "Q52",
+    "Content": "Which CAP property ensures the system continues to work as expected even in the presence of partial network failures?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Consistency" },
+      { "id": "B", "text": "Availability" },
+      { "id": "C", "text": "Partition Tolerance" },
+      { "id": "D", "text": "Durability" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C2",
+    "LecID": "C2-L3"
+  },
+  {
+    "QuestionID": "Q53",
+    "Content": "Large-scale databases like Google and Amazon often sacrifice which property to ensure 24/7 Availability and Partition Tolerance?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Strict Consistency" },
+      { "id": "B", "text": "Eventual Consistency" },
+      { "id": "C", "text": "Scalability" },
+      { "id": "D", "text": "Redundancy" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C2",
+    "LecID": "C2-L3"
+  },
+  {
+    "QuestionID": "Q54",
+    "Content": "What does the acronym BASE stand for in the context of NoSQL databases?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Basic Availability, Secure Environment" },
+      { "id": "B", "text": "Broad Access, Standard Extraction" },
+      { "id": "C", "text": "Block Application, Storage Engine" },
+      { "id": "D", "text": "Basically Available, Soft state, Eventually consistent" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C2",
+    "LecID": "C2-L3"
+  },
+  {
+    "QuestionID": "Q55",
+    "Content": "Redis and Memcached are examples of which type of NoSQL database?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Column-based Store" },
+      { "id": "B", "text": "Document-based Store" },
+      { "id": "C", "text": "Key-Value Store" },
+      { "id": "D", "text": "Graph-based Store" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C2",
+    "LecID": "C2-L4"
+  },
+  {
+    "QuestionID": "Q56",
+    "Content": "MongoDB and CouchDB belong to which NoSQL database category?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Key-Value Store" },
+      { "id": "B", "text": "Column-based Store" },
+      { "id": "C", "text": "Graph-based Store" },
+      { "id": "D", "text": "Document-based Store" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C2",
+    "LecID": "C2-L4"
+  },
+  {
+    "QuestionID": "Q57",
+    "Content": "Which NoSQL database type uses edges and nodes to represent and store interconnected data?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Graph-based Store" },
+      { "id": "B", "text": "Column-based Store" },
+      { "id": "C", "text": "Document-based Store" },
+      { "id": "D", "text": "Key-Value Store" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C2",
+    "LecID": "C2-L4"
+  },
+  {
+    "QuestionID": "Q58",
+    "Content": "HBase and Cassandra are examples of which NoSQL database type?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Graph-based Store" },
+      { "id": "B", "text": "Document-based Store" },
+      { "id": "C", "text": "Column-based Store (Extensible-record)" },
+      { "id": "D", "text": "Key-Value Store" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C2",
+    "LecID": "C2-L4"
+  },
+  {
+    "QuestionID": "Q59",
+    "Content": "What is a key characteristic of NewSQL databases?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "They abandon SQL entirely" },
+      { "id": "B", "text": "They are strictly limited to single-node deployments" },
+      { "id": "C", "text": "They provide a SQL interface but scale better than traditional built-in engines" },
+      { "id": "D", "text": "They are purely object-based storages" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C2",
+    "LecID": "C2-L4"
+  },
+  {
+    "QuestionID": "Q60",
+    "Content": "In Hadoop's Distributed File System (HDFS), what is the master node called?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Data Node" },
+      { "id": "B", "text": "Secondary Name Node" },
+      { "id": "C", "text": "Name Node" },
+      { "id": "D", "text": "Chunk Server" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C2",
+    "LecID": "C2-L5"
+  },
+  {
+    "QuestionID": "Q61",
+    "Content": "What is the primary role of Data Nodes in HDFS?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Managing the file system namespace" },
+      { "id": "B", "text": "Performing block operations and storing the actual data" },
+      { "id": "C", "text": "Serving as the client proxy" },
+      { "id": "D", "text": "Maintaining global metadata" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C2",
+    "LecID": "C2-L5"
+  },
+  {
+    "QuestionID": "Q62",
+    "Content": "What is the role of the Secondary Name Node in HDFS?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It acts as a checkpoint node" },
+      { "id": "B", "text": "It stores the actual user data blocks" },
+      { "id": "C", "text": "It acts as the primary master if the Name Node fails instantly" },
+      { "id": "D", "text": "It executes MapReduce jobs" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C2",
+    "LecID": "C2-L5"
+  },
+  {
+    "QuestionID": "Q63",
+    "Content": "How does a Distributed File System like HDFS handle hardware failure?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "By requiring a manual reboot of the entire cluster" },
+      { "id": "B", "text": "By automatically replicating chunks on different machines" },
+      { "id": "C", "text": "By saving all data on a single highly reliable disk" },
+      { "id": "D", "text": "By moving all computation away from the data" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C2",
+    "LecID": "C2-L5"
+  },
+  {
+    "QuestionID": "Q64",
+    "Content": "In HDFS, what does the Name Node do when it detects that a block replica is lost due to node failure?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It stops the entire system to prevent data corruption" },
+      { "id": "B", "text": "It deletes the remaining replicas" },
+      { "id": "C", "text": "It replicates the lost blocks in another available node" },
+      { "id": "D", "text": "It waits for the user to manually restore the node" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C2",
+    "LecID": "C2-L5"
+  },
+  {
+    "QuestionID": "Q65",
+    "Content": "According to the HDFS write strategy, where is the second replica of a block typically placed?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "On the exact same node as the client" },
+      { "id": "B", "text": "On a node on a different rack" },
+      { "id": "C", "text": "On a different node on the same rack as the client" },
+      { "id": "D", "text": "On the Secondary Name Node" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C2",
+    "LecID": "C2-L5"
+  },
+  {
+    "QuestionID": "Q66",
+    "Content": "Which phrase best defines \"Eventual Consistency\"?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Data is strictly consistent at every millisecond" },
+      { "id": "B", "text": "The system ensures that all replicas will eventually become consistent after some time" },
+      { "id": "C", "text": "The system never achieves full consistency" },
+      { "id": "D", "text": "Consistency is only guaranteed on the master node" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C2",
+    "LecID": "C2-L3"
+  },
+  {
+    "QuestionID": "Q67",
+    "Content": "Which of the following is true about Object Storage scalability compared to File Storage?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It is highly scalable with a flat namespace and no need for rebalancing" },
+      { "id": "B", "text": "It is strictly limited by hierarchical folders" },
+      { "id": "C", "text": "It scales vertically only" },
+      { "id": "D", "text": "It cannot store petabytes of data" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C2",
+    "LecID": "C2-L1"
+  },
+  {
+    "QuestionID": "Q68",
+    "Content": "Which storage model relies heavily on APIs (like RESTful APIs) rather than traditional file paths for access?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Block Storage" },
+      { "id": "B", "text": "Object Storage" },
+      { "id": "C", "text": "Relational Databases" },
+      { "id": "D", "text": "Traditional File Systems" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C2",
+    "LecID": "C2-L1"
+  },
+  {
+    "QuestionID": "Q69",
+    "Content": "In the HDFS Architecture, what connects the different racks containing Data Nodes?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Checkpoint nodes" },
+      { "id": "B", "text": "Switches" },
+      { "id": "C", "text": "Object Servers" },
+      { "id": "D", "text": "SANs" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C2",
+    "LecID": "C2-L5"
+  },
+  {
+    "QuestionID": "Q70",
+    "Content": "Why is Object Storage considered highly flexible for modern use cases?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It provides high-speed I/O for transactional databases" },
+      { "id": "B", "text": "It is suitable for cloud-native applications, AI/ML workloads, and handling unstructured data" },
+      { "id": "C", "text": "It enforces strict ACID compliance natively" },
+      { "id": "D", "text": "It organizes data in rigid tables and rows" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C2",
+    "LecID": "C2-L1"
+  },
+  {
+    "QuestionID": "Q71",
+    "Content": "What is Big Data Storage primarily designed for?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Eliminating the need for cloud storage" },
+      { "id": "B", "text": "Managing small structured datasets" },
+      { "id": "C", "text": "Replacing relational databases" },
+      { "id": "D", "text": "Storing and managing large volumes of data efficiently" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C3",
+    "LecID": "C3-L1"
+  },
+  {
+    "QuestionID": "Q72",
+    "Content": "Which of the following is NOT a key characteristic of Big Data Storage?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "High availability and durability" },
+      { "id": "B", "text": "Cost efficiency" },
+      { "id": "C", "text": "Single-node architecture" },
+      { "id": "D", "text": "Scalability" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C3",
+    "LecID": "C3-L1"
+  },
+  {
+    "QuestionID": "Q73",
+    "Content": "Which storage type organizes data as objects with metadata and unique identifiers?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Object Storage" },
+      { "id": "B", "text": "Block Storage" },
+      { "id": "C", "text": "File Storage" },
+      { "id": "D", "text": "Columnar Storage" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C3",
+    "LecID": "C3-L2"
+  },
+  {
+    "QuestionID": "Q74",
+    "Content": "Which of the following is an example of an Object Storage system?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "MySQL" },
+      { "id": "B", "text": "PostgreSQL" },
+      { "id": "C", "text": "Google Cloud Storage" },
+      { "id": "D", "text": "Apache HBase" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C3",
+    "LecID": "C3-L2"
+  },
+  {
+    "QuestionID": "Q75",
+    "Content": "Which of the following is an example of a Distributed File System (DFS)?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Amazon S3" },
+      { "id": "B", "text": "Hadoop Distributed File System (HDFS)" },
+      { "id": "C", "text": "Google BigQuery" },
+      { "id": "D", "text": "MongoDB" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C3",
+    "LecID": "C3-L3"
+  },
+  {
+    "QuestionID": "Q76",
+    "Content": "What is the main benefit of co-locating storage and compute in Big Data Storage?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Eliminates the need for data replication" },
+      { "id": "B", "text": "Allows real-time updates of databases" },
+      { "id": "C", "text": "Decreases storage costs" },
+      { "id": "D", "text": "Reduces network congestion and improves performance" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C3",
+    "LecID": "C3-L3"
+  },
+  {
+    "QuestionID": "Q77",
+    "Content": "Which company developed the Google File System (GFS) for handling large-scale data processing?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Microsoft" },
+      { "id": "B", "text": "IBM" },
+      { "id": "C", "text": "Amazon" },
+      { "id": "D", "text": "Google" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C3",
+    "LecID": "C3-L3"
+  },
+  {
+    "QuestionID": "Q78",
+    "Content": "Which distributed storage system was developed as an open-source equivalent of GFS?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "MongoDB" },
+      { "id": "B", "text": "Cassandra" },
+      { "id": "C", "text": "HDFS" },
+      { "id": "D", "text": "NoSQL" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C3",
+    "LecID": "C3-L3"
+  },
+  {
+    "QuestionID": "Q79",
+    "Content": "What was the goal of The New York Times' cloud computing project using AWS?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "To replace traditional storage with object storage" },
+      { "id": "B", "text": "To convert 4TB of TIFF images to PDFs" },
+      { "id": "C", "text": "To analyze social media trends" },
+      { "id": "D", "text": "To develop a new search engine" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C3",
+    "LecID": "C3-L1"
+  },
+  {
+    "QuestionID": "Q80",
+    "Content": "What is the recommended strategy for storing Big Data to minimize failures?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Decreasing file size to reduce storage load" },
+      { "id": "B", "text": "Avoiding cloud-based storage solutions" },
+      { "id": "C", "text": "Replicating data across multiple nodes" },
+      { "id": "D", "text": "Using a single centralized server" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C3",
+    "LecID": "C3-L3"
+  },
+  {
+    "QuestionID": "Q81",
+    "Content": "What is the primary advantage of Distributed File Systems over traditional storage?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Eliminates the risk of hardware failures" },
+      { "id": "B", "text": "Reduces the need for metadata" },
+      { "id": "C", "text": "Ensures scalability and fault tolerance" },
+      { "id": "D", "text": "Eliminates data redundancy" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C3",
+    "LecID": "C3-L3"
+  },
+  {
+    "QuestionID": "Q82",
+    "Content": "What is the core idea behind Hadoop’s storage model?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Move compute processes close to the data" },
+      { "id": "B", "text": "Use high-end proprietary hardware" },
+      { "id": "C", "text": "Store all data in a relational database" },
+      { "id": "D", "text": "Avoid file replication for efficiency" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C3",
+    "LecID": "C3-L3"
+  },
+  {
+    "QuestionID": "Q83",
+    "Content": "In HDFS, what is the default block size in Hadoop 3.x?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "32 MB" },
+      { "id": "B", "text": "64 MB" },
+      { "id": "C", "text": "128 MB" },
+      { "id": "D", "text": "256 MB" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C3",
+    "LecID": "C3-L3"
+  },
+  {
+    "QuestionID": "Q84",
+    "Content": "Which of the following describes the CAP theorem in distributed storage?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "The CAP theorem does not apply to modern cloud systems" },
+      { "id": "B", "text": "A distributed system can guarantee all three: Consistency, Availability, and Partition Tolerance" },
+      { "id": "C", "text": "A distributed system can provide at most two out of three: Consistency, Availability, Partition Tolerance" },
+      { "id": "D", "text": "Only relational databases follow the CAP theorem" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C3",
+    "LecID": "C3-L2"
+  },
+  {
+    "QuestionID": "Q85",
+    "Content": "Which storage model is commonly used in AI/ML workloads and large-scale analytics?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Key-Value Stores" },
+      { "id": "B", "text": "Columnar Storage" },
+      { "id": "C", "text": "Relational Databases" },
+      { "id": "D", "text": "Object Storage" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C3",
+    "LecID": "C3-L2"
+  },
+  {
+    "QuestionID": "Q86",
+    "Content": "Which of the following is NOT an advantage of Object Storage?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Suitable for cloud storage and backups" },
+      { "id": "B", "text": "Highly scalable" },
+      { "id": "C", "text": "Metadata-driven organization" },
+      { "id": "D", "text": "Efficient for structured database queries" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C3",
+    "LecID": "C3-L2"
+  },
+  {
+    "QuestionID": "Q87",
+    "Content": "What does eventual consistency mean in distributed storage?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Data consistency is only guaranteed in cloud storage" },
+      { "id": "B", "text": "Consistency is more important than availability" },
+      { "id": "C", "text": "Data may be inconsistent for a short time but will eventually become consistent" },
+      { "id": "D", "text": "Data is always consistent across all nodes immediately" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C3",
+    "LecID": "C3-L2"
+  },
+  {
+    "QuestionID": "Q88",
+    "Content": "Why is data replication essential in distributed storage systems?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "To replace the need for backups" },
+      { "id": "B", "text": "To improve read performance and fault tolerance" },
+      { "id": "C", "text": "To increase latency" },
+      { "id": "D", "text": "To minimize cloud storage costs" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C3",
+    "LecID": "C3-L2"
+  },
+  {
+    "QuestionID": "Q89",
+    "Content": "What is the main trade-off when using erasure coding instead of full replication in distributed storage?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Lower storage costs but increased compute overhead" },
+      { "id": "B", "text": "Higher storage costs but faster retrieval" },
+      { "id": "C", "text": "Reduced fault tolerance" },
+      { "id": "D", "text": "Limited scalability" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C3",
+    "LecID": "C3-L2"
+  },
+  {
+    "QuestionID": "Q90",
+    "Content": "Which open-source distributed storage system is optimized for cloud-native applications?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Ceph" },
+      { "id": "B", "text": "Apache Kafka" },
+      { "id": "C", "text": "MySQL" },
+      { "id": "D", "text": "MongoDB" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C3",
+    "LecID": "C3-L3"
+  },
+  {
+    "QuestionID": "Q91",
+    "Content": "What does Big Data storage primarily refer to?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Only storing relational databases" },
+      { "id": "B", "text": "Infrastructure to store large volumes of structured, semi-structured, and unstructured data" },
+      { "id": "C", "text": "Storing data on a single local hard drive" },
+      { "id": "D", "text": "Caching data in RAM" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C3",
+    "LecID": "C3-L3"
+  },
+  {
+    "QuestionID": "Q92",
+    "Content": "Which of the following best describes \"Horizontal Scaling\" (Scale-out)?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Upgrading a single machine with a faster CPU" },
+      { "id": "B", "text": "Adding more RAM to a single node" },
+      { "id": "C", "text": "Adding more machines to the system" },
+      { "id": "D", "text": "Partitioning data vertically" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C3",
+    "LecID": "C3-L3"
+  },
+  {
+    "QuestionID": "Q93",
+    "Content": "According to the CAP theorem, which property ensures that the system continues to operate despite network partitions?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Consistency" },
+      { "id": "B", "text": "Availability" },
+      { "id": "C", "text": "Partition Tolerance" },
+      { "id": "D", "text": "Scalability" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C3",
+    "LecID": "C3-L3"
+  },
+  {
+    "QuestionID": "Q94",
+    "Content": "To ensure 24/7 Availability, large-scale databases like Google and Amazon often sacrifice which CAP property?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Partition Tolerance" },
+      { "id": "B", "text": "Strict Consistency" },
+      { "id": "C", "text": "Redundancy" },
+      { "id": "D", "text": "Durability" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C3",
+    "LecID": "C3-L3"
+  },
+  {
+    "QuestionID": "Q95",
+    "Content": "What is the primary characteristic of a Block-based Storage model?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It uses a flat namespace with RESTful APIs" },
+      { "id": "B", "text": "It stores data as fixed-size blocks with a unique identifier and no additional metadata" },
+      { "id": "C", "text": "It organizes data in a hierarchical file structure" },
+      { "id": "D", "text": "It uses a graph structure with nodes and edges" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C3",
+    "LecID": "C3-L1"
+  },
+  {
+    "QuestionID": "Q96",
+    "Content": "Which of the following NoSQL databases uses a \"Big Hash Table of keys and values\"?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Key-Value Store" },
+      { "id": "B", "text": "Column-based Store" },
+      { "id": "C", "text": "Document-based Store" },
+      { "id": "D", "text": "Graph-based Store" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C3",
+    "LecID": "C3-L4"
+  },
+  {
+    "QuestionID": "Q97",
+    "Content": "MongoDB and CouchDB are examples of which type of NoSQL database?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Graph-based Store" },
+      { "id": "B", "text": "Column-based Store" },
+      { "id": "C", "text": "Document-based Store" },
+      { "id": "D", "text": "Key-Value Store" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C3",
+    "LecID": "C3-L4"
+  },
+  {
+    "QuestionID": "Q98",
+    "Content": "Which NoSQL database type is best suited for interconnected data using nodes and edges?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Document-based Store" },
+      { "id": "B", "text": "Key-Value Store" },
+      { "id": "C", "text": "Column-based Store" },
+      { "id": "D", "text": "Graph-based Store" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C3",
+    "LecID": "C3-L4"
+  },
+  {
+    "QuestionID": "Q99",
+    "Content": "What is a key feature of VoltDB as a NewSQL database?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It relies on disk-based storage for slow reads" },
+      { "id": "B", "text": "It uses a Master-Slave architecture like Hadoop" },
+      { "id": "C", "text": "It provides main-memory storage, single-threaded execution, and no locking" },
+      { "id": "D", "text": "It abandons SQL entirely" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C3",
+    "LecID": "C3-L4"
+  },
+  {
+    "QuestionID": "Q100",
+    "Content": "Which storage model manages data using a flat namespace, metadata, and unique identifiers (OIDs)?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "File-based Storage" },
+      { "id": "B", "text": "Block-based Storage" },
+      { "id": "C", "text": "Object Storage" },
+      { "id": "D", "text": "Relational Databases" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C3",
+    "LecID": "C3-L1"
+  },
+  {
+    "QuestionID": "Q101",
+    "Content": "Which access mechanism is primarily used in Object Storage?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Traditional file paths" },
+      { "id": "B", "text": "Block access interface" },
+      { "id": "C", "text": "API-based access (e.g., RESTful APIs)" },
+      { "id": "D", "text": "SQL queries" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C3",
+    "LecID": "C3-L1"
+  },
+  {
+    "QuestionID": "Q102",
+    "Content": "In the HDFS Master-Slave architecture, what is the primary role of the Name Node?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Performing block operations" },
+      { "id": "B", "text": "Managing the File System Name Space and block mappings" },
+      { "id": "C", "text": "Acting as a checkpoint node" },
+      { "id": "D", "text": "Storing the actual physical data chunks" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C3",
+    "LecID": "C3-L5"
+  },
+  {
+    "QuestionID": "Q103",
+    "Content": "What are the \"work horses\" in HDFS that handle actual block operations and replication?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Data Nodes" },
+      { "id": "B", "text": "Name Nodes" },
+      { "id": "C", "text": "Secondary Name Nodes" },
+      { "id": "D", "text": "Object Servers" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C3",
+    "LecID": "C3-L5"
+  },
+  {
+    "QuestionID": "Q104",
+    "Content": "Why is computation brought directly to the data in a Distributed File System like HDFS?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "To increase the CPU speed" },
+      { "id": "B", "text": "Because data nodes don't have memory" },
+      { "id": "C", "text": "To minimize network traffic and avoid moving massive amounts of data" },
+      { "id": "D", "text": "Because the Name Node requires it" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C3",
+    "LecID": "C3-L5"
+  },
+  {
+    "QuestionID": "Q105",
+    "Content": "In HDFS, what does the Name Node use to detect Data Node failures?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Heartbeat signals" },
+      { "id": "B", "text": "File checksums" },
+      { "id": "C", "text": "REST APIs" },
+      { "id": "D", "text": "Secondary Name Node polling" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C3",
+    "LecID": "C3-L5"
+  },
+  {
+    "QuestionID": "Q106",
+    "Content": "How does HDFS achieve fault tolerance when a Data Node fails?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It halts the entire cluster" },
+      { "id": "B", "text": "It retrieves data from a local cache" },
+      { "id": "C", "text": "The Name Node replicates the lost blocks to another available node" },
+      { "id": "D", "text": "It asks the client to upload the data again" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C3",
+    "LecID": "C3-L3"
+  },
+  {
+    "QuestionID": "Q107",
+    "Content": "Which of the following is considered a disadvantage of Object Storage?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Poor scalability" },
+      { "id": "B", "text": "High latency, making it slower for real-time applications" },
+      { "id": "C", "text": "High cost per GB" },
+      { "id": "D", "text": "Cannot store unstructured data" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C3",
+    "LecID": "C3-L3"
+  },
+  {
+    "QuestionID": "Q108",
+    "Content": "What is the role of the Secondary Name Node in HDFS?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It serves as a backup Data Node" },
+      { "id": "B", "text": "It executes MapReduce jobs" },
+      { "id": "C", "text": "It provides block mappings to clients directly" },
+      { "id": "D", "text": "It acts as a Checkpoint node and periodically backs up the Name Node's metadata" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C3",
+    "LecID": "C3-L1"
+  },
+  {
+    "QuestionID": "Q109",
+    "Content": "Which storage solution is highly suitable for cloud-native applications, AI/ML workloads, and big data analytics due to its flexibility?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Object Storage" },
+      { "id": "B", "text": "Block Storage" },
+      { "id": "C", "text": "Traditional RDBMS" },
+      { "id": "D", "text": "Vertical Partitioning" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C3",
+    "LecID": "C3-L3"
+  },
+  {
+    "QuestionID": "Q110",
+    "Content": "In HDFS, how does the system decide which replica a client should read from to optimize bandwidth?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Random selection" },
+      { "id": "B", "text": "Alphabetical order of node names" },
+      { "id": "C", "text": "Rack awareness based on network topology" },
+      { "id": "D", "text": "Asking the Secondary Name Node" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C3",
+    "LecID": "C3-L3"
+  },
+  {
+    "QuestionID": "Q111",
+    "Content": "What is the primary characteristic of the Batch Processing Paradigm?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Processing data continuously one record at a time" },
+      { "id": "B", "text": "Processing large volumes of static data in scheduled jobs (offline)" },
+      { "id": "C", "text": "Processing data in real-time as it flows" },
+      { "id": "D", "text": "Executing serverless functions on demand" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L1"
+  },
+  {
+    "QuestionID": "Q112",
+    "Content": "Which of the following frameworks is a typical example of Batch Processing?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Apache Storm" },
+      { "id": "B", "text": "Apache Kafka" },
+      { "id": "C", "text": "Hadoop MapReduce" },
+      { "id": "D", "text": "AWS Lambda" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L1"
+  },
+  {
+    "QuestionID": "Q113",
+    "Content": "What does \"Micro-batch Processing\" entail?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Processing all historical data overnight" },
+      { "id": "B", "text": "Processing data in small batches at very short intervals (near real-time)" },
+      { "id": "C", "text": "Processing data continuously one record at a time" },
+      { "id": "D", "text": "Storing data in a graph database" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L1"
+  },
+  {
+    "QuestionID": "Q114",
+    "Content": "Spark Structured Streaming is a typical framework for which processing paradigm?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Micro-batch Processing" },
+      { "id": "B", "text": "Graph Processing" },
+      { "id": "C", "text": "Native Stream Processing" },
+      { "id": "D", "text": "Serverless Computing" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C4",
+    "LecID": "C4-L1"
+  },
+  {
+    "QuestionID": "Q115",
+    "Content": "Which hybrid architecture combines both batch and stream processing pipelines for historical and real-time data analysis?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Unified Architecture" },
+      { "id": "B", "text": "Kappa Architecture" },
+      { "id": "C", "text": "Lambda Architecture" },
+      { "id": "D", "text": "Cloud Architecture" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L1"
+  },
+  {
+    "QuestionID": "Q116",
+    "Content": "What is the main advantage of the Kappa Architecture over the Lambda Architecture?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It provides higher accuracy using a separate batch layer" },
+      { "id": "B", "text": "It uses a simpler stream-only architecture for both real-time and batch data" },
+      { "id": "C", "text": "It relies entirely on Hadoop MapReduce" },
+      { "id": "D", "text": "It does not require a message broker" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L1"
+  },
+  {
+    "QuestionID": "Q117",
+    "Content": "According to the Kappa Architecture, how is batch processing handled?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Using a separate Hadoop cluster" },
+      { "id": "B", "text": "By treating batch as a replay of streams" },
+      { "id": "C", "text": "By using the Lambda speed layer" },
+      { "id": "D", "text": "Batch processing is completely impossible" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L1"
+  },
+  {
+    "QuestionID": "Q118",
+    "Content": "Which modern paradigm uses a single processing model to handle both batch and streaming in one system?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Lambda Architecture" },
+      { "id": "B", "text": "Micro-batch Processing" },
+      { "id": "C", "text": "Unified Processing (SOTA)" },
+      { "id": "D", "text": "Interactive Querying" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L1"
+  },
+  {
+    "QuestionID": "Q119",
+    "Content": "Which of the following frameworks is considered a Unified Processing engine?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Apache Storm" },
+      { "id": "B", "text": "Hadoop MapReduce" },
+      { "id": "C", "text": "Apache Flink" },
+      { "id": "D", "text": "HDFS" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L1"
+  },
+  {
+    "QuestionID": "Q120",
+    "Content": "Which of the following is a key characteristic of the Cloud & Serverless Paradigm?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "High manual infrastructure management" },
+      { "id": "B", "text": "Pay-as-you-go pricing and no infrastructure management (serverless)" },
+      { "id": "C", "text": "Strict reliance on on-premise hardware" },
+      { "id": "D", "text": "Inability to scale elastically" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L1"
+  },
+  {
+    "QuestionID": "Q121",
+    "Content": "Which of the following is an example of a Cloud & Serverless service?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "AWS Lambda" },
+      { "id": "B", "text": "Apache Hadoop" },
+      { "id": "C", "text": "Apache Kafka" },
+      { "id": "D", "text": "MongoDB" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C4",
+    "LecID": "C4-L1"
+  },
+  {
+    "QuestionID": "Q122",
+    "Content": "In the MapReduce programming model, what is the purpose of the Map function?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "To process a set of all records in batches" },
+      { "id": "B", "text": "To process each record sequentially and independently" },
+      { "id": "C", "text": "To schedule tasks across the cluster" },
+      { "id": "D", "text": "To replace the Reducer entirely" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L1"
+  },
+  {
+    "QuestionID": "Q123",
+    "Content": "What does the Reduce function do in the MapReduce model?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Processes each record sequentially and independently" },
+      { "id": "B", "text": "Processes a set of all records in batches to summarize/aggregate them" },
+      { "id": "C", "text": "Stores data permanently on disk" },
+      { "id": "D", "text": "Divides the input data into splits" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L1"
+  },
+  {
+    "QuestionID": "Q124",
+    "Content": "What is a common use case for the Stream Processing paradigm?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Complex data warehousing" },
+      { "id": "B", "text": "Fraud detection and real-time analytics" },
+      { "id": "C", "text": "Training large static machine learning models" },
+      { "id": "D", "text": "Generating monthly financial reports" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L1"
+  },
+  {
+    "QuestionID": "Q125",
+    "Content": "Which framework is known for \"Native stream processing\" rather than micro-batching?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Apache Spark" },
+      { "id": "B", "text": "Apache Flink" },
+      { "id": "C", "text": "Hadoop MapReduce" },
+      { "id": "D", "text": "Hive" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L1"
+  },
+  {
+    "QuestionID": "Q126",
+    "Content": "Where do the core terms \"Map\" and \"Reduce\" originate from?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Object-Oriented Programming" },
+      { "id": "B", "text": "Functional Language (e.g., Lisp)" },
+      { "id": "C", "text": "Relational Databases" },
+      { "id": "D", "text": "Assembly Language" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L2"
+  },
+  {
+    "QuestionID": "Q127",
+    "Content": "What is the primary role of the underlying MapReduce runtime system?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It only compiles the code" },
+      { "id": "B", "text": "It acts as a database storage engine" },
+      { "id": "C", "text": "It automatically parallelizes computation and handles machine failures" },
+      { "id": "D", "text": "It generates random data splits" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L2"
+  },
+  {
+    "QuestionID": "Q128",
+    "Content": "How does the Map function process its input records?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It processes each record sequentially and independently" },
+      { "id": "B", "text": "It processes the set of all records in batches" },
+      { "id": "C", "text": "It waits for the Reduce function to finish first" },
+      { "id": "D", "text": "It processes data using a graph structure" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C4",
+    "LecID": "C4-L2"
+  },
+  {
+    "QuestionID": "Q129",
+    "Content": "What is the expected output format of a Map operation?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "A single aggregated number" },
+      { "id": "B", "text": "A structured database table" },
+      { "id": "C", "text": "Unstructured text files" },
+      { "id": "D", "text": "A set of intermediate <key, value> pairs" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C4",
+    "LecID": "C4-L2"
+  },
+  {
+    "QuestionID": "Q130",
+    "Content": "What does \"Data Locality Optimization\" mean in MapReduce?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Replicating data to all nodes simultaneously" },
+      { "id": "B", "text": "Running the map task on a node where the input data resides" },
+      { "id": "C", "text": "Sending all data to a single central server" },
+      { "id": "D", "text": "Saving the final output locally" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L2"
+  },
+  {
+    "QuestionID": "Q131",
+    "Content": "What is the recommended size for an input split in MapReduce?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "The entire size of the dataset" },
+      { "id": "B", "text": "1 Megabyte" },
+      { "id": "C", "text": "The size of an HDFS block (default 128 MB)" },
+      { "id": "D", "text": "Determined strictly by the amount of RAM available" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L2"
+  },
+  {
+    "QuestionID": "Q132",
+    "Content": "Where do Map tasks write their intermediate output?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Directly into the final output database" },
+      { "id": "B", "text": "On the local disk of the worker node" },
+      { "id": "C", "text": "Into the global HDFS with high replication" },
+      { "id": "D", "text": "To the application master's memory" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L2"
+  },
+  {
+    "QuestionID": "Q133",
+    "Content": "Why is the intermediate output of Map tasks NOT written to HDFS?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "HDFS cannot store <key, value> pairs" },
+      { "id": "B", "text": "HDFS does not support fast writes" },
+      { "id": "C", "text": "It is intermediate output that is thrown away later, making HDFS replication overkill" },
+      { "id": "D", "text": "The MapReduce framework does not have permission to write to HDFS" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L2"
+  },
+  {
+    "QuestionID": "Q134",
+    "Content": "What happens during the \"Shuffle\" step in MapReduce?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "The system sorts the map outputs by key and transfers them to the reducers" },
+      { "id": "B", "text": "The system randomly deletes invalid data" },
+      { "id": "C", "text": "The system reschedules failed tasks" },
+      { "id": "D", "text": "The system compresses the final output" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C4",
+    "LecID": "C4-L2"
+  },
+  {
+    "QuestionID": "Q135",
+    "Content": "Do Reduce tasks typically benefit from Data Locality like Map tasks?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Yes, they always run on the exact same node as the data" },
+      { "id": "B", "text": "Yes, they only process data from their local disk" },
+      { "id": "C", "text": "No, they must execute on the master node" },
+      { "id": "D", "text": "No, their input comes from the outputs of all mappers across the network" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C4",
+    "LecID": "C4-L2"
+  },
+  {
+    "QuestionID": "Q136",
+    "Content": "In the \"Divide and Conquer\" approach, what does the MapReduce runtime add to your base application?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Automatic code generation" },
+      { "id": "B", "text": "Only SQL querying capabilities" },
+      { "id": "C", "text": "Distribution, fault tolerance, replication, monitoring, and load balancing" },
+      { "id": "D", "text": "An interactive graphical user interface" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L2"
+  },
+  {
+    "QuestionID": "Q137",
+    "Content": "Which of the following is a strict characteristic of MapReduce job execution?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Map tasks and reduce tasks run exactly at the same time" },
+      { "id": "B", "text": "All map tasks should be completed before the reduce operation starts" },
+      { "id": "C", "text": "Reduce tasks must start before map tasks" },
+      { "id": "D", "text": "Map tasks can only output a single key" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L2"
+  },
+  {
+    "QuestionID": "Q138",
+    "Content": "What happens to a map task's output immediately before it is written to the local disk?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It is sent over the network to HDFS" },
+      { "id": "B", "text": "It is buffered in a circular memory, partitioned, and sorted by key" },
+      { "id": "C", "text": "It is printed to the console" },
+      { "id": "D", "text": "It is immediately aggregated by a Reducer" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L2"
+  },
+  {
+    "QuestionID": "Q139",
+    "Content": "What typically determines the number of map tasks for a MapReduce job?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "The total number of input splits (blocks) of the input files" },
+      { "id": "B", "text": "The number of Reduce tasks" },
+      { "id": "C", "text": "The amount of available RAM on the Master node" },
+      { "id": "D", "text": "The length of the user's code" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C4",
+    "LecID": "C4-L2"
+  },
+  {
+    "QuestionID": "Q140",
+    "Content": "What is the primary function of the Reduce operation?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "To split the input data into smaller chunks" },
+      { "id": "B", "text": "To transform data into graphical formats" },
+      { "id": "C", "text": "To process a set of intermediate records in batches to summarize or aggregate them" },
+      { "id": "D", "text": "To read data from external databases" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L2"
+  },
+  {
+    "QuestionID": "Q141",
+    "Content": "Where do Map tasks write their intermediate output?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Directly into the final output database" },
+      { "id": "B", "text": "On the local disk of the worker node" },
+      { "id": "C", "text": "Into the global HDFS with high replication" },
+      { "id": "D", "text": "To the application master's memory" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L3"
+  },
+  {
+    "QuestionID": "Q142",
+    "Content": "What does \"Data Locality Optimization\" mean in MapReduce?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Replicating data to all nodes simultaneously" },
+      { "id": "B", "text": "Running the map task on a node where the input data resides" },
+      { "id": "C", "text": "Sending all data to a single central server" },
+      { "id": "D", "text": "Saving the final output locally" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L3"
+  },
+  {
+    "QuestionID": "Q143",
+    "Content": "What primarily determines the number of map tasks for a MapReduce job?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "The number of Reduce tasks" },
+      { "id": "B", "text": "The total number of input splits (or blocks) of the input files" },
+      { "id": "C", "text": "The amount of available RAM on the Master node" },
+      { "id": "D", "text": "The length of the user's code" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L3"
+  },
+  {
+    "QuestionID": "Q144",
+    "Content": "What is the recommended size for an input split in MapReduce?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "1 Megabyte" },
+      { "id": "B", "text": "The entire size of the dataset" },
+      { "id": "C", "text": "The size of an HDFS block (e.g., 128 MB)" },
+      { "id": "D", "text": "Determined strictly by the RAM available" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L3"
+  },
+  {
+    "QuestionID": "Q145",
+    "Content": "Where is the final output of a Reduce task typically stored?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "On the local disk of the reducer node" },
+      { "id": "B", "text": "In the Hadoop Distributed File System (HDFS) for reliability" },
+      { "id": "C", "text": "In the client's memory" },
+      { "id": "D", "text": "It is immediately deleted" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L3"
+  },
+  {
+    "QuestionID": "Q146",
+    "Content": "Why can't the \"Mean\" (average) function be used directly as a Combiner function?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Because it requires too much memory" },
+      { "id": "B", "text": "Because it is not commutative and associative (e.g., mean of means is not the overall mean)" },
+      { "id": "C", "text": "Because Combiners only work with strings" },
+      { "id": "D", "text": "Because it replaces the Reducer entirely" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L3"
+  },
+  {
+    "QuestionID": "Q147",
+    "Content": "In the YARN architecture, which component is responsible for coordinating the allocation of compute resources on the cluster?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Node Manager" },
+      { "id": "B", "text": "Application Master" },
+      { "id": "C", "text": "Resource Manager" },
+      { "id": "D", "text": "HDFS NameNode" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L3"
+  },
+  {
+    "QuestionID": "Q148",
+    "Content": "What happens during the Map side execution when the circular memory buffer reaches its threshold (e.g., 80%)?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "The Map task crashes with an OutOfMemory error" },
+      { "id": "B", "text": "A background thread starts to spill the contents to the local disk" },
+      { "id": "C", "text": "The data is sent directly to the Reducer" },
+      { "id": "D", "text": "The buffer size is automatically doubled" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L3"
+  },
+  {
+    "QuestionID": "Q149",
+    "Content": "Do Reduce tasks benefit from \"Data Locality\" in the same way Map tasks do?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Yes, they always run on the exact same node as the data" },
+      { "id": "B", "text": "Yes, they only process data from their local disk" },
+      { "id": "C", "text": "No, they must fetch sorted map outputs across the network from various mappers" },
+      { "id": "D", "text": "No, they execute entirely on the Master node" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L3"
+  },
+  {
+    "QuestionID": "Q150",
+    "Content": "According to Hadoop best practices, what is a recommended scaling factor to choose the right number of Reduce tasks?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Exactly equal to the number of Map tasks" },
+      { "id": "B", "text": "0.95 or 1.75 multiplied by (number of nodes * maximum containers per node)" },
+      { "id": "C", "text": "Always set it to 1" },
+      { "id": "D", "text": "10 to 100 per node" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L3"
+  },
+  {
+    "QuestionID": "Q151",
+    "Content": "What does it mean when a MapReduce job is \"uberized\"?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It is sent to a cloud server for execution" },
+      { "id": "B", "text": "The Application Master runs the tasks sequentially in the same JVM as itself because the job is very small" },
+      { "id": "C", "text": "The job is scheduled with the highest priority in YARN" },
+      { "id": "D", "text": "The job bypasses the Map phase entirely" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L3"
+  },
+  {
+    "QuestionID": "Q152",
+    "Content": "What is the default timeout period before the Application Master considers a hanging task (no progress reported) as failed?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "1 minute" },
+      { "id": "B", "text": "10 minutes" },
+      { "id": "C", "text": "1 hour" },
+      { "id": "D", "text": "0 (It never times out)" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L3"
+  },
+  {
+    "QuestionID": "Q153",
+    "Content": "By default, how many times will a task attempt to run (if it keeps failing) before the entire MapReduce job fails?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "2 times" },
+      { "id": "B", "text": "3 times" },
+      { "id": "C", "text": "4 times" },
+      { "id": "D", "text": "10 times" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L3"
+  },
+  {
+    "QuestionID": "Q154",
+    "Content": "What happens if two speculative task attempts run concurrently and one finishes successfully first?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Both are committed and the Reducer merges them" },
+      { "id": "B", "text": "The first one is committed, and the framework aborts/kills the slower attempt" },
+      { "id": "C", "text": "The system throws a data duplication error" },
+      { "id": "D", "text": "The Application Master crashes" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L3"
+  },
+  {
+    "QuestionID": "Q155",
+    "Content": "Which of the following is a strict requirement for performing a Map-side Join?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "The datasets must be unstructured" },
+      { "id": "B", "text": "The inputs must be partitioned and sorted by the same join key" },
+      { "id": "C", "text": "The join must be executed inside the Combiner" },
+      { "id": "D", "text": "There must be zero reduce tasks" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L3"
+  },
+  {
+    "QuestionID": "Q156",
+    "Content": "Which of the following is NOT one of the main independent entities in a YARN-based MapReduce job run?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "The client" },
+      { "id": "B", "text": "The YARN Resource Manager" },
+      { "id": "C", "text": "The Zookeeper server" },
+      { "id": "D", "text": "The MapReduce Application Master" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L4"
+  },
+  {
+    "QuestionID": "Q157",
+    "Content": "During the job submission process, which component is responsible for computing the input splits?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "The Resource Manager" },
+      { "id": "B", "text": "The Node Manager" },
+      { "id": "C", "text": "The JobSubmitter (Client)" },
+      { "id": "D", "text": "The Application Master" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L4"
+  },
+  {
+    "QuestionID": "Q158",
+    "Content": "What qualifies a MapReduce job to be run as an \"uber task\"?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "A job that runs entirely over the network" },
+      { "id": "B", "text": "A small job where the Application Master runs all tasks sequentially in its own JVM" },
+      { "id": "C", "text": "A job that bypasses the Map phase entirely" },
+      { "id": "D", "text": "A job that requires maximum CPU cores across the cluster" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L4"
+  },
+  {
+    "QuestionID": "Q159",
+    "Content": "Why is the job JAR file copied to the shared filesystem (HDFS) with a high replication factor (default 10) during job submission?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "To act as a backup in case the whole cluster fails" },
+      { "id": "B", "text": "So that there are lots of copies across the cluster for node managers to access quickly when running tasks" },
+      { "id": "C", "text": "Because HDFS requires all executable files to have a replication of 10" },
+      { "id": "D", "text": "To speed up the map phase computation" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L4"
+  },
+  {
+    "QuestionID": "Q160",
+    "Content": "During Task Assignment, which tasks are given higher priority when the Application Master requests containers from the Resource Manager?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Map tasks" },
+      { "id": "B", "text": "Reduce tasks" },
+      { "id": "C", "text": "Combiner tasks" },
+      { "id": "D", "text": "They have equal priority" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C4",
+    "LecID": "C4-L4"
+  },
+  {
+    "QuestionID": "Q161",
+    "Content": "When does the Application Master typically start requesting containers for reduce tasks?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Immediately when the job starts" },
+      { "id": "B", "text": "Only after all map tasks are 100% complete" },
+      { "id": "C", "text": "Not until 5% of map tasks have completed" },
+      { "id": "D", "text": "Before map tasks are requested" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L4"
+  },
+  {
+    "QuestionID": "Q162",
+    "Content": "During Task Execution, what is the name of the main Java class that executes the map or reduce task in a dedicated JVM?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "JobSubmitter" },
+      { "id": "B", "text": "MRAppMaster" },
+      { "id": "C", "text": "YarnChild" },
+      { "id": "D", "text": "NodeManager" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L4"
+  },
+  {
+    "QuestionID": "Q163",
+    "Content": "How does a running task (child process) report its progress and status back to the Application Master?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "By writing to an HDFS log file every second" },
+      { "id": "B", "text": "Through the umbilical interface every three seconds" },
+      { "id": "C", "text": "By sending emails to the client" },
+      { "id": "D", "text": "By directly updating the Resource Manager's web UI" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L4"
+  },
+  {
+    "QuestionID": "Q164",
+    "Content": "Regarding data locality constraints during scheduling, which of the following statements is true?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Both Map and Reduce tasks have data locality constraints." },
+      { "id": "B", "text": "Only Map tasks have data locality constraints that the scheduler tries to honor." },
+      { "id": "C", "text": "Only Reduce tasks have data locality constraints." },
+      { "id": "D", "text": "Neither Map nor Reduce tasks care about data locality." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L4"
+  },
+  {
+    "QuestionID": "Q165",
+    "Content": "Which component is called by the Application Master before any tasks run to create the final output directory, and after completion to clean up the working state?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "InputFormat" },
+      { "id": "B", "text": "FileInputFormat" },
+      { "id": "C", "text": "OutputCommitter" },
+      { "id": "D", "text": "NodeManager" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L4"
+  },
+  {
+    "QuestionID": "Q166",
+    "Content": "In the Mapper API, which method is called once at the start of the task?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "map()" },
+      { "id": "B", "text": "setup()" },
+      { "id": "C", "text": "cleanup()" },
+      { "id": "D", "text": "initialize()" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L5"
+  },
+  {
+    "QuestionID": "Q167",
+    "Content": "What is the purpose of the cleanup() method in the MapReduce API?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It cleans the JVM memory automatically" },
+      { "id": "B", "text": "It is called once at the end of the task to clean up the working state" },
+      { "id": "C", "text": "It deletes the final output files" },
+      { "id": "D", "text": "It resets the Mapper counter" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L5"
+  },
+  {
+    "QuestionID": "Q168",
+    "Content": "Which Hadoop Java package contains the basic data types optimized for network serialization, such as Text and IntWritable?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "org.apache.hadoop.net" },
+      { "id": "B", "text": "org.apache.hadoop.types" },
+      { "id": "C", "text": "org.apache.hadoop.io" },
+      { "id": "D", "text": "org.apache.hadoop.mapreduce" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L5"
+  },
+  {
+    "QuestionID": "Q169",
+    "Content": "In the default MapReduce text processing (e.g., the WordCount example), what is the input key type for the Mapper?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "String" },
+      { "id": "B", "text": "Text" },
+      { "id": "C", "text": "LongWritable (the offset of the beginning of the line)" },
+      { "id": "D", "text": "IntWritable" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L5"
+  },
+  {
+    "QuestionID": "Q170",
+    "Content": "In the Reducer class, how often is the reduce() method called?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Once for each key/value pair in the split" },
+      { "id": "B", "text": "Once for each unique key" },
+      { "id": "C", "text": "Once per task" },
+      { "id": "D", "text": "Once per partition" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L5"
+  },
+  {
+    "QuestionID": "Q171",
+    "Content": "What is the default Partitioner class used in Hadoop MapReduce?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "TotalOrderPartitioner" },
+      { "id": "B", "text": "HashPartitioner" },
+      { "id": "C", "text": "RangePartitioner" },
+      { "id": "D", "text": "CustomPartitioner" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L5"
+  },
+  {
+    "QuestionID": "Q172",
+    "Content": "How does the default HashPartitioner determine the partition index for a given key?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "By grouping keys alphabetically" },
+      { "id": "B", "text": "By assigning a random partition number" },
+      { "id": "C", "text": "By calculating (key.hashCode() & Integer.MAX_VALUE) % numReduceTasks" },
+      { "id": "D", "text": "By calculating key.length() % numReduceTasks" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L5"
+  },
+  {
+    "QuestionID": "Q173",
+    "Content": "Which component is responsible for creating the input splits and dividing them into records before passing them to the Mapper?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Partitioner" },
+      { "id": "B", "text": "RecordReader" },
+      { "id": "C", "text": "InputFormat" },
+      { "id": "D", "text": "JobSubmitter" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C4",
+    "LecID": "C4-L5"
+  },
+  {
+    "QuestionID": "Q174",
+    "Content": "What is the specific role of the RecordReader in MapReduce?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It writes the final output to HDFS" },
+      { "id": "B", "text": "It acts as an iterator over records in an input split and generates key-value pairs for the map function" },
+      { "id": "C", "text": "It reads the reducer's output for the user" },
+      { "id": "D", "text": "It partitions the data across the cluster" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L5"
+  },
+  {
+    "QuestionID": "Q175",
+    "Content": "Regarding the data types in MapReduce, which of the following rules must strictly be followed?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "The Map input types must perfectly match the Reduce output types." },
+      { "id": "B", "text": "The Map output types (K2, V2) must match the Reduce input types." },
+      { "id": "C", "text": "The Map output types must be exactly Text and IntWritable." },
+      { "id": "D", "text": "The Combiner output must be completely different from the Map output." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C4",
+    "LecID": "C4-L5"
+  },
+  {
+    "QuestionID": "Q176",
+    "Content": "What were the two main types of applications that MapReduce struggled with, motivating the creation of Spark?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Batch processing and Log analysis" },
+      { "id": "B", "text": "Iterative algorithms (like machine learning) and Interactive data mining" },
+      { "id": "C", "text": "Simple ETL tasks and Data storage" },
+      { "id": "D", "text": "Relational database management and File serving" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L1"
+  },
+  {
+    "QuestionID": "Q177",
+    "Content": "Where does MapReduce write its intermediate data between the Map and Reduce phases, which causes a major performance bottleneck?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "To the RAM of the Master node" },
+      { "id": "B", "text": "To the cloud" },
+      { "id": "C", "text": "To the local disk as intermediate files" },
+      { "id": "D", "text": "To a NoSQL database" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C5",
+    "LecID": "C5-L1"
+  },
+  {
+    "QuestionID": "Q178",
+    "Content": "Unlike Hadoop MapReduce which relies heavily on disk I/O, where does Spark prefer to keep data to speed up processing?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "In RAM (In-Memory)" },
+      { "id": "B", "text": "On magnetic tapes" },
+      { "id": "C", "text": "In isolated hard drives" },
+      { "id": "D", "text": "In relational databases" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C5",
+    "LecID": "C5-L1"
+  },
+  {
+    "QuestionID": "Q179",
+    "Content": "What is the fundamental data abstraction introduced by Apache Spark?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Hadoop Distributed File System (HDFS)" },
+      { "id": "B", "text": "Resilient Distributed Datasets (RDDs)" },
+      { "id": "C", "text": "Directed Acyclic Graph (DAG)" },
+      { "id": "D", "text": "Yet Another Resource Negotiator (YARN)" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L1"
+  },
+  {
+    "QuestionID": "Q180",
+    "Content": "Which programming languages are officially supported by Spark's APIs?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "C++, C#, PHP, and HTML" },
+      { "id": "B", "text": "Scala, Python, Java, and R" },
+      { "id": "C", "text": "Ruby, Swift, and Go" },
+      { "id": "D", "text": "Assembly and Fortran" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L1"
+  },
+  {
+    "QuestionID": "Q181",
+    "Content": "How much faster can Spark perform compared to Hadoop MapReduce when running in memory?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Up to 2 times faster" },
+      { "id": "B", "text": "Up to 10 times faster" },
+      { "id": "C", "text": "Up to 100 times faster" },
+      { "id": "D", "text": "It is actually slower than Hadoop" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C5",
+    "LecID": "C5-L1"
+  },
+  {
+    "QuestionID": "Q182",
+    "Content": "Which of the following is TRUE about the execution flow in Spark compared to MapReduce?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Spark strictly forces a Map phase followed by a Reduce phase." },
+      { "id": "B", "text": "The number of stages in Spark is up to the programmer, not limited to just \"map\" then \"reduce\"." },
+      { "id": "C", "text": "Spark cannot run on YARN." },
+      { "id": "D", "text": "Spark does not support parallel processing." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L1"
+  },
+  {
+    "QuestionID": "Q183",
+    "Content": "In the context of Spark's RDD, what does \"Resilient\" mean?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "The data is heavily encrypted." },
+      { "id": "B", "text": "The data can only be read by the Master node." },
+      { "id": "C", "text": "The dataset is immutable and automatically rebuilt if a partition is lost." },
+      { "id": "D", "text": "The dataset is permanently stored on a physical hard drive." }
+    ],
+    "answerID": "C",
+    "ChapterID": "C5",
+    "LecID": "C5-L1"
+  },
+  {
+    "QuestionID": "Q184",
+    "Content": "Does Apache Spark provide its own built-in distributed storage system like Hadoop's HDFS?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Yes, it has SparkFS." },
+      { "id": "B", "text": "No, Spark is a data-processing engine and must be integrated with storage systems like HDFS, S3, or HBase." },
+      { "id": "C", "text": "Yes, it uses a relational database." },
+      { "id": "D", "text": "No, Spark cannot connect to any external storage." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L1"
+  },
+  {
+    "QuestionID": "Q185",
+    "Content": "Which component of the Spark Unified Stack is designed specifically for processing real-time data?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Spark SQL" },
+      { "id": "B", "text": "MLlib" },
+      { "id": "C", "text": "GraphX" },
+      { "id": "D", "text": "Spark Streaming" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C5",
+    "LecID": "C5-L1"
+  },
+  {
+    "QuestionID": "Q186",
+    "Content": "What mechanism does Spark use to recover lost data without needing to replicate data across disks like HDFS?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Lineage info (keeping track of the operations that created the RDD)" },
+      { "id": "B", "text": "Manual backups by the user" },
+      { "id": "C", "text": "Storing everything in a centralized SQL database" },
+      { "id": "D", "text": "Pausing the cluster until the hardware is fixed" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C5",
+    "LecID": "C5-L1"
+  },
+  {
+    "QuestionID": "Q187",
+    "Content": "Why is caching (persisting) an RDD highly beneficial in Spark?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It deletes the RDD to free up space." },
+      { "id": "B", "text": "It allows the RDD to be reused across parallel operations without reloading it from disk." },
+      { "id": "C", "text": "It converts unstructured data into structured tables automatically." },
+      { "id": "D", "text": "It sends the data to the printer." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L1"
+  },
+  {
+    "QuestionID": "Q188",
+    "Content": "What is the basic class that represents data in Spark?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Hadoop Distributed File System (HDFS)" },
+      { "id": "B", "text": "Resilient Distributed Dataset (RDD)" },
+      { "id": "C", "text": "DataFrame" },
+      { "id": "D", "text": "SparkContext" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L2"
+  },
+  {
+    "QuestionID": "Q189",
+    "Content": "Which of the following is a core characteristic of an RDD?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It is mutable and can be changed directly" },
+      { "id": "B", "text": "It is immutable and automatically rebuilt if a partition is lost" },
+      { "id": "C", "text": "It is stored exclusively on a single machine" },
+      { "id": "D", "text": "It requires a strict relational database schema" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L2"
+  },
+  {
+    "QuestionID": "Q190",
+    "Content": "Spark operations on RDDs are generally divided into which two types?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Maps and Reduces" },
+      { "id": "B", "text": "Inputs and Outputs" },
+      { "id": "C", "text": "Transformations and Actions" },
+      { "id": "D", "text": "Reads and Writes" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C5",
+    "LecID": "C5-L2"
+  },
+  {
+    "QuestionID": "Q191",
+    "Content": "Which of the following is an example of an Action in Spark?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "map" },
+      { "id": "B", "text": "filter" },
+      { "id": "C", "text": "count" },
+      { "id": "D", "text": "groupByKey" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C5",
+    "LecID": "C5-L2"
+  },
+  {
+    "QuestionID": "Q192",
+    "Content": "Which of the following is an example of a Transformation in Spark?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "collect" },
+      { "id": "B", "text": "save" },
+      { "id": "C", "text": "filter" },
+      { "id": "D", "text": "reduce" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C5",
+    "LecID": "C5-L2"
+  },
+  {
+    "QuestionID": "Q193",
+    "Content": "What does \"Lazy Evaluation\" mean in the context of Spark Transformations?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Spark executes the code very slowly to save CPU" },
+      { "id": "B", "text": "Transformations are not computed immediately; Spark just remembers the plan (lineage) until an action is called" },
+      { "id": "C", "text": "Spark pauses execution until more memory is available" },
+      { "id": "D", "text": "Transformations automatically delete old RDDs to save space" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L2"
+  },
+  {
+    "QuestionID": "Q194",
+    "Content": "What is the primary difference between the map and flatMap transformations?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "map only works on numbers, while flatMap works on strings" },
+      { "id": "B", "text": "map returns exactly one element for each input, while flatMap can return a sequence of 0 or more elements for each input" },
+      { "id": "C", "text": "flatMap is an action, while map is a transformation" },
+      { "id": "D", "text": "flatMap automatically sorts the data, while map does not" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L2"
+  },
+  {
+    "QuestionID": "Q195",
+    "Content": "What are the two types of restricted shared variables provided by Spark?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Global variables and Local variables" },
+      { "id": "B", "text": "Accumulators and Broadcast variables" },
+      { "id": "C", "text": "Static variables and Dynamic variables" },
+      { "id": "D", "text": "Map variables and Reduce variables" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L2"
+  },
+  {
+    "QuestionID": "Q196",
+    "Content": "In Spark's RDD lifecycle, what triggers the actual execution of a computation?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Defining a new RDD" },
+      { "id": "B", "text": "Calling a Transformation" },
+      { "id": "C", "text": "Calling an Action" },
+      { "id": "D", "text": "Importing the SparkContext" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C5",
+    "LecID": "C5-L2"
+  },
+  {
+    "QuestionID": "Q197",
+    "Content": "How does Spark achieve fault tolerance for RDDs?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "By maintaining lineage information to reconstruct lost partitions" },
+      { "id": "B", "text": "By continuously copying all RAM data to external hard drives" },
+      { "id": "C", "text": "By relying entirely on Hadoop's HDFS replication" },
+      { "id": "D", "text": "By pausing the cluster when a node fails" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C5",
+    "LecID": "C5-L2"
+  },
+  {
+    "QuestionID": "Q198",
+    "Content": "What is a \"Shuffle\" operation in Spark?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Randomly selecting a sample of data from an RDD" },
+      { "id": "B", "text": "Deleting corrupted data partitions" },
+      { "id": "C", "text": "An all-to-all operation that requires rearranging partitions and moving data across workers over the network" },
+      { "id": "D", "text": "The process of converting an RDD into a DataFrame" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C5",
+    "LecID": "C5-L2"
+  },
+  {
+    "QuestionID": "Q199",
+    "Content": "Which of the following transformations is most likely to cause a Shuffle?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "map" },
+      { "id": "B", "text": "filter" },
+      { "id": "C", "text": "reduceByKey" },
+      { "id": "D", "text": "sample" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C5",
+    "LecID": "C5-L2"
+  },
+  {
+    "QuestionID": "Q200",
+    "Content": "What is a potential negative side-effect of applying a filter transformation on a partitioned RDD?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It immediately triggers a heavy network shuffle" },
+      { "id": "B", "text": "It can lead to unbalanced partitions (data skew) across the cluster" },
+      { "id": "C", "text": "It permanently deletes the original input file" },
+      { "id": "D", "text": "It forces the RDD to be written to disk" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L2"
+  },
+  {
+    "QuestionID": "Q201",
+    "Content": "What is the key difference between reduce and reduceByKey in Spark?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "reduce is an action that aggregates all elements into one result, while reduceByKey is a transformation that aggregates values per key" },
+      { "id": "B", "text": "reduce operates on keys, while reduceByKey operates only on values" },
+      { "id": "C", "text": "reduceByKey is an action, while reduce is a transformation" },
+      { "id": "D", "text": "There is no difference; they are just aliases for the same function" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C5",
+    "LecID": "C5-L2"
+  },
+  {
+    "QuestionID": "Q202",
+    "Content": "Why is .reduceByKey(f) often much more efficient than equivalent group-and-reduce workflows?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Because it bypasses the JVM entirely" },
+      { "id": "B", "text": "Because it reduces each partition locally before shuffling the data across the network (acting like a MapReduce combiner)" },
+      { "id": "C", "text": "Because it automatically deletes all duplicate keys" },
+      { "id": "D", "text": "Because it disables lazy evaluation" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L2"
+  },
+  {
+    "QuestionID": "Q203",
+    "Content": "What event triggers the execution of a Spark job?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Defining a new RDD" },
+      { "id": "B", "text": "Calling an Action (e.g., count(), saveAsTextFile())" },
+      { "id": "C", "text": "Calling a Transformation (e.g., map(), filter())" },
+      { "id": "D", "text": "Importing the SparkContext" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L3"
+  },
+  {
+    "QuestionID": "Q204",
+    "Content": "In Spark's execution model, what does DAG stand for?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Data Aggregation Group" },
+      { "id": "B", "text": "Distributed Application Gateway" },
+      { "id": "C", "text": "Directed Acyclic Graph" },
+      { "id": "D", "text": "Dynamic Action Generator" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C5",
+    "LecID": "C5-L3"
+  },
+  {
+    "QuestionID": "Q205",
+    "Content": "What are the two main independent entities that make up a running Spark application?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "The JobTracker and TaskTracker" },
+      { "id": "B", "text": "The Master and the Combiner" },
+      { "id": "C", "text": "The Driver and the Executors" },
+      { "id": "D", "text": "The NameNode and DataNodes" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C5",
+    "LecID": "C5-L3"
+  },
+  {
+    "QuestionID": "Q206",
+    "Content": "What is the primary role of a Spark Executor?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "To translate user code into a logical plan" },
+      { "id": "B", "text": "To manage the cluster resources globally" },
+      { "id": "C", "text": "To execute tasks and cache data in memory or on disk" },
+      { "id": "D", "text": "To provide a web UI for the user" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C5",
+    "LecID": "C5-L3"
+  },
+  {
+    "QuestionID": "Q207",
+    "Content": "Which component is considered the main entry point to Spark functionality and tells the framework where to find the cluster?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "SparkContext (or SparkSession)" },
+      { "id": "B", "text": "Hadoop HDFS" },
+      { "id": "C", "text": "YARN Resource Manager" },
+      { "id": "D", "text": "DAGScheduler" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C5",
+    "LecID": "C5-L3"
+  },
+  {
+    "QuestionID": "Q208",
+    "Content": "In Spark, what typically marks the boundary between two different Stages?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "A non-shuffle transformation like map()" },
+      { "id": "B", "text": "A shuffle operation (e.g., reduceByKey())" },
+      { "id": "C", "text": "Reading data from HDFS" },
+      { "id": "D", "text": "Reaching a maximum memory limit" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L3"
+  },
+  {
+    "QuestionID": "Q209",
+    "Content": "How are Jobs, Stages, and Tasks related in Spark's execution hierarchy?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "A Task contains multiple Jobs, which are divided into Stages." },
+      { "id": "B", "text": "A Job is a collection of Stages, and a Stage is split into Tasks." },
+      { "id": "C", "text": "A Stage contains multiple Jobs, which are divided into Tasks." },
+      { "id": "D", "text": "They are completely independent concepts." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L3"
+  },
+  {
+    "QuestionID": "Q210",
+    "Content": "Why can calling the .collect() action on a large RDD be dangerous?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It permanently deletes the data from HDFS." },
+      { "id": "B", "text": "It sends all data from the executors to the single driver, potentially causing an OutOfMemory error." },
+      { "id": "C", "text": "It forces the cluster to shut down." },
+      { "id": "D", "text": "It disables the lazy evaluation mechanism permanently." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L3"
+  },
+  {
+    "QuestionID": "Q211",
+    "Content": "When deploying Spark on YARN in \"client mode\", where does the Spark driver run?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Inside the YARN ApplicationMaster on a cluster node" },
+      { "id": "B", "text": "On the client machine where the command was submitted" },
+      { "id": "C", "text": "Inside the HDFS NameNode" },
+      { "id": "D", "text": "Split across multiple worker nodes" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L3"
+  },
+  {
+    "QuestionID": "Q212",
+    "Content": "What is a \"Task\" in Spark?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "A single Python script" },
+      { "id": "B", "text": "A completed machine learning model" },
+      { "id": "C", "text": "The work of computing one stage on one partition of data, done by one executor" },
+      { "id": "D", "text": "The process of requesting resources from YARN" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C5",
+    "LecID": "C5-L3"
+  },
+  {
+    "QuestionID": "Q213",
+    "Content": "Which internal Spark component is responsible for breaking down a job into a DAG of stages?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "TaskScheduler" },
+      { "id": "B", "text": "DAGScheduler" },
+      { "id": "C", "text": "ExecutorBackend" },
+      { "id": "D", "text": "BlockManager" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L3"
+  },
+  {
+    "QuestionID": "Q214",
+    "Content": "According to Spark's DAG scheduler, what are the two specific types of tasks that can run in a stage?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Map tasks and Reduce tasks" },
+      { "id": "B", "text": "Shuffle map tasks and Result tasks" },
+      { "id": "C", "text": "Input tasks and Output tasks" },
+      { "id": "D", "text": "Memory tasks and Disk tasks" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L3"
+  },
+  {
+    "QuestionID": "Q215",
+    "Content": "What happens if an RDD has been persisted (cached) from a previous job in the same SparkContext?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Spark throws an error to prevent memory overflow." },
+      { "id": "B", "text": "Spark copies the RDD to a new Hadoop cluster." },
+      { "id": "C", "text": "The DAG scheduler saves work and does not create stages to recompute it." },
+      { "id": "D", "text": "The RDD is immediately deleted and re-evaluated." }
+    ],
+    "answerID": "C",
+    "ChapterID": "C5",
+    "LecID": "C5-L3"
+  },
+  {
+    "QuestionID": "Q216",
+    "Content": "To take advantage of data locality, what is the preferred order of task assignment by the task scheduler?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Node-local, Process-local, Rack-local" },
+      { "id": "B", "text": "Process-local, Node-local, Rack-local" },
+      { "id": "C", "text": "Rack-local, Node-local, Process-local" },
+      { "id": "D", "text": "Arbitrary allocation" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L3"
+  },
+  {
+    "QuestionID": "Q217",
+    "Content": "In \"YARN cluster mode\", which component is specifically responsible for starting the Spark driver program?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "The Spark Client (e.g., spark-submit)" },
+      { "id": "B", "text": "The NodeManager" },
+      { "id": "C", "text": "The YARN Application Master" },
+      { "id": "D", "text": "The Zookeeper server" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C5",
+    "LecID": "C5-L3"
+  },
+  {
+    "QuestionID": "Q218",
+    "Content": "What are the two main independent entities in a running Spark application?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Master and Combiner" },
+      { "id": "B", "text": "Driver and Executors" },
+      { "id": "C", "text": "NameNode and DataNode" },
+      { "id": "D", "text": "JobTracker and TaskTracker" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L4"
+  },
+  {
+    "QuestionID": "Q219",
+    "Content": "What is the primary role of the Spark Driver?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "To store large blocks of distributed data" },
+      { "id": "B", "text": "To run the \"main\" logic, build RDD descriptions, and coordinate tasks" },
+      { "id": "C", "text": "To execute computations and cache data" },
+      { "id": "D", "text": "To manage global cluster resources like YARN" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L4"
+  },
+  {
+    "QuestionID": "Q220",
+    "Content": "Which of the following is a supported Cluster Manager for Apache Spark?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Apache YARN" },
+      { "id": "B", "text": "Apache Mesos" },
+      { "id": "C", "text": "Standalone" },
+      { "id": "D", "text": "All of the above" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C5",
+    "LecID": "C5-L4"
+  },
+  {
+    "QuestionID": "Q221",
+    "Content": "When deploying a Spark application on YARN in client mode (--deploy-mode=client), where does the Spark Driver run?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "On the YARN Resource Manager" },
+      { "id": "B", "text": "On a random worker node in the cluster" },
+      { "id": "C", "text": "On the client machine where the command was submitted" },
+      { "id": "D", "text": "Inside the HDFS NameNode" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C5",
+    "LecID": "C5-L4"
+  },
+  {
+    "QuestionID": "Q222",
+    "Content": "When running Spark in --deploy-mode=cluster on YARN, where does the driver program run?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "On the client machine" },
+      { "id": "B", "text": "Inside a YARN Application Master on a cluster node" },
+      { "id": "C", "text": "Inside the Spark Web UI" },
+      { "id": "D", "text": "On the Secondary NameNode" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L4"
+  },
+  {
+    "QuestionID": "Q223",
+    "Content": "What is the default port for the Spark Web Frontend (Spark UI) when running locally?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "8080" },
+      { "id": "B", "text": "4040" },
+      { "id": "C", "text": "50070" },
+      { "id": "D", "text": "9000" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L4"
+  },
+  {
+    "QuestionID": "Q224",
+    "Content": "In the Spark architecture, what happens when you call an action like .collect() on a very large RDD?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Data is written to HDFS in parallel" },
+      { "id": "B", "text": "Data is sent from executors to the single driver, which may cause an OutOfMemory error" },
+      { "id": "C", "text": "The executors compress the data and cache it locally" },
+      { "id": "D", "text": "The cluster automatically adds more RAM to the driver" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C5",
+    "LecID": "C5-L4"
+  },
+  {
+    "QuestionID": "Q225",
+    "Content": "How does Spark handle Python logic (PySpark) execution on the worker nodes?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Python code is natively compiled into Java bytecode before execution" },
+      { "id": "B", "text": "The executor JVM natively runs Python code using Jython" },
+      { "id": "C", "text": "The executor JVM spawns a separate Python process (daemon) and pipes data to it for evaluation" },
+      { "id": "D", "text": "Python logic is only executed on the Driver, not on the executors" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C5",
+    "LecID": "C5-L4"
+  },
+  {
+    "QuestionID": "Q226",
+    "Content": "Which cluster manager allows for fine-grained sharing of resources across different applications and runs each Spark task as an individual task by default?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "YARN" },
+      { "id": "B", "text": "Standalone" },
+      { "id": "C", "text": "Apache Mesos" },
+      { "id": "D", "text": "Local mode" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C5",
+    "LecID": "C5-L4"
+  },
+  {
+    "QuestionID": "Q227",
+    "Content": "What is a key limitation of the Standalone cluster manager compared to YARN or Mesos?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It cannot run on Linux" },
+      { "id": "B", "text": "It requires Hadoop MapReduce to be installed" },
+      { "id": "C", "text": "It uses a static allocation of resources and cannot adapt well to the varying needs of other cluster applications over time" },
+      { "id": "D", "text": "It only supports Python applications" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C5",
+    "LecID": "C5-L4"
+  },
+  {
+    "QuestionID": "Q228",
+    "Content": "What is a Spark DataFrame conceptually similar to?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "A simple array of integers" },
+      { "id": "B", "text": "A table in a relational database" },
+      { "id": "C", "text": "A completely unstructured text file" },
+      { "id": "D", "text": "A single column of data" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L1"
+  },
+  {
+    "QuestionID": "Q229",
+    "Content": "Which of the following programming languages are supported by the Spark DataFrame API?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Only Java and Scala" },
+      { "id": "B", "text": "Only Python and R" },
+      { "id": "C", "text": "C++, C#, and PHP" },
+      { "id": "D", "text": "Python, Scala, Java, and R" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C6",
+    "LecID": "C6-L1"
+  },
+  {
+    "QuestionID": "Q230",
+    "Content": "What is the primary entry point to work with DataFrames in Spark 2.0 and later?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "SparkContext" },
+      { "id": "B", "text": "SparkSession" },
+      { "id": "C", "text": "RDDContext" },
+      { "id": "D", "text": "DataFrameReader" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L1"
+  },
+  {
+    "QuestionID": "Q231",
+    "Content": "What does printSchema() do when called on a DataFrame?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It deletes the schema of the DataFrame." },
+      { "id": "B", "text": "It prints out the column names and their associated data types." },
+      { "id": "C", "text": "It prints out the first 20 rows of data." },
+      { "id": "D", "text": "It saves the schema to a database." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L1"
+  },
+  {
+    "QuestionID": "Q232",
+    "Content": "What is a key difference between DataFrames and Datasets in Spark?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "DataFrames use static typing (compile-time), while Datasets use dynamic typing (runtime)." },
+      { "id": "B", "text": "DataFrames use dynamic typing (runtime), while Datasets use static typing (compile-time)." },
+      { "id": "C", "text": "DataFrames only support Python, while Datasets only support R." },
+      { "id": "D", "text": "There is absolutely no difference; they are different names for the same API." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L1"
+  },
+  {
+    "QuestionID": "Q233",
+    "Content": "In Scala, a DataFrame is essentially a type alias for which of the following?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Dataset[Column]" },
+      { "id": "B", "text": "RDD[String]" },
+      { "id": "C", "text": "Dataset[Row]" },
+      { "id": "D", "text": "Array[Row]" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L1"
+  },
+  {
+    "QuestionID": "Q234",
+    "Content": "Which core Spark component is responsible for automatically optimizing DataFrame operations and SQL queries?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Spark Streaming" },
+      { "id": "B", "text": "Spark Core" },
+      { "id": "C", "text": "Catalyst Optimizer" },
+      { "id": "D", "text": "DAGScheduler" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L1"
+  },
+  {
+    "QuestionID": "Q235",
+    "Content": "Which statement is TRUE regarding DataFrame operations (transformations vs. actions)?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Both transformations and actions are lazily evaluated." },
+      { "id": "B", "text": "Transformations (like select) are lazily evaluated, while actions (like show or count) are eagerly evaluated." },
+      { "id": "C", "text": "Transformations are eagerly evaluated, while actions are lazily evaluated." },
+      { "id": "D", "text": "DataFrames do not have transformations or actions." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L1"
+  },
+  {
+    "QuestionID": "Q236",
+    "Content": "While DataFrames are displayed in a row-oriented format, how does Spark SQL prefer to organize the data internally (and in storage like Parquet) to leverage memory cache and vector instructions?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Purely unstructured format" },
+      { "id": "B", "text": "Columnar format" },
+      { "id": "C", "text": "Graph format" },
+      { "id": "D", "text": "Key-value format" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L1"
+  },
+  {
+    "QuestionID": "Q237",
+    "Content": "According to the syntax and analysis error spectrum, when does a DataFrame catch \"analysis errors\" (e.g., trying to select a column that doesn't exist)?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "At compile time" },
+      { "id": "B", "text": "At runtime" },
+      { "id": "C", "text": "It never catches analysis errors" },
+      { "id": "D", "text": "Before writing the code" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L1"
+  },
+  {
+    "QuestionID": "Q238",
+    "Content": "Why is a schema essential when working with structured data in Spark?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It defines the structure in the form of column names and associated data types, enabling Spark to perform sophisticated optimizations." },
+      { "id": "B", "text": "It encrypts the data for security." },
+      { "id": "C", "text": "It prevents the cluster from crashing." },
+      { "id": "D", "text": "It automatically translates Python code to Java." }
+    ],
+    "answerID": "A",
+    "ChapterID": "C6",
+    "LecID": "C6-L1"
+  },
+  {
+    "QuestionID": "Q239",
+    "Content": "When caching/persisting a DataFrame in memory, why does it typically require much less space than caching an RDD backed by the same data file?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Because DataFrames delete half of the data automatically." },
+      { "id": "B", "text": "Because Spark SQL knows the schema and can organize the data in a columnar format, applying applicable compressions." },
+      { "id": "C", "text": "Because DataFrames only store metadata, not actual data." },
+      { "id": "D", "text": "Because DataFrames bypass the JVM entirely." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L1"
+  },
+  {
+    "QuestionID": "Q240",
+    "Content": "What is a column expression in Spark?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "A native Python or Scala function that runs locally on the driver." },
+      { "id": "B", "text": "A way to express an operation on a column, which is then calculated by the Spark SQL engine." },
+      { "id": "C", "text": "An exact copy of a SQL query string." },
+      { "id": "D", "text": "A variable that stores the physical data of a column." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L2"
+  },
+  {
+    "QuestionID": "Q241",
+    "Content": "Which of the following is NOT a valid way to refer to a column named 'lname' in a PySpark DataFrame named data?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "data['lname']" },
+      { "id": "B", "text": "data.lname" },
+      { "id": "C", "text": "data.groupby('lname')" },
+      { "id": "D", "text": "data.getColumn('lname')" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C6",
+    "LecID": "C6-L2"
+  },
+  {
+    "QuestionID": "Q242",
+    "Content": "Who performs the actual calculation of a column expression?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "The Python interpreter" },
+      { "id": "B", "text": "The Java Virtual Machine (JVM) garbage collector" },
+      { "id": "C", "text": "The Spark SQL engine (in Scala code)" },
+      { "id": "D", "text": "The Hadoop Distributed File System (HDFS)" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L2"
+  },
+  {
+    "QuestionID": "Q243",
+    "Content": "In Spark Scala, which of the following provides syntactic sugar to refer to a column and returns a Column object?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "$\"columnName\"" },
+      { "id": "B", "text": "@\"columnName\"" },
+      { "id": "C", "text": "&\"columnName\"" },
+      { "id": "D", "text": "%\"columnName\"" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C6",
+    "LecID": "C6-L2"
+  },
+  {
+    "QuestionID": "Q244",
+    "Content": "What is the recommended and unambiguous way to refer to a column in PySpark, especially to avoid weird failures?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "data.lname" },
+      { "id": "B", "text": "data['lname']" },
+      { "id": "C", "text": "lname" },
+      { "id": "D", "text": "col.lname" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L2"
+  },
+  {
+    "QuestionID": "Q245",
+    "Content": "Why does the expression data.where('age' < 25) fail with a TypeError in PySpark?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Because 'age' is a string literal, and Python cannot compare a string to an integer (25) to create a column expression." },
+      { "id": "B", "text": "Because where() is not a valid DataFrame method." },
+      { "id": "C", "text": "Because 25 needs to be passed as a string ('25')." },
+      { "id": "D", "text": "Because 'age' does not exist in the DataFrame." }
+    ],
+    "answerID": "A",
+    "ChapterID": "C6",
+    "LecID": "C6-L2"
+  },
+  {
+    "QuestionID": "Q246",
+    "Content": "How should you explicitly compare a column to a string literal like 'John' to avoid ambiguity?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "data.where(data['fname'] == 'John')" },
+      { "id": "B", "text": "data.where(data['fname'] == functions.string('John'))" },
+      { "id": "C", "text": "data.where(data['fname'] == functions.lit('John'))" },
+      { "id": "D", "text": "data.where(data['fname'].equals('John'))" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L2"
+  },
+  {
+    "QuestionID": "Q247",
+    "Content": "What does the as() or alias() function do when appended to a column expression?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It changes the data type of the column." },
+      { "id": "B", "text": "It renames the resulting column to make it more human-readable." },
+      { "id": "C", "text": "It deletes the column from the DataFrame." },
+      { "id": "D", "text": "It registers the column as a temporary view." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L2"
+  },
+  {
+    "QuestionID": "Q248",
+    "Content": "When working with Scala, which symbol is commonly used to refer to a column name to save typing (using Scala symbol literals)?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "$" },
+      { "id": "B", "text": "' (apostrophe/tick)" },
+      { "id": "C", "text": "_" },
+      { "id": "D", "text": "#" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L2"
+  },
+  {
+    "QuestionID": "Q249",
+    "Content": "What is a key advantage of using Column expressions over native Python functions (UDFs)?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Python functions run faster than Column expressions." },
+      { "id": "B", "text": "Column expressions are evaluated natively in the JVM by Spark SQL, avoiding the JVM-to-Python serialization penalty." },
+      { "id": "C", "text": "Column expressions allow for infinite loop calculations." },
+      { "id": "D", "text": "Column expressions bypass the Catalyst Optimizer entirely." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L2"
+  },
+  {
+    "QuestionID": "Q250",
+    "Content": "Why does the call maxage.select(maxage.max(age)) fail with an AttributeError?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Because select does not accept aggregate functions." },
+      { "id": "B", "text": "Because maxage does not have a max attribute; it is evaluated as a Python method call rather than a Spark column expression." },
+      { "id": "C", "text": "Because age must be an integer, not a string." },
+      { "id": "D", "text": "Because max is only available in SQL queries, not DataFrame APIs." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L2"
+  },
+  {
+    "QuestionID": "Q251",
+    "Content": "When joining two DataFrames that have a column with the exact same name, what happens if you project it using select(\"dept_no\")?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Spark automatically selects the column from the left DataFrame." },
+      { "id": "B", "text": "Spark automatically selects the column from the right DataFrame." },
+      { "id": "C", "text": "Spark throws an AnalysisException stating the reference is ambiguous." },
+      { "id": "D", "text": "Spark renames one of the columns automatically." }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L2"
+  },
+  {
+    "QuestionID": "Q252",
+    "Content": "Which transformation is best suited to evaluate a list of conditions and return a specific value (similar to a SQL switch/case statement)?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "functions.coalesce()" },
+      { "id": "B", "text": "functions.when()" },
+      { "id": "C", "text": "functions.lit()" },
+      { "id": "D", "text": "functions.expr()" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L2"
+  },
+  {
+    "QuestionID": "Q253",
+    "Content": "What does the coalesce function do when provided with multiple column expressions?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It merges multiple partitions into one." },
+      { "id": "B", "text": "It returns the first column value that is not null." },
+      { "id": "C", "text": "It concatenates all the string values of the columns together." },
+      { "id": "D", "text": "It calculates the mathematical average of the columns." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L2"
+  },
+  {
+    "QuestionID": "Q254",
+    "Content": "What is the return type of aggregation functions like sum(\"count\") or max(\"count\") when used inside the agg() method?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "A literal Double or Long value." },
+      { "id": "B", "text": "A generic Scala Row object." },
+      { "id": "C", "text": "An instance of the Column class." },
+      { "id": "D", "text": "A completely new DataFrame." }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L2"
+  },
+  {
+    "QuestionID": "Q255",
+    "Content": "What is the primary promise and role of the Spark Catalyst?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "To manually allocate RAM for Spark executors" },
+      { "id": "B", "text": "To act as a query optimizer that automatically optimizes data processing applications and SQL queries" },
+      { "id": "C", "text": "To securely store data in Hadoop HDFS" },
+      { "id": "D", "text": "To convert Python scripts into C++ programs" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L3"
+  },
+  {
+    "QuestionID": "Q256",
+    "Content": "Which DataFrame method is used to display the execution plan of a query?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "show()" },
+      { "id": "B", "text": "printSchema()" },
+      { "id": "C", "text": "explain()" },
+      { "id": "D", "text": "displayPlan()" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L3"
+  },
+  {
+    "QuestionID": "Q257",
+    "Content": "What are the two main types of optimizations applied by the Catalyst optimizer to a logical plan?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Memory-based and Disk-based" },
+      { "id": "B", "text": "Static and Dynamic" },
+      { "id": "C", "text": "Rule-based and Cost-based" },
+      { "id": "D", "text": "Map-side and Reduce-side" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L3"
+  },
+  {
+    "QuestionID": "Q258",
+    "Content": "Which Spark project is responsible for improving execution efficiency by leveraging memory hierarchy and whole-stage code generation?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Project Catalyst" },
+      { "id": "B", "text": "Project Tungsten" },
+      { "id": "C", "text": "Project Hydrogen" },
+      { "id": "D", "text": "Project YARN" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L3"
+  },
+  {
+    "QuestionID": "Q259",
+    "Content": "What is the first step in the Catalyst optimization process after parsing the user's data processing logic (DataFrame or SQL)?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Generating Java bytecode" },
+      { "id": "B", "text": "Writing data to disk" },
+      { "id": "C", "text": "Creating a Logical Plan" },
+      { "id": "D", "text": "Creating a Physical Plan" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L3"
+  },
+  {
+    "QuestionID": "Q260",
+    "Content": "What does the \"predicate pushdown\" optimization achieve?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It pushes all the data into the executor's memory." },
+      { "id": "B", "text": "It filters data at the data source level (e.g., RDBMS or Parquet) to dramatically reduce the amount of data Spark needs to read." },
+      { "id": "C", "text": "It sorts the data before pushing it to the join operator." },
+      { "id": "D", "text": "It converts row-oriented data into columnar data." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L3"
+  },
+  {
+    "QuestionID": "Q261",
+    "Content": "What is the output of calling explain(true) or explain(\"extended\") on a DataFrame?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Only the optimized physical plan" },
+      { "id": "B", "text": "Both the logical plans (parsed, analyzed, optimized) and the physical plan" },
+      { "id": "C", "text": "The Java bytecode generated by Tungsten" },
+      { "id": "D", "text": "The runtime statistics of the cluster" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L3"
+  },
+  {
+    "QuestionID": "Q262",
+    "Content": "Which framework, introduced in Spark 3.0, dynamically adjusts and regenerates high-quality query execution plans using runtime statistics?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Static Query Execution" },
+      { "id": "B", "text": "Cost-Based Optimizer (CBO)" },
+      { "id": "C", "text": "Adaptive Query Execution (AQE)" },
+      { "id": "D", "text": "Structured Streaming" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L3"
+  },
+  {
+    "QuestionID": "Q263",
+    "Content": "Which of the following is an example of a \"Rule-based optimization\" performed by Catalyst?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Dynamically switching join strategies based on file size" },
+      { "id": "B", "text": "Constant folding, project pruning, and predicate pushdown" },
+      { "id": "C", "text": "Generating JVM bytecode" },
+      { "id": "D", "text": "Coalescing shuffle partitions at runtime" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L3"
+  },
+  {
+    "QuestionID": "Q264",
+    "Content": "How does the \"whole-stage code generation\" feature (from Project Tungsten) improve execution performance?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "By translating the entire Spark application into Python" },
+      { "id": "B", "text": "By disabling the garbage collector entirely" },
+      { "id": "C", "text": "By combining multiple operators into a single Java function to minimize virtual function calls" },
+      { "id": "D", "text": "By bypassing the Spark Driver" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L3"
+  },
+  {
+    "QuestionID": "Q265",
+    "Content": "When Adaptive Query Execution (AQE) is enabled, what does it dynamically do if it detects the size of one dataset falls below a certain threshold after filtering?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It throws an OutOfMemory error to protect the cluster." },
+      { "id": "B", "text": "It dynamically switches from a sort-merge join to a broadcast hash join." },
+      { "id": "C", "text": "It saves the intermediate data to HDFS." },
+      { "id": "D", "text": "It skips the join entirely." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L3"
+  },
+  {
+    "QuestionID": "Q266",
+    "Content": "When inspecting a physical plan generated by Tungsten, what does an asterisk (*) appearing before an operator (e.g., * HashAggregate) indicate?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "The operator requires a network shuffle." },
+      { "id": "B", "text": "The operator failed during execution." },
+      { "id": "C", "text": "Whole-stage code generation is enabled for that operator." },
+      { "id": "D", "text": "The data for that operator is cached in memory." }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L3"
+  },
+  {
+    "QuestionID": "Q267",
+    "Content": "What is the default file format for reading and writing data in Spark SQL?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "CSV" },
+      { "id": "B", "text": "JSON" },
+      { "id": "C", "text": "Parquet" },
+      { "id": "D", "text": "ORC" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L4"
+  },
+  {
+    "QuestionID": "Q268",
+    "Content": "Which class is the primary interface used to read data from external storage systems into a DataFrame?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "DataFrameWriter" },
+      { "id": "B", "text": "SparkContext" },
+      { "id": "C", "text": "DataFrameReader" },
+      { "id": "D", "text": "RDDReader" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L4"
+  },
+  {
+    "QuestionID": "Q269",
+    "Content": "When writing a DataFrame to disk, which SaveMode completely replaces any existing data at the specified destination?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Append" },
+      { "id": "B", "text": "Ignore" },
+      { "id": "C", "text": "ErrorIfExists" },
+      { "id": "D", "text": "Overwrite" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C6",
+    "LecID": "C6-L4"
+  },
+  {
+    "QuestionID": "Q270",
+    "Content": "Which text-based data format is considered semi-structured, allows nested structures, and is widely used in web applications?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "CSV" },
+      { "id": "B", "text": "Parquet" },
+      { "id": "C", "text": "JSON" },
+      { "id": "D", "text": "JDBC" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L4"
+  },
+  {
+    "QuestionID": "Q271",
+    "Content": "How do you instruct Spark to use the first row of a CSV file as the column names?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": ".option(\"inferSchema\", \"true\")" },
+      { "id": "B", "text": ".option(\"header\", \"true\")" },
+      { "id": "C", "text": ".option(\"firstRow\", \"names\")" },
+      { "id": "D", "text": ".option(\"sep\", \",\")" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L4"
+  },
+  {
+    "QuestionID": "Q272",
+    "Content": "What type of storage format is Apache Parquet?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Row-oriented format" },
+      { "id": "B", "text": "Column-oriented (Columnar) format" },
+      { "id": "C", "text": "Graph-based format" },
+      { "id": "D", "text": "Plain text format" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L4"
+  },
+  {
+    "QuestionID": "Q273",
+    "Content": "If you read a CSV file WITHOUT setting inferSchema=\"true\" or providing a manual schema, what data type will Spark assign to all columns?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Integer" },
+      { "id": "B", "text": "String" },
+      { "id": "C", "text": "Binary" },
+      { "id": "D", "text": "Double" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L4"
+  },
+  {
+    "QuestionID": "Q274",
+    "Content": "What is the default SaveMode behavior if you try to write a DataFrame to a directory that already exists?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It silently ignores the write operation." },
+      { "id": "B", "text": "It appends the new data to the existing files." },
+      { "id": "C", "text": "It throws an error (ErrorIfExists)." },
+      { "id": "D", "text": "It overwrites the existing directory." }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L4"
+  },
+  {
+    "QuestionID": "Q275",
+    "Content": "Why is Parquet considered a \"self-describing\" format?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It automatically generates Java code for the user." },
+      { "id": "B", "text": "It contains the schema (column names and types) embedded directly within the file metadata." },
+      { "id": "C", "text": "It requires a separate text file to explain the data." },
+      { "id": "D", "text": "It formats data as human-readable plain text." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L4"
+  },
+  {
+    "QuestionID": "Q276",
+    "Content": "How does Spark handle corrupted records or parsing errors when reading a JSON file by default?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It crashes the Spark application immediately." },
+      { "id": "B", "text": "It sets the value for all columns in that corrupted row to null." },
+      { "id": "C", "text": "It deletes the corrupted file from the disk." },
+      { "id": "D", "text": "It skips the corrupted row and continues silently." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L4"
+  },
+  {
+    "QuestionID": "Q277",
+    "Content": "What is the effect of using the partitionBy(\"year\") option when writing a DataFrame to disk?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It sorts all rows by the year inside a single file." },
+      { "id": "B", "text": "It creates a nested directory structure where each directory represents a specific year (e.g., year=2021)." },
+      { "id": "C", "text": "It automatically deletes data older than a year." },
+      { "id": "D", "text": "It compresses the data using a year-based algorithm." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L4"
+  },
+  {
+    "QuestionID": "Q278",
+    "Content": "Which API should you use to read data from a relational database like MySQL or PostgreSQL into Spark?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": ".format(\"rdbms\")" },
+      { "id": "B", "text": ".format(\"sql\")" },
+      { "id": "C", "text": ".format(\"jdbc\")" },
+      { "id": "D", "text": ".format(\"odbc\")" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L4"
+  },
+  {
+    "QuestionID": "Q279",
+    "Content": "In big data workflows, why is reading a compressed file (like LZ4 or Snappy) often FASTER than reading an uncompressed plain text file?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Compressed files skip the Spark Driver entirely." },
+      { "id": "B", "text": "Disks are slow and processors are fast, so spending CPU cycles to uncompress less disk data is faster." },
+      { "id": "C", "text": "Compressed files bypass the Hadoop Distributed File System (HDFS)." },
+      { "id": "D", "text": "Spark can only process compressed files." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L4"
+  },
+  {
+    "QuestionID": "Q280",
+    "Content": "Since JSON files do not explicitly declare column data types, how does Spark infer the schema of a massive JSON file without expensive full-file scans?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It assumes all fields are Strings." },
+      { "id": "B", "text": "It parses a subset of sample records determined by the samplingRatio option (default 1.0)." },
+      { "id": "C", "text": "It only reads the very first line of the JSON file." },
+      { "id": "D", "text": "It queries the Catalyst Optimizer for the best guess." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L4"
+  },
+  {
+    "QuestionID": "Q281",
+    "Content": "Apart from skipping unnecessary columns via projection, what specific internal optimization does Spark perform when reading Parquet files to considerably speed up execution?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It caches the entire Parquet file into the Driver's memory before processing." },
+      { "id": "B", "text": "It converts all Parquet data into JSON objects first." },
+      { "id": "C", "text": "It performs decompression and decoding in column batches." },
+      { "id": "D", "text": "It disables the JVM garbage collector during the read operation." }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L4"
+  },
+  {
+    "QuestionID": "Q282",
+    "Content": "What does UDF stand for in the context of Spark SQL?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Unified Data Format" },
+      { "id": "B", "text": "User-Defined Function" },
+      { "id": "C", "text": "Universal Data Frame" },
+      { "id": "D", "text": "Underlying Distributed File" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L5"
+  },
+  {
+    "QuestionID": "Q283",
+    "Content": "Which programming languages are officially supported for writing Spark UDFs?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Only Scala and Java" },
+      { "id": "B", "text": "Only Python and R" },
+      { "id": "C", "text": "Python, Java, and Scala" },
+      { "id": "D", "text": "C++, Go, and Rust" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L5"
+  },
+  {
+    "QuestionID": "Q284",
+    "Content": "What must you do with a custom function before you can use it in a Spark DataFrame or SQL query?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Compile it into a standalone executable" },
+      { "id": "B", "text": "Register it with Spark (e.g., using spark.udf.register)" },
+      { "id": "C", "text": "Save it to the Hadoop Distributed File System (HDFS)" },
+      { "id": "D", "text": "Restart the Spark cluster" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L5"
+  },
+  {
+    "QuestionID": "Q285",
+    "Content": "What is the recommended best practice regarding the use of UDFs in Spark?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Always use UDFs because they are faster than built-in functions." },
+      { "id": "B", "text": "Use UDFs as a last resort; always try to use Spark's built-in SQL functions first." },
+      { "id": "C", "text": "Write all UDFs in Python to maximize performance." },
+      { "id": "D", "text": "UDFs should only be used for reading files." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L5"
+  },
+  {
+    "QuestionID": "Q286",
+    "Content": "Where does the actual execution of a UDF take place in a Spark cluster?",
+    "Type": "Multiple Choice",
+    "Level": "Easy",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "On the Spark Driver" },
+      { "id": "B", "text": "Inside the Zookeeper node" },
+      { "id": "C", "text": "On the Spark Executors" },
+      { "id": "D", "text": "Inside the HDFS NameNode" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L5"
+  },
+  {
+    "QuestionID": "Q287",
+    "Content": "How does a Spark executor handle a UDF written in Scala or Java?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It compiles the code to C++ before running." },
+      { "id": "B", "text": "It executes them natively within the same JVM process." },
+      { "id": "C", "text": "It sends the data back to the Driver to run the JVM code." },
+      { "id": "D", "text": "It opens a separate Java daemon for each task." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L5"
+  },
+  {
+    "QuestionID": "Q288",
+    "Content": "Why is there a significant performance penalty when executing a standard Python UDF?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Because Python code cannot run on Spark clusters." },
+      { "id": "B", "text": "Because the executor JVM must spawn a separate Python process and serialize/deserialize data back and forth for each row." },
+      { "id": "C", "text": "Because Python limits Spark to using only a single core." },
+      { "id": "D", "text": "Because Python UDFs disable the Spark Web UI." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L5"
+  },
+  {
+    "QuestionID": "Q289",
+    "Content": "Introduced in Spark 2.3, which feature provides a much faster alternative to standard Python UDFs?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "RDD UDFs" },
+      { "id": "B", "text": "Vectorized UDFs (Pandas UDFs)" },
+      { "id": "C", "text": "Catalyst UDFs" },
+      { "id": "D", "text": "Cython UDFs" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L5"
+  },
+  {
+    "QuestionID": "Q290",
+    "Content": "Which underlying memory format allows Pandas UDFs to efficiently transfer data between the JVM and Python without heavy serialization overhead?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Apache Parquet" },
+      { "id": "B", "text": "Apache Avro" },
+      { "id": "C", "text": "Apache Arrow" },
+      { "id": "D", "text": "Apache ORC" }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L5"
+  },
+  {
+    "QuestionID": "Q291",
+    "Content": "How does the execution pattern of a Pandas UDF differ from a standard Python UDF?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It is called once for each individual row." },
+      { "id": "B", "text": "It is called once for each partition of the DataFrame (operating on subsets at a time)." },
+      { "id": "C", "text": "It only runs on the Master node." },
+      { "id": "D", "text": "It skips rows with null values automatically." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L5"
+  },
+  {
+    "QuestionID": "Q292",
+    "Content": "According to performance benchmarks, what is the ranking from fastest to slowest when performing column transformations?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "Python UDF > Pandas UDF > Spark DataFrame ops" },
+      { "id": "B", "text": "Spark DataFrame ops > Python UDF > Pandas UDF" },
+      { "id": "C", "text": "Pandas UDF > Spark DataFrame ops > Python UDF" },
+      { "id": "D", "text": "Spark DataFrame ops > Pandas UDF > Python UDF" }
+    ],
+    "answerID": "D",
+    "ChapterID": "C6",
+    "LecID": "C6-L5"
+  },
+  {
+    "QuestionID": "Q293",
+    "Content": "When registering a UDF to be used explicitly within a raw SQL query string (e.g., spark.sql(\"SELECT my_udf(col)...\")), which method is used?",
+    "Type": "Multiple Choice",
+    "Level": "Medium",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "spark.sqlContext.udf.register()" },
+      { "id": "B", "text": "functions.udf()" },
+      { "id": "C", "text": "spark.createUDF()" },
+      { "id": "D", "text": "DataFrame.registerUDF()" }
+    ],
+    "answerID": "A",
+    "ChapterID": "C6",
+    "LecID": "C6-L5"
+  },
+  {
+    "QuestionID": "Q294",
+    "Content": "If you decide to avoid UDFs by converting a Spark DataFrame back to an RDD to apply custom Python logic, what is the resulting data type and consequence?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "An RDD[String], which is free of conversion costs." },
+      { "id": "B", "text": "An RDD[Row] of objects, which is not free because the Scala-based DataFrame representation must be converted to a Python representation." },
+      { "id": "C", "text": "An RDD[Column], which runs natively in the JVM." },
+      { "id": "D", "text": "A raw text file saved to local disk." }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L5"
+  },
+  {
+    "QuestionID": "Q295",
+    "Content": "In the broader Hadoop/Hive ecosystem (which Spark SQL supports), what is a UDAF?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "User-Defined Array Filter (operates on arrays only)" },
+      { "id": "B", "text": "User-Defined Aggregate Function (works on multiple input rows to create a single output row)" },
+      { "id": "C", "text": "User-Defined Asynchronous Function (runs in the background)" },
+      { "id": "D", "text": "User-Defined Analytical Format" }
+    ],
+    "answerID": "B",
+    "ChapterID": "C6",
+    "LecID": "C6-L5"
+  },
+  {
+    "QuestionID": "Q296",
+    "Content": "In the Hive/Spark ecosystem, what does a UDTF (User-Defined Table-Generating Function) do?",
+    "Type": "Multiple Choice",
+    "Level": "Hard",
+    "Points": "",
+    "Options": [
+      { "id": "A", "text": "It creates a new database table on disk." },
+      { "id": "B", "text": "It takes multiple rows and aggregates them into one row." },
+      { "id": "C", "text": "It operates on a single row and produces multiple rows (a table) as output." },
+      { "id": "D", "text": "It deletes corrupted tables from the catalog." }
+    ],
+    "answerID": "C",
+    "ChapterID": "C6",
+    "LecID": "C6-L5"
+  }
+
+]
