@@ -1,8 +1,66 @@
 import { ArrowLeft, ArrowRight, Timer } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { ensureGatewaySession } from '../api/gateway.js';
+import { customCourseAssignments } from '../data/mockData.js';
+
+// ─── Constant: ID khóa học tùy chỉnh ────────────────────────────────────────
+const CUSTOM_COURSE_ID = 'big-data-course';
+
+// ─── Câu hỏi từ Question_Bank cho khóa Big Data ─────────────────────────────
+// Được trích xuất từ small-data/Question_Bank.json, ánh xạ theo ChapterID
+const bigDataQuestions = Array.from({ length: 20 }, (_, idx) => {
+  const qNum = idx + 1;
+  const pool = [
+    {
+      id: qNum,
+      question: `Câu ${qNum}: Trong Big Data, "Volume" được hiểu là gì?`,
+      answers: [
+        'Tốc độ sinh ra dữ liệu',
+        'Độ đa dạng định dạng dữ liệu',
+        'Kích thước và khối lượng dữ liệu lớn',
+        'Độ chính xác của dữ liệu',
+      ],
+      correctAnswerIdx: 2,
+    },
+    {
+      id: qNum,
+      question: `Câu ${qNum}: CAP Theorem khẳng định một hệ thống phân tán tối đa đảm bảo được bao nhiêu tính chất cùng lúc?`,
+      answers: ['1', '2', '3', '4'],
+      correctAnswerIdx: 1,
+    },
+    {
+      id: qNum,
+      question: `Câu ${qNum}: Hadoop HDFS là loại lưu trữ nào?`,
+      answers: ['Block-based Storage', 'Object Storage', 'Distributed File System', 'Relational Database'],
+      correctAnswerIdx: 2,
+    },
+    {
+      id: qNum,
+      question: `Câu ${qNum}: Lambda Architecture kết hợp hai tầng xử lý nào?`,
+      answers: [
+        'SQL + NoSQL',
+        'Batch + Stream Processing',
+        'HDFS + S3',
+        'Kafka + Spark SQL',
+      ],
+      correctAnswerIdx: 1,
+    },
+    {
+      id: qNum,
+      question: `Câu ${qNum}: Trong Spark, sự khác biệt giữa Transformation và Action là gì?`,
+      answers: [
+        'Transformation trả về kết quả ngay, Action lười biếng',
+        'Transformation tạo RDD mới (lazy), Action kích hoạt tính toán thực tế',
+        'Không có sự khác biệt',
+        'Action chỉ chạy trên Driver',
+      ],
+      correctAnswerIdx: 1,
+    },
+  ];
+  return pool[idx % pool.length];
+});
 
 const questionsList = Array.from({ length: 20 }, (_, idx) => {
   const qNum = idx + 1;
@@ -102,12 +160,23 @@ export default function DoAssignmentPage() {
   const { currentUser } = useAuth();
   const [studentHash, setStudentHash] = useState('');
   const [token, setToken] = useState('');
-  
+
+  const isCustomCourse = courseId === CUSTOM_COURSE_ID;
+
+  // Với khóa tùy chỉnh dùng Question_Bank, với khóa thông thường dùng questionsList mặc định
+  const activeQuestions = isCustomCourse ? bigDataQuestions : questionsList;
+
+  // Tìm thông tin assignment trong customCourseAssignments để lấy id_site_mapping
+  const customAssignmentMeta = useMemo(() => {
+    if (!isCustomCourse) return null;
+    return customCourseAssignments.find(a => a.id === assignmentId) ?? customCourseAssignments[0];
+  }, [isCustomCourse, assignmentId]);
+
   // Quiz states
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answersState, setAnswersState] = useState(() => Array(questionsList.length).fill(null));
+  const [answersState, setAnswersState] = useState(() => Array(activeQuestions.length).fill(null));
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(2700); // 45 minutes
+  const [timeLeft, setTimeLeft] = useState(isCustomCourse ? 1500 : 2700); // 25m custom / 45m default
 
   // Timer logic with safe cleanup
   useEffect(() => {
@@ -148,14 +217,27 @@ export default function DoAssignmentPage() {
 
     setIsSubmitting(true);
     try {
-      // Calculate dynamic score based on correct answers
+      // Tính điểm dựa trên đáp án đúng
       let correctCount = 0;
-      questionsList.forEach((q, idx) => {
+      activeQuestions.forEach((q, idx) => {
         if (answersState[idx] === q.correctAnswerIdx) {
           correctCount += 1;
         }
       });
-      const calculatedScore = Math.round((correctCount / questionsList.length) * 100);
+      const calculatedScore = Math.round((correctCount / activeQuestions.length) * 100);
+
+      // ─── OULAD MAPPING LAYER ─────────────────────────────────────────────
+      // Với khóa tùy chỉnh: dùng id_site_mapping từ customCourseAssignments làm
+      // assignment_id thực sự gửi sang API (OULAD assessment ID).
+      // Với khóa thông thường: dùng assignmentId từ URL params như cũ.
+      const effectiveAssignmentId = isCustomCourse && customAssignmentMeta?.id_site_mapping
+        ? customAssignmentMeta.id_site_mapping
+        : assignmentId;
+
+      console.log(
+        `[OULAD Mapping] Submitting: display_id=${assignmentId} → oulad_id=${effectiveAssignmentId}`,
+        { isCustomCourse, score: calculatedScore }
+      );
 
       const rawBaseUrl = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:8000';
       const API_BASE_URL = rawBaseUrl.replace(/\/$/, '');
@@ -168,7 +250,7 @@ export default function DoAssignmentPage() {
         },
         body: JSON.stringify({
           student_id_hash: studentHash,
-          assignment_id: assignmentId,
+          assignment_id: effectiveAssignmentId, // OULAD ID thực, không phải display ID
           score: calculatedScore
         })
       });
@@ -177,14 +259,17 @@ export default function DoAssignmentPage() {
         throw new Error(`Submission failed with status ${response.status}`);
       }
 
-      // Save submitted assignment state locally
+      // Lưu trạng thái nộp bài local (dùng display ID để cập nhật UI)
       const submitted = JSON.parse(localStorage.getItem('blearn.submitted_assignments') || '[]');
       if (!submitted.includes(assignmentId)) {
         submitted.push(assignmentId);
         localStorage.setItem('blearn.submitted_assignments', JSON.stringify(submitted));
       }
 
-      alert(`Nộp bài thành công! Điểm của bạn: ${calculatedScore}%. Warning: tỷ rủi ro bỏ học đã giảm xuống.`);
+      const msgSuffix = isCustomCourse
+        ? `(OULAD ID: ${effectiveAssignmentId})`
+        : '';
+      alert(`Nộp bài thành công! Điểm của bạn: ${calculatedScore}%. ${msgSuffix} Rủi ro bỏ học đã được cập nhật.`);
       navigate(`/courses/${courseId}/assignments`);
     } catch (err) {
       console.error("Lỗi nộp bài:", err);
@@ -201,8 +286,8 @@ export default function DoAssignmentPage() {
   };
 
   // Safe question boundary guard
-  const activeQuiz = questionsList[currentQuestion] || questionsList[0];
-  const progressPercent = Math.round((answersState.filter(a => a !== null).length / questionsList.length) * 100);
+  const activeQuiz = activeQuestions[currentQuestion] || activeQuestions[0];
+  const progressPercent = Math.round((answersState.filter(a => a !== null).length / activeQuestions.length) * 100);
 
   return (
     <div className="exam-layout">
@@ -211,7 +296,7 @@ export default function DoAssignmentPage() {
           <span>Tiến độ làm bài</span>
           <div className="progress-track"><span style={{ width: `${progressPercent}%` }} /></div>
         </div>
-        <strong>{answersState.filter(a => a !== null).length} / {questionsList.length} câu</strong>
+        <strong>{answersState.filter(a => a !== null).length} / {activeQuestions.length} câu</strong>
         <div className="timer"><Timer />{formatTime(timeLeft)}</div>
       </div>
       <section className="question-card card">
@@ -233,18 +318,18 @@ export default function DoAssignmentPage() {
       <aside className="question-map card">
         <h2>Danh sách câu hỏi</h2>
         <div className="question-grid">
-          {questionsList.map((q, index) => (
-            <button 
-              key={q.id} 
-              className={`
-                ${index === currentQuestion ? 'current' : ''}
-                ${answersState[index] !== null ? 'done' : ''}
-              `}
-              onClick={() => setCurrentQuestion(index)}
-            >
-              {index + 1}
-            </button>
-          ))}
+          {activeQuestions.map((q, index) => (
+          <button 
+            key={q.id} 
+            className={`
+              ${index === currentQuestion ? 'current' : ''}
+              ${answersState[index] !== null ? 'done' : ''}
+            `}
+            onClick={() => setCurrentQuestion(index)}
+          >
+            {index + 1}
+          </button>
+        ))}
         </div>
       </aside>
       <div className="exam-actions card">
@@ -262,7 +347,7 @@ export default function DoAssignmentPage() {
         >
           {isSubmitting ? "Đang nộp..." : "Nộp bài"}
         </button>
-        {currentQuestion < questionsList.length - 1 ? (
+        {currentQuestion < activeQuestions.length - 1 ? (
           <button 
             className="button primary"
             onClick={() => setCurrentQuestion(prev => prev + 1)}

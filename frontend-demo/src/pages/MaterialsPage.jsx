@@ -4,27 +4,52 @@ import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import { ensureGatewaySession, fetchRecommendations, resolveStudentHash, trackStudentClick } from '../api/gateway.js';
-import { materials as localMaterials } from '../data/mockData.js';
+import { materials as localMaterials, customCourseMaterials } from '../data/mockData.js';
+
+// ─── Constant: ID khóa học tùy chỉnh dùng Lecture_Bank ───────────────────────
+const CUSTOM_COURSE_ID = 'big-data-course';
 
 export default function MaterialsPage() {
   const { courseId } = useParams();
   const { currentUser } = useAuth();
-  const [materials, setMaterials] = useState(() => localMaterials);
-  const [isLoading, setIsLoading] = useState(true);
+
+  // Nếu đang ở khóa tùy chỉnh, dùng thẳng customCourseMaterials thay vì gọi API
+  const isCustomCourse = courseId === CUSTOM_COURSE_ID;
+
+  const [materials, setMaterials] = useState(() =>
+    isCustomCourse ? customCourseMaterials : localMaterials
+  );
+  const [isLoading, setIsLoading] = useState(!isCustomCourse);
   const [studentHash, setStudentHash] = useState('');
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadMaterials() {
-      setIsLoading(true);
+      // Luôn resolve student hash (cần cho tracking)
       try {
         const resolvedHash = await resolveStudentHash(currentUser);
         if (isMounted) {
           setStudentHash(resolvedHash);
         }
-        const { studentHash } = await ensureGatewaySession(currentUser);
-        const payload = await fetchRecommendations(studentHash);
+      } catch {
+        // silent
+      }
+
+      // Khóa tùy chỉnh: dùng data tĩnh từ Lecture_Bank, không cần gọi API RecSys
+      if (isCustomCourse) {
+        if (isMounted) {
+          setMaterials(customCourseMaterials);
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      // Khóa thông thường: thử tải gợi ý từ FastAPI Gateway
+      setIsLoading(true);
+      try {
+        const { studentHash: sHash } = await ensureGatewaySession(currentUser);
+        const payload = await fetchRecommendations(sHash);
         if (isMounted) {
           setMaterials(Array.isArray(payload?.recommendations) ? payload.recommendations : []);
         }
@@ -44,12 +69,20 @@ export default function MaterialsPage() {
     return () => {
       isMounted = false;
     };
-  }, [currentUser]);
+  }, [currentUser, isCustomCourse]);
 
   const hasMaterials = useMemo(() => materials.length > 0, [materials]);
 
+  /**
+   * handleMaterialClick – OULAD Mapping Layer
+   *
+   * Với khóa tùy chỉnh (big-data-course), mỗi item có trường `id_site_mapping`
+   * trỏ về OULAD id_site thực. Ta ưu tiên dùng id_site_mapping thay vì id hiển thị,
+   * đảm bảo sự kiện gửi về Kafka luôn chứa mã OULAD hợp lệ.
+   */
   const handleMaterialClick = async (item) => {
-    const rawId = item.id_site || item.id;
+    // Ưu tiên id_site_mapping (OULAD ID thực) → id_site → id (hiển thị nội bộ)
+    const rawId = item.id_site_mapping || item.id_site || item.id;
     const cleanedSiteId = String(rawId).replace(/\D/g, '');
     await trackStudentClick(studentHash, cleanedSiteId);
   };
@@ -57,9 +90,13 @@ export default function MaterialsPage() {
   return (
     <div className="page-stack">
       <PageHeader
-        eyebrow="Khóa học / Tài liệu"
-        title="Tài liệu khóa học"
-        description="Quản lý và truy cập tất cả tài nguyên học tập của khóa học hiện tại."
+        eyebrow={isCustomCourse ? 'Big Data / Tài liệu' : 'Khóa học / Tài liệu'}
+        title={isCustomCourse ? 'Tài liệu Big Data & Hệ thống Phân tán' : 'Tài liệu khóa học'}
+        description={
+          isCustomCourse
+            ? 'Hệ thống bài giảng từ Lecture_Bank – mỗi lượt xem được theo dõi thời gian thực qua Kafka.'
+            : 'Quản lý và truy cập tất cả tài nguyên học tập của khóa học hiện tại.'
+        }
         action={<button className="button ghost"><Filter size={18} /> Bộ lọc</button>}
       />
       <div className="filter-tabs">

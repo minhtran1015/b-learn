@@ -3,16 +3,31 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { readCachedMaterials, resolveStudentHash, trackStudentClick } from '../api/gateway.js';
-import { materials } from '../data/mockData.js';
+import { materials, customCourseMaterials } from '../data/mockData.js';
+
+// ─── Constant: ID khóa học tùy chỉnh ────────────────────────────────────────
+const CUSTOM_COURSE_ID = 'big-data-course';
 
 export default function MaterialDetailPage() {
   const { courseId, materialId } = useParams();
   const { currentUser } = useAuth();
   const [studentHash, setStudentHash] = useState('');
+
+  const isCustomCourse = courseId === CUSTOM_COURSE_ID;
+
+  /**
+   * activeMaterials – chọn nguồn dữ liệu phù hợp:
+   *  - Khóa tùy chỉnh → customCourseMaterials (Lecture_Bank)
+   *  - Khóa thông thường → recommendations từ cache hoặc fallback local
+   */
   const activeMaterials = useMemo(() => {
+    if (isCustomCourse) {
+      return customCourseMaterials;
+    }
     const cached = readCachedMaterials();
     return cached.length > 0 ? cached : materials;
-  }, []);
+  }, [isCustomCourse]);
+
   const material = activeMaterials.find((item) => item.id === materialId) ?? activeMaterials[0];
 
   useEffect(() => {
@@ -32,8 +47,15 @@ export default function MaterialDetailPage() {
     };
   }, [currentUser]);
 
+  /**
+   * handleMaterialClick – OULAD Mapping Layer
+   *
+   * Ưu tiên id_site_mapping (OULAD ID thực) → id_site → id nội bộ.
+   * Đảm bảo event gửi về /track-click luôn chứa mã OULAD hợp lệ
+   * để Kafka ingestion pipeline nhận đúng chuẩn schema.
+   */
   const handleMaterialClick = async (item) => {
-    const rawId = item.id_site || item.id;
+    const rawId = item.id_site_mapping || item.id_site || item.id;
     const cleanedSiteId = String(rawId).replace(/\D/g, '');
     await trackStudentClick(studentHash, cleanedSiteId);
   };
@@ -47,9 +69,14 @@ export default function MaterialDetailPage() {
         </div>
         <div className="card learning-card">
           <div>
-            <span className="pill">Bài học</span>
+            <span className="pill">{isCustomCourse ? 'Big Data' : 'Bài học'}</span>
             <h1>{material.title}</h1>
             <p>Hiểu nội dung cốt lõi, ghi chú lại điểm quan trọng và đánh dấu hoàn thành khi đã sẵn sàng.</p>
+            {isCustomCourse && material.id_site_mapping && (
+              <small style={{ opacity: 0.55, fontSize: '11px' }}>
+                🔗 OULAD ID: {material.id_site_mapping} · {material._bank_source}
+              </small>
+            )}
           </div>
           <button
             className="button primary"
@@ -70,9 +97,19 @@ export default function MaterialDetailPage() {
           </div>
           <h3>Mục tiêu bài học</h3>
           <ul className="check-list">
-            <li>Nắm vững khái niệm Overfitting và Underfitting.</li>
-            <li>Thực hành kỹ thuật Cross-Validation cơ bản.</li>
-            <li>Sử dụng Grid Search để tìm kiếm bộ tham số tối ưu.</li>
+            {isCustomCourse ? (
+              <>
+                <li>Nắm vững khái niệm cốt lõi và thuật ngữ chuyên ngành trong bài.</li>
+                <li>Phân biệt được các thành phần và cơ chế hoạt động chính.</li>
+                <li>Áp dụng kiến thức vào phân tích tình huống thực tế trong Big Data.</li>
+              </>
+            ) : (
+              <>
+                <li>Nắm vững khái niệm Overfitting và Underfitting.</li>
+                <li>Thực hành kỹ thuật Cross-Validation cơ bản.</li>
+                <li>Sử dụng Grid Search để tìm kiếm bộ tham số tối ưu.</li>
+              </>
+            )}
           </ul>
         </div>
       </section>
