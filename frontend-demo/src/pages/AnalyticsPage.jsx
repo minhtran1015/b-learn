@@ -2,6 +2,9 @@ import { Clock3, Info, Trophy } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import PageHeader from '../components/PageHeader.jsx';
 import { courses } from '../data/mockData.js';
+import { useEffect, useState } from 'react';
+import { useAuth } from '../auth/AuthContext.jsx';
+import { ensureGatewaySession, fetchRecommendations } from '../api/gateway.js';
 
 const skillScores = [
   { label: 'Chương 1', value: 86 },
@@ -81,6 +84,23 @@ function RadarChart({ scores }) {
 export default function AnalyticsPage() {
   const { courseId } = useParams();
   const course = courses.find((item) => item.id === courseId) ?? courses[0];
+  const { currentUser } = useAuth();
+  const [dropoutProbability, setDropoutProbability] = useState(0.15); // Mặc định là 15% rủi ro (đỗ 85%)
+
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const { studentHash } = await ensureGatewaySession(currentUser);
+        const payload = await fetchRecommendations(studentHash);
+        if (payload && payload.dropout_probability !== undefined) {
+          setDropoutProbability(payload.dropout_probability);
+        }
+      } catch (err) {
+        console.error("Failed to load prediction stats:", err);
+      }
+    }
+    loadStats();
+  }, [currentUser]);
 
   return (
     <div className="page-stack">
@@ -115,7 +135,7 @@ export default function AnalyticsPage() {
         <div className="stat-wide"><Trophy /><span>Số bài kiểm tra đã xong</span><strong>128 bài</strong><small>Top 5% học viên</small></div>
         <div className="card prediction-card">
           <h2>Dự đoán khả năng trượt/đỗ</h2>
-          <div className="pass-box">Đỗ 85%</div>
+          <div className="pass-box">Đỗ {Math.round((1 - dropoutProbability) * 100)}%</div>
           <p>Dựa trên hiệu suất học tập 30 ngày qua, hệ thống dự báo bạn có khả năng cao hoàn thành khóa học xuất sắc.</p>
         </div>
         <div className="card session-table">

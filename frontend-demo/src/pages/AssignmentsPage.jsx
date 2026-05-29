@@ -1,10 +1,28 @@
 import { CheckCircle2, Circle, Clock } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import PageHeader from '../components/PageHeader.jsx';
-import { assignments } from '../data/mockData.js';
+import { assignments as localAssignments } from '../data/mockData.js';
+import { useState, useEffect } from 'react';
 
 export default function AssignmentsPage() {
   const { courseId } = useParams();
+  const [assignments, setAssignments] = useState(localAssignments);
+
+  useEffect(() => {
+    const submitted = JSON.parse(localStorage.getItem('blearn.submitted_assignments') || '[]');
+    if (submitted.length > 0) {
+      const updated = localAssignments.map(item => {
+        if (submitted.includes(item.id)) {
+          return { ...item, status: 'done' };
+        }
+        return item;
+      });
+      setAssignments(updated);
+    }
+  }, []);
+  
+  const doneCount = assignments.filter(a => a.status === 'done').length;
+  const progressPercent = Math.round((doneCount / assignments.length) * 100);
 
   return (
     <div className="page-stack">
@@ -15,8 +33,8 @@ export default function AssignmentsPage() {
       />
       <div className="completion-banner">
         <span>Tiến độ hoàn thành</span>
-        <div className="progress-track"><span style={{ width: '35%' }} /></div>
-        <strong>5/14 bài tập</strong>
+        <div className="progress-track"><span style={{ width: `${progressPercent}%` }} /></div>
+        <strong>{doneCount}/{assignments.length} bài tập</strong>
       </div>
       <section className="assignment-group">
         <h2>Chương 1: Cơ bản về Microservices</h2>

@@ -49,6 +49,9 @@ df_lms_meta = None
 last_loaded = None
 click_producer = None
 
+# Lưu vết các thay đổi độ thành thục/dropout rate để áp dụng lại nếu cache bị refresh
+_assessment_shifts = {}  # {student_id_hash: dropout_probability_reduction}
+
 
 class LoginRequest(BaseModel):
     username: str
@@ -65,6 +68,12 @@ class ClickTrackRequest(BaseModel):
     page_path: str = ""
     source: str = "frontend-demo"
     event_time: Optional[str] = None
+
+
+class AssessmentSubmitRequest(BaseModel):
+    student_id_hash: str
+    assignment_id: str
+    score: float
 
 
 def _fallback_click_log_path() -> str:
@@ -278,6 +287,13 @@ def get_cached_data():
             df_user_emb = load_parquet_file("user_embeddings.parquet")
             df_item_emb = load_parquet_file("item_embeddings.parquet")
             df_risk = load_parquet_file("risk_predictions.parquet")
+            
+            # Áp dụng các thay đổi từ submit-assessment đã lưu
+            if df_risk is not None and not df_risk.empty:
+                for shash, reduction in _assessment_shifts.items():
+                    idx_list = df_risk[df_risk['student_id_hash'] == shash].index
+                    for idx in idx_list:
+                        df_risk.loc[idx, 'dropout_probability'] = max(0.0, float(df_risk.loc[idx, 'dropout_probability']) - reduction)
             try:
                 df_lms_meta = load_parquet_file("lms_simulator.parquet")
             except Exception as lms_error:
@@ -392,6 +408,57 @@ def get_recommendations(student_id_hash: str, current_user: dict = Depends(verif
         "served_by": "FastAPI Gateway",
         "client_role": current_user.get("role"),
         "timestamp": datetime.datetime.now().isoformat()
+    }
+
+@app.post("/submit-assessment")
+def submit_assessment(
+    payload: AssessmentSubmitRequest,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(verify_token),
+):
+    """
+    Nhận kết quả bài tập của học viên, cập nhật động cache bộ nhớ đệm (df_risk)
+    bằng cách tăng tiến độ học tập và hạ tỷ lệ rủi ro bỏ học xuống,
+    đồng thời gửi thông điệp thô vào Kafka.
+    """
+    global df_risk, _assessment_shifts
+    
+    # 1. Ghi lại lượng dịch chuyển (reduction) cho sinh viên này
+    # Giảm dropout probability đi 15% (0.15)
+    _assessment_shifts[payload.student_id_hash] = _assessment_shifts.get(payload.student_id_hash, 0.0) + 0.15
+    
+    # 2. Cập nhật trực tiếp cache df_risk hiện tại để có hiệu lực ngay lập tức
+    user_emb_df, item_emb_df, risk_df, lms_meta_df = get_cached_data()
+    if risk_df is not None and not risk_df.empty:
+        idx_list = risk_df[risk_df['student_id_hash'] == payload.student_id_hash].index
+        for idx in idx_list:
+            risk_df.loc[idx, 'dropout_probability'] = max(0.0, float(risk_df.loc[idx, 'dropout_probability']) - 0.15)
+            print(f"[Closed-Loop Cache Shift] Updated student {payload.student_id_hash} in-memory dropout probability.")
+
+    # 3. Bắn bản tin thô vào Kafka để lưu vết lịch sử lâu dài
+    record = {
+        "student_id_hash": payload.student_id_hash,
+        "assignment_id": payload.assignment_id,
+        "score": float(payload.score),
+        "event_type": "assessment_submission",
+        "event_time": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "client_user": current_user.get("username"),
+        "client_role": current_user.get("role"),
+    }
+    background_tasks.add_task(_publish_click_event, record)
+    
+    # Lấy dropout prob mới để phản hồi
+    new_prob = 0.0
+    if risk_df is not None and not risk_df.empty:
+        matching_rows = risk_df[risk_df['student_id_hash'] == payload.student_id_hash]
+        if not matching_rows.empty:
+            new_prob = float(matching_rows.iloc[0]['dropout_probability'])
+
+    return {
+        "status": "success",
+        "message": f"Assessment {payload.assignment_id} submitted successfully with score {payload.score}%",
+        "student_id_hash": payload.student_id_hash,
+        "new_dropout_probability": new_prob
     }
 
 @app.get("/health")
