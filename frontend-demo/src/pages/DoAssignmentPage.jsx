@@ -184,7 +184,7 @@ export default function DoAssignmentPage() {
         localStorage.setItem('blearn.submitted_assignments', JSON.stringify(submitted));
       }
 
-      alert(`Nộp bài thành công! Điểm của bạn: ${calculatedScore}%. Rủi ro bỏ học đã giảm xuống.`);
+      alert(`Nộp bài thành công! Điểm của bạn: ${calculatedScore}%. Warning: tỷ rủi ro bỏ học đã giảm xuống.`);
       navigate(`/courses/${courseId}/assignments`);
     } catch (err) {
       console.error("Lỗi nộp bài:", err);
