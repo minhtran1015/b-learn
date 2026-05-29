@@ -50,6 +50,9 @@ export function AuthProvider({ children }) {
     [users, currentUserId],
   );
 
+  const [gatewayToken, setGatewayToken] = useState(() => localStorage.getItem('blearn.gatewayToken'));
+  const [currentStudentHash, setCurrentStudentHash] = useState(() => localStorage.getItem('blearn.studentHash'));
+
   const register = async ({ email, password, fullName, role, ...rest }) => {
     const normalizedEmail = email.trim().toLowerCase();
     if (users.some((user) => user.email === normalizedEmail)) {
@@ -89,6 +92,8 @@ export function AuthProvider({ children }) {
     setCurrentUserId(user.id);
     const safeUser = sanitizeUser(user);
     await ensureGatewaySession(safeUser);
+    setGatewayToken(localStorage.getItem('blearn.gatewayToken'));
+    setCurrentStudentHash(localStorage.getItem('blearn.studentHash'));
     return safeUser;
   };
 
@@ -108,6 +113,8 @@ export function AuthProvider({ children }) {
     setCurrentUserId(user.id);
     const safeUser = sanitizeUser(user);
     await ensureGatewaySession(safeUser);
+    setGatewayToken(localStorage.getItem('blearn.gatewayToken'));
+    setCurrentStudentHash(localStorage.getItem('blearn.studentHash'));
     return safeUser;
   };
 
@@ -115,6 +122,8 @@ export function AuthProvider({ children }) {
     localStorage.removeItem(SESSION_KEY);
     setCurrentUserId(null);
     clearGatewaySession();
+    setGatewayToken(null);
+    setCurrentStudentHash(null);
   };
 
   const updateProfile = (nextProfile) => {
@@ -153,7 +162,9 @@ export function AuthProvider({ children }) {
     logout,
     register,
     updateProfile,
-  }), [currentUser, users]);
+    token: gatewayToken,
+    currentStudentHash,
+  }), [currentUser, users, gatewayToken, currentStudentHash]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

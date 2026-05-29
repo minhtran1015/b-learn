@@ -84,43 +84,72 @@ function RadarChart({ scores }) {
 export default function AnalyticsPage() {
   const { courseId } = useParams();
   const course = courses.find((item) => item.id === courseId) ?? courses[0];
-  const { currentUser } = useAuth();
-  const [dropoutProbability, setDropoutProbability] = useState(0.15); // Mặc định là 15% rủi ro (đỗ 85%)
-  const [scores, setScores] = useState([
+  const { currentUser, token: contextToken, currentStudentHash: contextHash } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [performanceData, setPerformanceData] = useState(null);
+
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        setLoading(true);
+        const { token, studentHash } = await ensureGatewaySession(currentUser);
+        const currentStudentHash = studentHash || contextHash;
+        const finalToken = token || contextToken;
+
+        if (!currentStudentHash) return;
+
+        const rawBaseUrl = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:8000';
+        const API_BASE_URL = rawBaseUrl.replace(/\/$/, '');
+
+        const response = await fetch(`${API_BASE_URL}/recommendations/${currentStudentHash}`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${finalToken}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch recommendations: ${response.status}`);
+        }
+
+        const apiResponse = await response.json();
+        setPerformanceData(apiResponse);
+      } catch (err) {
+        console.error("Failed to load prediction stats:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    if (currentUser) {
+      loadStats();
+    }
+  }, [currentUser, contextToken, contextHash]);
+
+  const apiResponse = performanceData || {};
+  const keyMap = {
+    C1: 'Chương 1',
+    C2: 'Chương 2',
+    C3: 'Chương 3',
+    C4: 'Chương 4',
+    C5: 'Chương 5',
+    C6: 'Chương 6',
+  };
+  const dynamicSkillScores = Object.entries(apiResponse.bkt_mastery || {}).map(([key, val]) => ({
+    label: keyMap[key] || key,
+    value: Math.round(val * 100) // Chuyển xác suất thập phân sang phần trăm %
+  }));
+
+  const scores = dynamicSkillScores.length > 0 ? dynamicSkillScores : [
     { label: 'Chương 1', value: 86 },
     { label: 'Chương 2', value: 72 },
     { label: 'Chương 3', value: 91 },
     { label: 'Chương 4', value: 64 },
     { label: 'Chương 5', value: 78 },
     { label: 'Chương 6', value: 69 },
-  ]);
-  const passRate = (1 - dropoutProbability) * 100;
+  ];
 
-  useEffect(() => {
-    async function loadStats() {
-      try {
-        const { studentHash } = await ensureGatewaySession(currentUser);
-        const payload = await fetchRecommendations(studentHash);
-        if (payload && payload.dropout_probability !== undefined) {
-          setDropoutProbability(payload.dropout_probability);
-        }
-        if (payload && payload.bkt_mastery) {
-          const bkt = payload.bkt_mastery;
-          setScores([
-            { label: 'Chương 1', value: Math.round((bkt.C1 ?? 0.86) * 100) },
-            { label: 'Chương 2', value: Math.round((bkt.C2 ?? 0.72) * 100) },
-            { label: 'Chương 3', value: Math.round((bkt.C3 ?? 0.91) * 100) },
-            { label: 'Chương 4', value: Math.round((bkt.C4 ?? 0.64) * 100) },
-            { label: 'Chương 5', value: Math.round((bkt.C5 ?? 0.78) * 100) },
-            { label: 'Chương 6', value: Math.round((bkt.C6 ?? 0.69) * 100) },
-          ]);
-        }
-      } catch (err) {
-        console.error("Failed to load prediction stats:", err);
-      }
-    }
-    loadStats();
-  }, [currentUser]);
+  const dropoutProb = apiResponse.dropout_probability !== undefined ? apiResponse.dropout_probability : 0.15;
+  const passRate = (1 - dropoutProb) * 100;
 
   return (
     <div className="page-stack">
