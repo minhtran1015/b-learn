@@ -92,14 +92,25 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     async function loadStats() {
-      // Lấy thông tin session trước
-      const { token, studentHash } = await ensureGatewaySession(currentUser);
+      let token = null;
+      let studentHash = null;
+      try {
+        const session = await ensureGatewaySession(currentUser);
+        token = session.token;
+        studentHash = session.studentHash;
+      } catch (err) {
+        console.error("Failed to ensure gateway session:", err);
+      }
+
       const currentStudentHash = studentHash || contextHash;
       const finalToken = token || contextToken;
 
-      // Nếu chưa có thông tin định danh, giữ nguyên trạng thái loading, KHÔNG tắt sớm
-      if (!currentStudentHash || !finalToken) return;
+      // CHẶN TUYỆT ĐỐI TẠI ĐÂY: Nếu chưa có thông tin Auth, GIỮ NGUYÊN isLoading = true và thoát hàm an toàn
+      if (!currentStudentHash || !finalToken) {
+        return;
+      }
 
+      // Chỉ khi có đủ dữ liệu kết nối mới bắt đầu bật trạng thái tải dữ liệu API
       try {
         setIsLoading(true);
         const rawBaseUrl = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:8000';
