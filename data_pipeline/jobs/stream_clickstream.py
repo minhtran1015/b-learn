@@ -196,9 +196,9 @@ def main():
         .select(
             F.col("assignment_id").cast("int").alias("id_assessment"),
             F.col("effective_student_id").alias("id_student"),
-            F.col("score").cast("double").alias("score"),
             F.coalesce(F.col("date"), F.lit(18)).cast("int").alias("date_submitted"),
-            F.lit(0).cast("int").alias("is_banked")
+            F.lit(0).cast("int").alias("is_banked"),
+            F.col("score").cast("double").alias("score")
         )
         .withColumn("_silver_at", F.current_timestamp())
         .withColumn("_silver_source_table", F.lit("oulad_studentassessment"))
