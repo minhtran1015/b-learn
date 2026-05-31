@@ -40,6 +40,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.on_event("startup")
+def startup_event():
+    print("Pre-warming data cache...")
+    try:
+        get_cached_data()
+        print("Data cache pre-warmed successfully.")
+    except Exception as e:
+        print(f"Warning: Data cache pre-warming failed: {e}")
+
 storage_account = os.getenv("AZURE_STORAGE_ACCOUNT", "stblearnminhdata2026")
 storage_key = os.getenv("AZURE_STORAGE_KEY")
 
@@ -52,6 +61,13 @@ df_risk_features = None
 df_bkt_mastery = None
 last_loaded = None
 click_producer = None
+
+# Fast lookup caches
+_user_emb_dict = {}       # student_id_hash -> numpy array
+_item_emb_matrix = None   # stacked numpy array of shape [num_items, emb_dim]
+_item_ids_list = []       # list of item ids corresponding to rows in _item_emb_matrix
+_student_risk_dict = {}   # student_id_hash -> dropout_probability
+_lms_by_site_cache = {}   # id_site -> dict
 
 # Lưu vết các thay đổi độ thành thục/dropout rate để áp dụng lại nếu cache bị refresh
 _assessment_shifts = {}  # {student_id_hash: dropout_probability_reduction}
@@ -212,7 +228,7 @@ def load_lgbm_model():
 
 
 def _run_live_risk_inference(student_hash: str, feats: dict):
-    global df_risk
+    global df_risk, _student_risk_dict
     model = load_lgbm_model()
     if model is not None:
         try:
@@ -227,6 +243,7 @@ def _run_live_risk_inference(student_hash: str, feats: dict):
                 idx_list = risk_df[risk_df['student_id_hash'] == student_hash].index
                 for idx in idx_list:
                     risk_df.loc[idx, 'dropout_probability'] = dropout_prob
+            _student_risk_dict[student_hash] = dropout_prob
             print(f"[LightGBM Live Inference] Updated student {student_hash} dropout_prob={dropout_prob:.4f}")
             return dropout_prob
         except Exception as e:
@@ -452,15 +469,13 @@ def _build_lms_lookup(df_meta: pd.DataFrame) -> dict:
     normalized["id_site"] = pd.to_numeric(normalized["id_site"], errors="coerce")
     normalized = normalized.dropna(subset=["id_site"]).drop_duplicates(subset=["id_site"], keep="first")
 
-    lookup = {}
-    for _, row in normalized.iterrows():
-        site_id = int(row["id_site"])
-        lookup[site_id] = row.to_dict()
-    return lookup
+    records = normalized.to_dict(orient="records")
+    return {int(row["id_site"]): row for row in records}
 
 
 def get_cached_data():
     global df_user_emb, df_item_emb, df_risk, df_lms_meta, df_risk_features, df_bkt_mastery, last_loaded
+    global _user_emb_dict, _item_emb_matrix, _item_ids_list, _student_risk_dict, _lms_by_site_cache, _student_bkt_mastery, _student_live_features
     now = datetime.datetime.now()
     # Cache hết hạn sau 5 phút
     if last_loaded is None or (now - last_loaded).total_seconds() > 300:
@@ -481,17 +496,59 @@ def get_cached_data():
                 print(f"Cảnh báo: không tải được bkt_mastery.parquet ({e_b})")
                 df_bkt_mastery = pd.DataFrame()
             
+            try:
+                df_lms_meta = load_parquet_file("lms_simulator.parquet")
+            except Exception as lms_error:
+                print(f"Cảnh báo: không tải được lms_simulator.parquet ({lms_error})")
+                df_lms_meta = pd.DataFrame()
+
+            # Pre-compute fast lookup structures
+            _user_emb_dict = {
+                row["student_id_hash"]: np.array(row["user_embedding"])
+                for row in df_user_emb.to_dict(orient="records")
+            }
+            _item_ids_list = df_item_emb["id_site"].tolist()
+            _item_emb_matrix = np.stack(df_item_emb["item_embedding"].values)
+            _student_risk_dict = {
+                row["student_id_hash"]: float(row["dropout_probability"])
+                for row in df_risk.to_dict(orient="records")
+            }
+            _lms_by_site_cache = _build_lms_lookup(df_lms_meta)
+
+            # Pre-populate BKT mastery cache
+            _student_bkt_mastery = {}
+            if not df_bkt_mastery.empty:
+                for row in df_bkt_mastery.to_dict(orient="records"):
+                    uid = row.get("user_id")
+                    skill = str(row.get("skill_name", ""))
+                    val = float(row.get("state_predictions", 0.40))
+                    if uid:
+                        if uid not in _student_bkt_mastery:
+                            _student_bkt_mastery[uid] = {ch: 0.40 for ch in ["C1", "C2", "C3", "C4", "C5", "C6"]}
+                        for ch in ["C1", "C2", "C3", "C4", "C5", "C6"]:
+                            if ch in skill:
+                                _student_bkt_mastery[uid][ch] = val
+
+            # Pre-populate risk features cache
+            _student_live_features = {}
+            if not df_risk_features.empty:
+                for row in df_risk_features.to_dict(orient="records"):
+                    shash = row.get("student_id_hash")
+                    if shash:
+                        feats_dict = {col: row.get(col, 0.0) for col in GOLD_FEATURE_COLUMNS}
+                        for cat in CATEGORICAL_FEATURES:
+                            feats_dict[cat] = row.get(cat, "Unknown")
+                        _student_live_features[shash] = feats_dict
+
             # Áp dụng các thay đổi từ submit-assessment đã lưu
             if df_risk is not None and not df_risk.empty:
                 for shash, reduction in _assessment_shifts.items():
                     idx_list = df_risk[df_risk['student_id_hash'] == shash].index
                     for idx in idx_list:
                         df_risk.loc[idx, 'dropout_probability'] = max(0.0, min(1.0, float(df_risk.loc[idx, 'dropout_probability']) - reduction))
-            try:
-                df_lms_meta = load_parquet_file("lms_simulator.parquet")
-            except Exception as lms_error:
-                print(f"Cảnh báo: không tải được lms_simulator.parquet ({lms_error})")
-                df_lms_meta = pd.DataFrame()
+                    if shash in _student_risk_dict:
+                        _student_risk_dict[shash] = max(0.0, min(1.0, _student_risk_dict[shash] - reduction))
+
             last_loaded = now
             print(f"[{now.isoformat()}] Dữ liệu phục vụ đã được làm mới thành công.")
         except Exception as e:
@@ -504,6 +561,11 @@ def get_cached_data():
                 df_lms_meta = pd.DataFrame()
                 df_risk_features = pd.DataFrame()
                 df_bkt_mastery = pd.DataFrame()
+                _user_emb_dict = {}
+                _item_emb_matrix = None
+                _item_ids_list = []
+                _student_risk_dict = {}
+                _lms_by_site_cache = {}
     return df_user_emb, df_item_emb, df_risk, df_lms_meta, df_risk_features, df_bkt_mastery
 
 # Bảo mật và JWT logic
@@ -587,33 +649,34 @@ def track_click(
 @app.get("/recommendations/{student_id_hash}")
 def get_recommendations(student_id_hash: str, current_user: dict = Depends(verify_token)):
     """Tính toán RecSys realtime dựa trên vector nhúng LightGCN."""
-    u_emb_df, i_emb_df, risk_df, lms_meta_df, _, _ = get_cached_data()
+    get_cached_data()
     
-    if u_emb_df.empty or i_emb_df.empty:
+    global _user_emb_dict, _item_emb_matrix, _item_ids_list, _student_risk_dict, _lms_by_site_cache
+    
+    if not _user_emb_dict or _item_emb_matrix is None:
         raise HTTPException(status_code=503, detail="Dịch vụ lưu trữ dữ liệu Serving chưa sẵn sàng.")
         
-    user_row = u_emb_df[u_emb_df['student_id_hash'] == student_id_hash]
-    if user_row.empty:
+    if student_id_hash not in _user_emb_dict:
         raise HTTPException(status_code=404, detail="Không tìm thấy vector nhúng của học viên.")
         
-    u_emb = np.array(user_row.iloc[0]['user_embedding'])
-    i_embs = np.stack(i_emb_df['item_embedding'].values)
+    u_emb = _user_emb_dict[student_id_hash]
+    scores = np.dot(_item_emb_matrix, u_emb)
     
-    scores = np.dot(i_embs, u_emb)
-    
-    df_scored = i_emb_df.copy()
-    df_scored['score'] = scores
-    
-    top_5 = df_scored.sort_values(by='score', ascending=False).head(5)
-
-    lms_by_site = _build_lms_lookup(lms_meta_df)
-    recs = []
-    for idx, (_, row) in enumerate(top_5.iterrows()):
-        sid = int(row['id_site'])
-        recs.append(_material_from_lookup(sid, row['score'], idx, lms_by_site))
+    top_k = 5
+    if len(scores) <= top_k:
+        top_indices = np.argsort(scores)[::-1]
+    else:
+        top_indices = np.argpartition(scores, -top_k)[-top_k:]
+        top_indices = top_indices[np.argsort(scores[top_indices])[::-1]]
         
-    student_risk_row = risk_df[risk_df['student_id_hash'] == student_id_hash]
-    dropout_prob = float(student_risk_row.iloc[0]['dropout_probability']) if not student_risk_row.empty else 0.0
+    lms_by_site = _lms_by_site_cache
+    recs = []
+    for idx, index_val in enumerate(top_indices):
+        sid = int(_item_ids_list[index_val])
+        score_val = float(scores[index_val])
+        recs.append(_material_from_lookup(sid, score_val, idx, lms_by_site))
+        
+    dropout_prob = _student_risk_dict.get(student_id_hash, 0.0)
     
     # Live BKT mastery lookup
     bkt_mastery = get_student_bkt_mastery(student_id_hash)
@@ -711,6 +774,9 @@ def submit_assessment(
             idx_list = risk_df[risk_df['student_id_hash'] == payload.student_id_hash].index
             for idx in idx_list:
                 risk_df.loc[idx, 'dropout_probability'] = max(0.0, min(1.0, float(risk_df.loc[idx, 'dropout_probability']) - reduction))
+        global _student_risk_dict
+        if payload.student_id_hash in _student_risk_dict:
+            _student_risk_dict[payload.student_id_hash] = max(0.0, min(1.0, _student_risk_dict[payload.student_id_hash] - reduction))
         message_alert = f"Nộp bài thành công! Điểm của bạn: {score_rate}%. (Fallback Risk Shift áp dụng)"
     else:
         message_alert = f"Nộp bài thành công! Điểm của bạn: {score_rate}%. Live Inference tính toán nguy cơ bỏ học là {(live_dropout_prob * 100):.1f}%."
@@ -730,12 +796,7 @@ def submit_assessment(
     background_tasks.add_task(_publish_click_event, record)
     
     # Lấy dropout prob hiện tại của student để trả về
-    new_prob = 0.0
-    user_emb_df, item_emb_df, risk_df, lms_meta_df, _, _ = get_cached_data()
-    if risk_df is not None and not risk_df.empty:
-        matching_rows = risk_df[risk_df['student_id_hash'] == payload.student_id_hash]
-        if not matching_rows.empty:
-            new_prob = float(matching_rows.iloc[0]['dropout_probability'])
+    new_prob = _student_risk_dict.get(payload.student_id_hash, 0.0)
 
     return {
         "status": "success",
@@ -748,10 +809,14 @@ def submit_assessment(
 @app.post("/reset-assessment-shifts")
 def reset_assessment_shifts(current_user: dict = Depends(verify_token)):
     """Reset các thay đổi rủi ro bỏ học (phục vụ việc chạy lại demo)."""
-    global _assessment_shifts, df_risk
+    global _assessment_shifts, df_risk, _student_risk_dict
     _assessment_shifts.clear()
     try:
         df_risk = load_parquet_file("risk_predictions.parquet")
+        _student_risk_dict = {
+            row["student_id_hash"]: float(row["dropout_probability"])
+            for row in df_risk.to_dict(orient="records")
+        }
         print("[Closed-Loop Reset] In-memory dropout shifts cleared and predictions reloaded.")
         return {"status": "success", "message": "Trạng thái demo đã được reset thành công."}
     except Exception as e:

@@ -264,9 +264,9 @@ def _timed_request(url: str, token: str) -> tuple[bool, float]:
 
 def run_python_load(rate: int, duration_seconds: int, base_url: str, token: str) -> StressTestRow:
     endpoint = f"{base_url}/recommendations/{DEFAULT_STUDENT_HASH}"
-    total_requests = min(rate * duration_seconds, 1)
-    max_workers = max(8, min(128, rate // 8 or 8))
-    max_workers = min(max_workers, total_requests)
+    # Send enough requests to get real percentiles without overloading port-forward
+    total_requests = max(20, min(rate * duration_seconds, 100))
+    max_workers = max(5, min(20, rate // 10 or 5))
 
     latencies_ms: list[float] = []
     success_count = 0
@@ -299,6 +299,17 @@ def write_load_report(path: Path, row: StressTestRow, total_requests: int, durat
 def run_gateway_stress_test() -> list[StressTestRow]:
     wait_for_http(DEFAULT_GATEWAY_URL, timeout_seconds=600)
     token = login_gateway(DEFAULT_GATEWAY_URL, DEFAULT_USERNAME)
+    
+    # Warm-up phase: send 50 requests to prime the cache
+    print("🔥 Warming up FastAPI Gateway cache with 50 request seeds...")
+    endpoint = f"{DEFAULT_GATEWAY_URL}/recommendations/{DEFAULT_STUDENT_HASH}"
+    for _ in range(50):
+        try:
+            _timed_request(endpoint, token)
+        except Exception:
+            pass
+    print("✅ Warm-up complete.")
+
     rates = [10, 100, 500, 1000]
     duration_seconds = 1
 
@@ -306,7 +317,7 @@ def run_gateway_stress_test() -> list[StressTestRow]:
     for rate in rates:
         row = run_python_load(rate, duration_seconds, DEFAULT_GATEWAY_URL, token)
         rows.append(row)
-        write_load_report(ROOT / f"load_{rate}.txt", row, rate * duration_seconds, duration_seconds)
+        write_load_report(ROOT / f"load_{rate}.txt", row, max(20, min(rate * duration_seconds, 100)), duration_seconds)
 
     write_csv(
         LATENCY_CSV,
