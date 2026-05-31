@@ -1,9 +1,15 @@
+import logging
 import os
 import sys
 from pathlib import Path
+
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType
+
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Add root data_pipeline to sys.path to resolve import module
 PIPELINE_ROOT = Path(__file__).resolve().parents[1]
@@ -44,7 +50,7 @@ def build_streaming_spark():
     return builder.getOrCreate()
 
 def main():
-    print("🚀 Starting Spark Structured Streaming Clickstream Job with Session Windows...")
+    logger.info("Starting Spark Structured Streaming Clickstream Job with Session Windows")
     spark = build_streaming_spark()
     
     storage_account = os.getenv("AZURE_STORAGE_ACCOUNT", "stblearnminhdata2026")
@@ -52,7 +58,7 @@ def main():
     kafka_topic = os.getenv("KAFKA_TOPIC", "learning-events")
     
     # 1. Read Stream from Kafka broker
-    print(f"Connecting to Kafka: {kafka_bootstrap_servers} on topic '{kafka_topic}'")
+    logger.info("Connecting to Kafka: %s on topic '%s'", kafka_bootstrap_servers, kafka_topic)
     kafka_df = (
         spark.readStream
         .format("kafka")
@@ -64,12 +70,12 @@ def main():
     )
     
     # 2. Define schema for both click and assessment JSON payloads
-    from pyspark.sql.types import DoubleType
     payload_schema = StructType([
         StructField("student_id_hash", StringType(), True),
         StructField("id_student", StringType(), True),
         StructField("id_site", StringType(), True),
         StructField("sum_click", IntegerType(), True),
+        StructField("clicks", IntegerType(), True),
         StructField("event_type", StringType(), True),
         StructField("assignment_id", StringType(), True),
         StructField("score", DoubleType(), True),
@@ -77,6 +83,7 @@ def main():
         StructField("code_presentation", StringType(), True),
         StructField("date", IntegerType(), True),
         StructField("event_time", StringType(), True),
+        StructField("_corrupt_record", StringType(), True),
     ])
     
     # 3. Deserialize JSON payload and normalize student ID
@@ -87,7 +94,7 @@ def main():
             F.from_json(
                 F.col("json_payload"),
                 payload_schema,
-                {"mode": "PERMISSIVE"}
+                {"mode": "PERMISSIVE", "columnNameOfCorruptRecord": "_corrupt_record"}
             ).alias("data"),
             "kafka_time",
         )
@@ -100,8 +107,45 @@ def main():
         F.coalesce(F.col("student_id_hash"), F.col("id_student"))
     )
 
+    rejected_df = parsed_df.filter(
+        F.col("_corrupt_record").isNotNull()
+        | ((F.col("event_type") == F.lit("click")) & F.col("clicks").isNull())
+    )
+
+    clean_df = parsed_df.filter(
+        F.col("_corrupt_record").isNull()
+        & (~((F.col("event_type") == F.lit("click")) & F.col("clicks").isNull()))
+    )
+
+    def _log_rejected_batch(batch_df, batch_id):
+        count = batch_df.count()
+        if count == 0:
+            return
+        sample_rows = [row.asDict(recursive=True) for row in batch_df.select(
+            "json_payload", "event_type", "clicks", "_corrupt_record"
+        ).limit(3).collect()]
+        logger.warning(
+            "[CORRUPT_RECORD] batch_id=%s rejected_records=%s sample=%s",
+            batch_id,
+            count,
+            sample_rows,
+        )
+
+    reject_checkpoint = "/tmp/spark-kafka-checkpoint-reject"
+    if os.getenv("AZURE_STORAGE_KEY"):
+        reject_checkpoint = f"abfss://bronze@{storage_account}.dfs.core.windows.net/checkpoints/oulad_stream_rejects"
+
+    query_reject = (
+        rejected_df.writeStream
+        .foreachBatch(_log_rejected_batch)
+        .outputMode("append")
+        .option("checkpointLocation", reject_checkpoint)
+        .trigger(processingTime="10 seconds")
+        .start()
+    )
+
     # 4. Stream A: Clickstream (event_type != 'assessment_submission')
-    click_df = parsed_df.filter(
+    click_df = clean_df.filter(
         (F.col("event_type").isNull()) | (F.col("event_type") != F.lit("assessment_submission"))
     )
     
@@ -118,7 +162,7 @@ def main():
             F.col("effective_student_id").alias("id_student")
         )
         .agg(
-            F.sum(F.coalesce(F.col("sum_click"), F.lit(1))).alias("sum_click"),
+            F.sum(F.coalesce(F.col("clicks"), F.col("sum_click"), F.lit(1))).alias("sum_click"),
             F.first(F.coalesce(F.col("code_module"), F.lit("AAA"))).alias("code_module"),
             F.first(F.coalesce(F.col("code_presentation"), F.lit("2014J"))).alias("code_presentation"),
             F.first(F.coalesce(F.col("id_site"), F.lit("546803"))).alias("id_site"),
@@ -143,7 +187,7 @@ def main():
     )
     
     # 5. Stream B: Assessment Submissions (event_type == 'assessment_submission')
-    assess_df = parsed_df.filter(
+    assess_df = clean_df.filter(
         F.col("event_type") == F.lit("assessment_submission")
     )
     
@@ -156,7 +200,8 @@ def main():
             F.coalesce(F.col("date"), F.lit(18)).cast("int").alias("date_submitted"),
             F.lit(0).cast("int").alias("is_banked")
         )
-        .withColumn("_silver_updated_at", F.current_timestamp())
+        .withColumn("_silver_at", F.current_timestamp())
+        .withColumn("_silver_source_table", F.lit("oulad_studentassessment"))
     )
     
     # 6. Configure checkpoints
@@ -166,8 +211,8 @@ def main():
         checkpoint_path_vle = "/tmp/spark-kafka-checkpoint-vle"
         checkpoint_path_assess = "/tmp/spark-kafka-checkpoint-assess"
         
-    print(f"VLE Checkpoint: {checkpoint_path_vle}")
-    print(f"Assessment Checkpoint: {checkpoint_path_assess}")
+    logger.info("VLE Checkpoint: %s", checkpoint_path_vle)
+    logger.info("Assessment Checkpoint: %s", checkpoint_path_assess)
     
     # 7. Start both streaming queries
     query_vle = (
@@ -190,6 +235,10 @@ def main():
     
     # Wait for either to terminate
     spark.streams.awaitAnyTermination()
+
+    for query in (query_reject, query_vle, query_assess):
+        if query.isActive:
+            query.stop()
 
 if __name__ == "__main__":
     main()

@@ -89,9 +89,14 @@ def load_recent_interactions(spark) -> pd.DataFrame | None:
         student_vle_df = student_vle_df.withColumnRenamed("id_student", "student_id_hash")
 
     # Lọc sự kiện mới theo cửa sổ thời gian nếu có cột timestamp
-    has_ts = "_silver_updated_at" in student_vle_df.columns or "date" in student_vle_df.columns
+    has_ts = "_silver_updated_at" in student_vle_df.columns or "_silver_at" in student_vle_df.columns or "date" in student_vle_df.columns
     if has_ts:
-        ts_col = "_silver_updated_at" if "_silver_updated_at" in student_vle_df.columns else "date"
+        if "_silver_updated_at" in student_vle_df.columns:
+            ts_col = "_silver_updated_at"
+        elif "_silver_at" in student_vle_df.columns:
+            ts_col = "_silver_at"
+        else:
+            ts_col = "date"
         from pyspark.sql import functions as F
         student_vle_df = student_vle_df.filter(F.col(ts_col) >= F.lit(cutoff_ts.isoformat()))
         count = student_vle_df.count()
