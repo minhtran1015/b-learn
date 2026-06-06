@@ -1,0 +1,7 @@
+operational_hour,state_store_provider,heap_usage_percent,off_heap_usage_mb,garbage_collection_counts
+1,default_memory,42.5,0.0,14
+1,rocksdb_provider,12.4,115.5,2
+2,default_memory,78.9,0.0,56
+2,rocksdb_provider,12.6,242.1,2
+3,default_memory,98.2,0.0,142
+3,rocksdb_provider,12.5,388.4,3

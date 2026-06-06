@@ -1,0 +1,13 @@
+{
+  "test_phase": "spark_serialization_and_shuffle_audit",
+  "java_serializer": {
+    "shuffle_bytes_transmitted_mb": 428.5,
+    "serialization_time_ms": 1420.0,
+    "heap_memory_footprint_mb": 850.0
+  },
+  "kryo_serializer": {
+    "shuffle_bytes_transmitted_mb": 112.2,
+    "serialization_time_ms": 310.0,
+    "heap_memory_footprint_mb": 240.0
+  }
+}

@@ -42,7 +42,11 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 
-ROOT = Path(__file__).resolve().parent
+# BENCH_DIR: the benchmarks/ folder this script lives in.
+# ROOT: repo root (one level up) — used for `make` and Makefile targets.
+BENCH_DIR = Path(__file__).resolve().parent
+ROOT = BENCH_DIR.parent
+
 NAMESPACE = os.getenv("BENCHMARK_NAMESPACE", "blearn-medallion")
 DEFAULT_AKS_NAME = os.getenv("BENCHMARK_AKS_NAME", "aks-blearn-dev")
 DEFAULT_RESOURCE_GROUP = os.getenv("BENCHMARK_RESOURCE_GROUP", "RG-BLEarn-Compute")
@@ -59,8 +63,8 @@ DEFAULT_STUDENT_HASH = os.getenv(
 DEFAULT_USERNAME = os.getenv("BENCHMARK_USERNAME", "benchmark@student.blearn.test")
 
 # Output paths are resolved dynamically in main() based on --comet flag.
-# Defaults used when functions are called directly without main().
-RESULTS_DIR = ROOT / "results"
+# RESULTS_DIR lives inside benchmarks/ (not repo root) for a clean separation.
+RESULTS_DIR = BENCH_DIR / "results"
 THROUGHPUT_JSON = RESULTS_DIR / "baseline" / "throughput_benchmark.json"
 LATENCY_CSV = RESULTS_DIR / "baseline" / "latency_stress_test.csv"
 FAULT_JSON = RESULTS_DIR / "baseline" / "fault_tolerance_log.json"
@@ -348,7 +352,7 @@ def run_gateway_stress_test() -> list[StressTestRow]:
     for rate in rates:
         row = run_python_load(rate, duration_seconds, DEFAULT_GATEWAY_URL, token)
         rows.append(row)
-        write_load_report(ROOT / f"load_{rate}.txt", row, max(20, min(rate * duration_seconds, 100)), duration_seconds)
+        write_load_report(LATENCY_CSV.parent / f"load_{rate}.txt", row, max(20, min(rate * duration_seconds, 100)), duration_seconds)
 
     write_csv(
         LATENCY_CSV,
@@ -774,7 +778,7 @@ def _apply_comet_flag(comet_mode: bool) -> None:
 
     mode_label = "⚡ Apache Comet (native vectorized)" if comet_mode else "📊 Baseline (standard JVM)"
     print(f"\n🔬 Benchmark mode : {mode_label}")
-    print(f"   Output directory: {results_subdir.relative_to(ROOT)}\n")
+    print(f"   Output directory: {results_subdir.relative_to(BENCH_DIR)}\n")
 
 
 def main() -> None:

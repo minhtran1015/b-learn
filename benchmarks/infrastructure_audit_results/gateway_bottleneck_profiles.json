@@ -1,0 +1,8 @@
+{
+  "load_level_qps": 1000,
+  "framework_baseline_latency_p99_ms": 0.85,
+  "pure_inference_numpy_latency_p99_ms": 1.22,
+  "full_request_with_jwt_latency_p99_ms": 5.71,
+  "event_loop_blocked_time_ms": 3.64,
+  "cpu_saturation_percent": 98.5
+}

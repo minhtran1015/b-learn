@@ -1,0 +1,8 @@
+{
+  "event": "Kafka Broker Crash Simulation",
+  "timestamp_crash_triggered": "2026-05-31T17:08:42Z",
+  "timestamp_kafka_recovered": "2026-05-31T17:08:47Z",
+  "spark_checkpoint_status": "SUCCESSFUL_RECOVERY",
+  "offset_gaps_detected": 0,
+  "data_loss_occurred": false
+}

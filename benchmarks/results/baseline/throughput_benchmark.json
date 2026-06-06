@@ -1,0 +1,10 @@
+{
+  "test_suite": "Ingestion Throughput and Poison Pill Defense",
+  "duration_seconds": 20,
+  "total_events_sent": 40000,
+  "poison_pills_injected": 6000,
+  "spark_processed_successfully": 34000,
+  "spark_isolated_corrupt_records": 6000,
+  "average_throughput_events_per_sec": 1999.74,
+  "stream_interrupted": false
+}

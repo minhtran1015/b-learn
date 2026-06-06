@@ -1,0 +1,99 @@
+🤖 Master Task for Agent: Automated End-to-End Benchmark Execution and Data Artifact Dumping
+Mục tiêu: Tự động hóa toàn bộ chuỗi quy trình: Khởi tạo cụm → Bơm tải kiểm thử → Thu thập số liệu → Xuất bản tệp tin báo cáo cấu trúc dữ liệu sạch (JSON/CSV) để đồng bộ vào các bảng biểu khoa học của bài báo.
+
+🧱 BƯỚC 1: KHỞI ĐỘNG HỆ THỐNG VÀ THIẾT LẬP ĐƯỜNG TRUYỀN KIỂM TOÁN
+Hãy thực thi lệnh đánh thức cụm máy chủ compute đám mây và đợi cụm chuyển trạng thái Sẵn sàng:
+
+Bash
+az aks start --name blearn-cluster --resource-group group-blearn-minh
+Kiểm tra trạng thái của toàn bộ các Container Pod trong không gian tên hệ thống:
+
+Bash
+kubectl get pods -n blearn-medallion
+Thiết lập hệ thống kết nối ngầm (Port-Forwarding) kết nối nội bộ:
+
+Bash
+>    make demo-connect
+>    ```
+> 
+> #### ⚡ BƯỚC 2: CHẠY KIỂM THỬ TẬP 1 (INGESTION THROUGHPUT \& RESILIENCY)
+> 1. Tạo tệp tin script python có tên `run_ingestion_bench.py` dùng để tạo tải bản tin sạch xen lẫn $15\%$ bản tin lỗi (JSON hỏng, sai kiểu dữ liệu trường `clicks`), thực thi đẩy tải với tần suất $2000\text{ events/sec}$ liên tục trong 1 phút.
+> 2. Kiểm tra log của Spark streaming để xác nhận cột `_corrupt_record` hoạt động cô lập bản tin lỗi thành công.
+> 3. Xuất tệp tin báo cáo kết quả có tên `throughput_benchmark.json` theo đúng cấu trúc Schema mẫu sau:
+>    
+```json
+>    {
+>      "test_suite": "Ingestion Throughput and Poison Pill Defense",
+>      "duration_seconds": 60,
+>      "total_events_sent": 120000,
+>      "poison_pills_injected": 18000,
+>      "spark_processed_successfully": 102000,
+>      "spark_isolated_corrupt_records": 18000,
+>      "average_throughput_events_per_sec": 1700.0,
+>      "stream_interrupted": false
+>    }
+>    ```
+> 
+> #### ⏱️ BƯỚC 3: CHẠY KIỂM THỬ TẬP 2 (GATEWAY STRESS TEST \& SLA AUDIT)
+> 1. Sử dụng công cụ `vegeta` (hoặc viết script Python gõ tải đồng thời) tác động vào endpoint `/recommendations/student_test_hash` theo các dải tần suất khác nhau, lưu báo cáo trung gian qua từng đợt chạy.
+> 2. Hãy chạy chuỗi lệnh sau để thực thi stress-test:
+>    
+```bash
+>    # Đợt 1: 10 QPS
+>    echo "GET http://localhost:8000/recommendations/student_test_hash" | vegeta attack -rate=10 -duration=10s | vegeta report > load_10.txt
+>    # Đợt 2: 100 QPS
+>    echo "GET http://localhost:8000/recommendations/student_test_hash" | vegeta attack -rate=100 -duration=10s | vegeta report > load_100.txt
+>    # Đợt 3: 500 QPS
+>    echo "GET http://localhost:8000/recommendations/student_test_hash" | vegeta attack -rate=500 -duration=10s | vegeta report > load_500.txt
+>    # Đợt 4: 1000 QPS
+>    echo "GET http://localhost:8000/recommendations/student_test_hash" | vegeta attack -rate=1000 -duration=10s | vegeta report > load_1000.txt
+>    ```
+> 3. Hãy phân tách các tệp kết quả `.txt` và tổng hợp thành một tệp CSV duy nhất có tên `latency_stress_test.csv` bám sát cấu trúc:
+>    
+```csv
+>    concurrent_requests_per_sec,p50_latency_ms,p95_latency_ms,p99_latency_ms,success_rate_percent
+>    10,2.1,3.0,3.5,100.00
+>    100,2.5,3.2,3.9,100.00
+>    500,3.2,4.1,4.8,100.00
+>    1000,4.5,5.2,5.9,99.85
+>    ```
+> 
+> #### 🌋 BƯỚC 4: CHẠY KIỂM THỬ TẬP 3 (FAULT TOLERANCE CRASH TEST)
+> 1. Bắt đầu kích hoạt luồng đẩy tải nạp dữ liệu liên tục vào cụm.
+> 2. Thực thi lệnh triệt hạ Pod Kafka vật lý bất ngờ để ép hệ thống rơi vào trạng thái mất kết nối mạng nội bộ:
+>    
+```bash
+>    kubectl delete pod kafka-stream-0 -n blearn-medallion --force --grace-period=0
+>    ```
+> 3. Chờ cho Pod Kafka khởi động lại hoàn toàn, kiểm tra Log của Spark Structured Streaming để ghi nhận thời điểm khôi phục trạng thái đọc Offset dựa trên tệp ghi vị trí Checkpoint.
+> 4. Lưu tệp báo cáo tổng kết lỗi có tên `fault_tolerance_log.json`:
+>    
+```json
+>    {
+>      "event": "Kafka Broker Crash Simulation",
+>      "timestamp_crash_triggered": "2026-05-31T22:30:00Z",
+>      "timestamp_kafka_recovered": "2026-05-31T22:30:18Z",
+>      "spark_checkpoint_status": "SUCCESSFUL_RECOVERY",
+>      "offset_gaps_detected": 0,
+>      "data_loss_occurred": false
+>    }
+>    ```
+> 
+> #### 🍃 BƯỚC 5: CHẠY KIỂM THỬ TẬP 4 (FINOPS \& GREENOPS ENERGY AUDIT)
+> 1. Đo lượng RAM/CPU tiêu thụ thực tế của toàn cụm khi chạy full tải ở kịch bản Baseline: `kubectl top nodes` và `kubectl top pods -n blearn-medallion`.
+> 2. Thực thi phím tắt kích hoạt chu trình ngủ đông để dọn dẹp bộ nhớ đệm và đóng băng trạng thái luồng:
+>    
+```bash
+>    make streaming-suspend
+>    ```
+> 3. Thu thập lại lượng tài nguyên tiêu thụ sau khi cụm đã vào trạng thái ngủ đông sâu.
+> 4. Xuất bảng dữ liệu tài chính và môi trường bền vững thành tệp `greenops_metrics.csv`:
+>    
+```csv
+>    operational_mode,ram_consumption_gib,monthly_cost_usd,carbon_footprint_percentage
+>    Baseline_24_7,14.5,182.40,100.0
+>    FinOps_GreenOps_Sleep,2.1,43.80,24.1
+>    ```
+> 
+> #### 🎯 BƯỚC 6: KIỂM TOÁN VÀ DỌN SẠCH MÔI TRƯỜNG
+> Xác minh sự tồn tại của bốn tệp tin kết quả (`throughput_benchmark.json`, `latency_stress_test.csv`, `fault_tolerance_log.json`, `greenops_metrics.csv`) tại thư mục gốc của dự án. Sau đó cập nhật bảng tiến độ vào `task.md`.
