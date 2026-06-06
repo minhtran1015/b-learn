@@ -5,12 +5,14 @@ import PageHeader from '../components/PageHeader.jsx';
 import { courses, recentActivities } from '../data/mockData.js';
 
 export default function DashboardPage() {
+  const activeCourseId = localStorage.getItem('blearn.activeCourseId') || 'machine-learning';
+
   return (
     <div className="page-stack">
       <PageHeader
         title="Chào buổi sáng, Quân!"
         description="Hôm nay là một ngày tốt để chinh phục thêm một mốc kiến thức mới."
-        action={<Link className="button primary" to="/courses/machine-learning/materials/m3"><PlayCircle size={19} />Tiếp tục học</Link>}
+        action={<Link className="button primary" to={`/courses/${activeCourseId}/materials`}><PlayCircle size={19} />Tiếp tục học</Link>}
       />
 
       <section className="dashboard-grid">
@@ -28,10 +30,10 @@ export default function DashboardPage() {
           <div className="card">
             <h3>Lối tắt nhanh</h3>
             <div className="shortcut-grid">
-              <Link to="/courses/machine-learning/materials"><ClipboardList /> Tài liệu</Link>
-              <Link to="/courses/machine-learning/assignments"><CalendarDays /> Bài tập</Link>
-              <Link to="/courses/machine-learning/discussions"><MessageSquare /> Thảo luận</Link>
-              <Link to="/courses/machine-learning/analytics"><PlayCircle /> Phân tích</Link>
+              <Link to={`/courses/${activeCourseId}/materials`}><ClipboardList /> Tài liệu</Link>
+              <Link to={`/courses/${activeCourseId}/assignments`}><CalendarDays /> Bài tập</Link>
+              <Link to={`/courses/${activeCourseId}/discussions`}><MessageSquare /> Thảo luận</Link>
+              <Link to={`/courses/${activeCourseId}/analytics`}><PlayCircle /> Phân tích</Link>
             </div>
           </div>
           <div className="card">

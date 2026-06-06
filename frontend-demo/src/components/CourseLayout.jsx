@@ -14,6 +14,10 @@ export default function CourseLayout() {
   const { courseId } = useParams();
   const course = courses.find((item) => item.id === courseId);
 
+  if (course) {
+    localStorage.setItem('blearn.activeCourseId', course.id);
+  }
+
   if (!course) {
     return <Navigate to="/courses" replace />;
   }

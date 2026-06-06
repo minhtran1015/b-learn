@@ -172,13 +172,28 @@ export default function AnalyticsPage() {
       />
       <section className="analytics-grid">
         <div className="card radar-card">
-          <h2>Mức độ thành thạo <Info size={18} /></h2>
+          <h2>Mức độ thành thạo & Tiến trình năng lực <Info size={18} /></h2>
           {isLoading ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '250px', fontSize: '14px', opacity: 0.8 }}>
               Đang tính toán Live Inference từ mô hình AI...
             </div>
           ) : (
-            <RadarChart scores={radarScores} />
+            <div className="radar-container" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px', alignItems: 'center', marginTop: '12px' }}>
+              <RadarChart scores={radarScores} />
+              <div className="progress-bars-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {radarScores.map((score) => (
+                  <div key={score.label} className="progress-bar-item">
+                    <div className="progress-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '14px' }}>
+                      <span>{score.label}</span>
+                      <strong style={{ color: score.value > 50 ? '#2ed573' : '#ff4757' }}>{score.value}%</strong>
+                    </div>
+                    <div className="progress-track" style={{ height: '6px', background: '#eaeaea', borderRadius: '3px', overflow: 'hidden' }}>
+                      <span style={{ display: 'block', height: '100%', width: `${score.value}%`, background: score.value > 50 ? '#2ed573' : '#ff4757', borderRadius: '3px' }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
         <div className="card heatmap-card">
@@ -201,13 +216,32 @@ export default function AnalyticsPage() {
         <div className="stat-wide"><Clock3 /><span>Thời gian học trung bình</span><strong>45 phút</strong><small>+12% so với tuần trước</small></div>
         <div className="stat-wide"><Trophy /><span>Số bài kiểm tra đã xong</span><strong>128 bài</strong><small>Top 5% học viên</small></div>
         <div className="card prediction-card">
-          <h2>Dự đoán khả năng trượt/đỗ</h2>
+          <h2>Dự đoán nguy cơ bỏ học & Kết quả</h2>
           {isLoading || dropoutProbability === null ? (
             <p style={{ opacity: 0.8, fontSize: '14px' }}>Đang tính toán Live Inference từ mô hình AI...</p>
           ) : (
             <>
-              <div className="pass-box">Đỗ {((1 - dropoutProbability) * 100).toFixed(0)}%</div>
-              <p>Dựa trên hiệu suất học tập 30 ngày qua, hệ thống dự báo bạn có khả năng cao hoàn thành khóa học xuất sắc.</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '12px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{
+                    padding: '4px 10px',
+                    borderRadius: '12px',
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    color: '#fff',
+                    backgroundColor: dropoutProbability > 0.5 ? '#ff4757' : '#2ed573'
+                  }}>
+                    {dropoutProbability > 0.5 ? '🔴 Nguy cơ bỏ học cao' : '🟢 An toàn / Rủi ro thấp'}
+                  </span>
+                  <span style={{ fontSize: '14px', color: '#666' }}>Xác suất:</span>
+                  <strong style={{ fontSize: '18px' }}>{(dropoutProbability * 100).toFixed(1)}%</strong>
+                </div>
+              </div>
+              <p style={{ fontSize: '14px', lineHeight: '1.4' }}>
+                {dropoutProbability > 0.5
+                  ? 'Cảnh báo: Tần suất hoạt động và kết quả học tập của bạn đang có dấu hiệu đi xuống. Hãy tập trung làm thêm bài tập và xem lại các bài giảng khuyên dùng.'
+                  : 'Hệ thống dự báo bạn đang ở vùng an toàn và có khả năng cao hoàn thành xuất sắc khóa học này.'}
+              </p>
             </>
           )}
         </div>

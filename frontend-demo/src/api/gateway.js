@@ -126,6 +126,10 @@ export async function trackStudentClick(studentId, siteId) {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        clearGatewaySession();
+        window.location.reload();
+      }
       const detail = await response.text();
       throw new Error(`track-click failed (${response.status}): ${detail || 'Unknown error'}`);
     }
@@ -152,7 +156,8 @@ export async function fetchRecommendations(studentHash) {
 
   if (!response.ok) {
     if (response.status === 401) {
-      clearToken();
+      clearGatewaySession();
+      window.location.reload();
     }
     const detail = await response.text();
     throw new Error(`Lấy recommendations thất bại (${response.status}): ${detail || 'Unknown error'}`);

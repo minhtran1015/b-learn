@@ -33,6 +33,8 @@ Thumbs.db
 full_data_manifest.json
 *.ipynb
 /RecSys-Output
-/infra/staging/ednet_consolidated_full
-/infra/staging/ednet_consolidated_full_compacted
+/infra/staging/
+small-data/**/*.csv
+small-data/**/*.json
+**/_SUCCESS
 infra/tfplan

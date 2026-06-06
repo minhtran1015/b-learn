@@ -84,7 +84,19 @@ export default function MaterialsPage() {
     // Ưu tiên id_site_mapping (OULAD ID thực) → id_site → id (hiển thị nội bộ)
     const rawId = item.id_site_mapping || item.id_site || item.id;
     const cleanedSiteId = String(rawId).replace(/\D/g, '');
+
+    // 1. Gửi log clickstream lên hệ thống
     await trackStudentClick(studentHash, cleanedSiteId);
+
+    // 2. Kích hoạt gọi lại API lấy gợi ý mới ngay lập tức để UI thay đổi tức thì (nếu không phải khóa học tùy chỉnh)
+    if (!isCustomCourse) {
+      try {
+        const payload = await fetchRecommendations(studentHash);
+        setMaterials(Array.isArray(payload?.recommendations) ? payload.recommendations : []);
+      } catch (e) {
+        console.log('Reload recommendations error:', e);
+      }
+    }
   };
 
   return (
