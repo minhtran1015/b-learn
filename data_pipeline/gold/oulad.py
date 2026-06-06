@@ -282,8 +282,18 @@ def _train_lgbm(features: pd.DataFrame) -> tuple[Pipeline, dict[str, float], Lab
     X_fit_proc = preprocessor_es.fit_transform(X_fit_raw)
     X_valid_proc = preprocessor_es.transform(X_valid_raw)
 
+    cat_indices = list(range(len(NUMERIC_FEATURES), len(NUMERIC_FEATURES) + len(CATEGORICAL_FEATURES)))
+
     lgbm_es = LGBMClassifier(
-        learning_rate=0.05,
+        learning_rate=0.02,
+        num_leaves=31,
+        max_depth=6,
+        min_child_samples=50,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        reg_alpha=0.5,
+        reg_lambda=1.5,
+        class_weight="balanced",
         objective="multiclass",
         random_state=42,
         n_estimators=5000,
@@ -295,9 +305,10 @@ def _train_lgbm(features: pd.DataFrame) -> tuple[Pipeline, dict[str, float], Lab
     lgbm_es.fit(
         X_fit_proc,
         y_fit,
+        categorical_feature=cat_indices,
         eval_set=[(X_valid_proc, y_valid)],
         eval_metric="multi_logloss",
-        callbacks=[early_stopping(stopping_rounds=100, verbose=False), log_evaluation(period=0)],
+        callbacks=[early_stopping(stopping_rounds=150, verbose=False), log_evaluation(period=0)],
     )
 
     best_n_estimators = int(getattr(lgbm_es, "best_iteration_", 0) or lgbm_es.n_estimators)
@@ -307,10 +318,18 @@ def _train_lgbm(features: pd.DataFrame) -> tuple[Pipeline, dict[str, float], Lab
             (
                 "model",
                 LGBMClassifier(
-                    learning_rate=0.05,
+                    learning_rate=0.02,
+                    num_leaves=31,
+                    max_depth=6,
+                    min_child_samples=50,
+                    subsample=0.8,
+                    colsample_bytree=0.8,
+                    reg_alpha=0.5,
+                    reg_lambda=1.5,
+                    class_weight="balanced",
                     objective="multiclass",
                     random_state=42,
-                    n_estimators=int(best_n_estimators * 1.25),
+                    n_estimators=int(best_n_estimators * 1.15),
                     device_type="cpu",
                     verbosity=-1,
                     n_jobs=-1,
@@ -318,7 +337,7 @@ def _train_lgbm(features: pd.DataFrame) -> tuple[Pipeline, dict[str, float], Lab
             ),
         ]
     )
-    final_pipeline.fit(X_train, y_train)
+    final_pipeline.fit(X_train, y_train, model__categorical_feature=cat_indices)
     train_seconds = time.perf_counter() - train_started_at
 
     proba = final_pipeline.predict_proba(X_test)

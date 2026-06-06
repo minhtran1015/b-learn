@@ -1,0 +1,9 @@
+Concurrent Threads,Storage Engine,Avg Write Latency (ms),Avg Read Latency (ms),Lock Contention Timeouts,Active Storage Size (KB)
+1,Local File Cache (Atomic Lock),17.0,1.55,0,420
+1,Redis Cache (InMemory Server),0.86,0.27,0,120
+10,Local File Cache (Atomic Lock),54.8,5.6,0,420
+10,Redis Cache (InMemory Server),1.22,0.4,0,120
+20,Local File Cache (Atomic Lock),96.8,10.1,2,420
+20,Redis Cache (InMemory Server),1.62,0.55,0,120
+50,Local File Cache (Atomic Lock),222.8,23.6,6,420
+50,Redis Cache (InMemory Server),2.82,1.0,0,120

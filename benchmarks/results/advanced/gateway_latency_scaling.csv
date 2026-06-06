@@ -1,0 +1,9 @@
+Concurrent Load (QPS),Engine,p50 Latency (ms),p90 Latency (ms),p95 Latency (ms),p99 Latency (ms),Success Rate
+10,Baseline,2.14,2.88,3.2,3.84,100.0%
+10,Apache Comet Enabled,2.11,2.79,3.13,3.72,100.0%
+100,Baseline,2.27,3.07,3.41,4.09,100.0%
+100,Apache Comet Enabled,2.22,2.93,3.28,3.9,100.0%
+500,Baseline,2.89,3.9,4.33,5.2,100.0%
+500,Apache Comet Enabled,2.68,3.54,3.97,4.72,100.0%
+1000,Baseline,3.65,4.93,5.48,6.58,100.0%
+1000,Apache Comet Enabled,3.27,4.31,4.83,5.75,100.0%

@@ -1,0 +1,7 @@
+Model,Class,Precision,Recall,F1-Score,Support,PR-AUC,ROC-AUC,Training Time (s),Best Iteration
+Baseline,Fail,0.3408,0.4541,0.3893,3810,0.3328,0.697,2.45,80
+Baseline,Success,0.6953,0.7289,0.7117,8815,0.7356,0.8058,2.45,80
+Baseline,Withdrawn,0.736,0.5426,0.6247,6439,0.7378,0.7913,2.45,80
+Optimized,Fail,0.3218,0.6037,0.4198,3810,0.3445,0.7063,3.99,210
+Optimized,Success,0.7454,0.6203,0.6771,8815,0.7661,0.8261,3.99,210
+Optimized,Withdrawn,0.757,0.5384,0.6293,6439,0.7487,0.802,3.99,210

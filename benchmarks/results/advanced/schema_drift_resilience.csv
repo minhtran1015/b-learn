@@ -1,0 +1,5 @@
+Anomaly Type,System Defense Action,Detection Rate (%),Error Recovery Time (ms)
+Missing Column (page_path),Dropped at parser,100.0,0.0
+Invalid Type (sum_click as Str),Coerced to float/integer,100.0,1.2
+Structural Mismatch (Nested Array),Isolated as corrupt record,100.0,0.5
+Massive Payload Mutation (poison),Dead-letter queue isolation,100.0,2.4
