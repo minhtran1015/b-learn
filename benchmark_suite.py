@@ -4,13 +4,23 @@
 This module executes the live benchmark flow end-to-end and writes the
 clean artifact files expected by the paper tables:
 
-- throughput_benchmark.json
-- latency_stress_test.csv
-- fault_tolerance_log.json
-- greenops_metrics.csv
+- throughput_benchmark.json          (or throughput_benchmark_comet.json with --comet)
+- latency_stress_test.csv            (or latency_stress_test_comet.csv with --comet)
+- fault_tolerance_log.json           (invariant across modes)
+- greenops_metrics.csv               (or greenops_metrics_comet.csv with --comet)
+
+All artifacts are written to organized subdirectories:
+  results/baseline/   <- default mode (Comet disabled or absent)
+  results/comet/      <- when --comet flag is passed
 
 The commands are intentionally explicit so that the suite can be re-run on
 the same AKS + port-forwarded environment used by the demo workflow.
+
+Usage:
+    python benchmark_suite.py all               # baseline run
+    python benchmark_suite.py all --comet       # Comet-accelerated run
+    python benchmark_suite.py ingestion --comet
+    python benchmark_suite.py verify --comet
 """
 
 from __future__ import annotations
@@ -48,10 +58,13 @@ DEFAULT_STUDENT_HASH = os.getenv(
 )
 DEFAULT_USERNAME = os.getenv("BENCHMARK_USERNAME", "benchmark@student.blearn.test")
 
-THROUGHPUT_JSON = ROOT / "throughput_benchmark.json"
-LATENCY_CSV = ROOT / "latency_stress_test.csv"
-FAULT_JSON = ROOT / "fault_tolerance_log.json"
-GREENOPS_CSV = ROOT / "greenops_metrics.csv"
+# Output paths are resolved dynamically in main() based on --comet flag.
+# Defaults used when functions are called directly without main().
+RESULTS_DIR = ROOT / "results"
+THROUGHPUT_JSON = RESULTS_DIR / "baseline" / "throughput_benchmark.json"
+LATENCY_CSV = RESULTS_DIR / "baseline" / "latency_stress_test.csv"
+FAULT_JSON = RESULTS_DIR / "baseline" / "fault_tolerance_log.json"
+GREENOPS_CSV = RESULTS_DIR / "baseline" / "greenops_metrics.csv"
 TASK_MD = ROOT / "task.md"
 
 
@@ -402,6 +415,74 @@ def _build_invalid_click_event(seq: int) -> dict:
     return payload
 
 
+def _capture_spark_peak_cpu(namespace: str, midpoint_wait: float) -> float:
+    """Sleep until the midpoint of ingestion, then snapshot Spark pod CPU usage.
+
+    Returns the number of CPU cores the spark-streaming-job pod is consuming
+    at peak load saturation, or 0.0 if the metrics-server is unavailable.
+    """
+    time.sleep(midpoint_wait)
+    try:
+        top_result = run_command(
+            ["kubectl", "top", "pods", "-n", namespace],
+            capture_output=True,
+            check=False,
+        )
+        for line in top_result.stdout.splitlines():
+            if "spark-streaming-job" in line:
+                parts = line.split()
+                if len(parts) >= 2:
+                    cpu_raw = parts[1]
+                    if cpu_raw.endswith("m"):
+                        return round(float(cpu_raw[:-1]) / 1000.0, 3)
+                    elif cpu_raw.endswith("n"):
+                        return round(float(cpu_raw[:-1]) / 1_000_000_000.0, 3)
+                    else:
+                        try:
+                            return round(float(cpu_raw), 3)
+                        except ValueError:
+                            pass
+    except Exception:
+        pass  # Graceful fallback if metrics-server is lagging
+    return 0.0
+
+
+def _extract_spark_batch_duration_ms(namespace: str) -> float:
+    """Parse the most recent Spark Structured Streaming micro-batch processing
+    duration from the streaming job pod logs.
+
+    Looks for lines containing processing-time indicators in the form:
+        '... processingTime ... Xms ...'
+        '... process ... 123ms ...'
+        '... batch completed in 123 ms ...'
+
+    Returns 0.0 if no matching log entry is found.
+    """
+    try:
+        spark_pod = _find_pod_name(namespace, "spark-streaming-job") or _find_pod_name(namespace, "spark")
+        if not spark_pod:
+            return 0.0
+        raw_logs = _kubectl_logs(namespace, spark_pod, tail_lines=200)
+        import re
+        # Pattern 1: StreamingQueryProgress JSON field: "durationMs" : {"triggerExecution": 123}
+        m = re.search(r'"triggerExecution"\s*:\s*(\d+)', raw_logs)
+        if m:
+            return float(m.group(1))
+        # Pattern 2: processingTime marker (e.g., Spark logs "Completed batch ... 123 ms")
+        for line in reversed(raw_logs.splitlines()):
+            line_lower = line.lower()
+            if ("process" in line_lower or "batch" in line_lower) and "ms" in line_lower:
+                parts = line.split()
+                for i, part in enumerate(parts):
+                    if part.lower().endswith("ms") and part[:-2].replace(".", "", 1).isdigit():
+                        return float(part[:-2])
+                    if part == "ms" and i > 0 and parts[i - 1].replace(".", "", 1).isdigit():
+                        return float(parts[i - 1])
+    except Exception:
+        pass
+    return 0.0
+
+
 def run_ingestion_benchmark(
     rate_per_second: int = 2000,
     duration_seconds: int = 20,
@@ -419,6 +500,24 @@ def run_ingestion_benchmark(
     malformed_positions = set(random_seed.sample(sorted(poison_positions), malformed_count))
     sent_count = 0
     producer_broken = False
+
+    # --- Comet delta metrics: capture peak CPU at midpoint of ingestion run ---
+    peak_cpu_cores = 0.0
+    midpoint_seconds = duration_seconds / 2.0
+    cpu_snapshot_thread = threading.Thread(
+        target=lambda: None,  # placeholder; overwritten below
+        daemon=True,
+    )
+
+    cpu_result_holder: list[float] = []
+
+    def _cpu_snapshot_worker():
+        result = _capture_spark_peak_cpu(NAMESPACE, midpoint_seconds)
+        cpu_result_holder.append(result)
+
+    cpu_snapshot_thread = threading.Thread(target=_cpu_snapshot_worker, daemon=True)
+    cpu_snapshot_thread.start()
+    # --------------------------------------------------------------------------
 
     started = time.perf_counter()
     for second in range(duration_seconds):
@@ -467,6 +566,14 @@ def run_ingestion_benchmark(
         producer.terminate()
         producer.wait(timeout=20)
 
+    # Collect CPU snapshot result (thread should have finished by now)
+    cpu_snapshot_thread.join(timeout=5)
+    peak_cpu_cores = cpu_result_holder[0] if cpu_result_holder else 0.0
+
+    # --- Comet delta metric: parse Spark micro-batch processing latency ---
+    spark_batch_duration_ms = _extract_spark_batch_duration_ms(NAMESPACE)
+    # ----------------------------------------------------------------------
+
     spark_processed_successfully = clean_count
     spark_isolated_corrupt_records = poison_count
 
@@ -479,6 +586,8 @@ def run_ingestion_benchmark(
         "spark_isolated_corrupt_records": spark_isolated_corrupt_records,
         "average_throughput_events_per_sec": round(sent_count / elapsed, 2),
         "stream_interrupted": producer_broken,
+        "peak_spark_cpu_cores_utilized": peak_cpu_cores,
+        "spark_microbatch_processing_ms": spark_batch_duration_ms,
     }
     write_json(THROUGHPUT_JSON, payload)
     return payload
@@ -609,6 +718,9 @@ def verify_artifacts() -> list[str]:
     missing = [str(path) for path in paths if not path.exists()]
     if missing:
         raise FileNotFoundError("Missing benchmark artifacts: " + ", ".join(missing))
+    print("\n📁 Artifact summary:")
+    for path in paths:
+        print(f"   ✅ {path.relative_to(ROOT)}")
     return [str(path) for path in paths]
 
 
@@ -641,8 +753,42 @@ def run_all() -> None:
     update_task_md()
 
 
+def _apply_comet_flag(comet_mode: bool) -> None:
+    """Redirect all module-level output path globals to the appropriate
+    results subdirectory based on whether --comet was specified.
+
+    Baseline results go to  results/baseline/
+    Comet results go to     results/comet/
+    fault_tolerance_log.json is kept invariant (it does not depend on Comet).
+    """
+    global THROUGHPUT_JSON, LATENCY_CSV, FAULT_JSON, GREENOPS_CSV
+    subdir = "comet" if comet_mode else "baseline"
+    results_subdir = RESULTS_DIR / subdir
+    results_subdir.mkdir(parents=True, exist_ok=True)
+
+    suffix = "_comet" if comet_mode else ""
+    THROUGHPUT_JSON = results_subdir / f"throughput_benchmark{suffix}.json"
+    LATENCY_CSV     = results_subdir / f"latency_stress_test{suffix}.csv"
+    FAULT_JSON      = results_subdir / "fault_tolerance_log.json"  # invariant
+    GREENOPS_CSV    = results_subdir / f"greenops_metrics{suffix}.csv"
+
+    mode_label = "⚡ Apache Comet (native vectorized)" if comet_mode else "📊 Baseline (standard JVM)"
+    print(f"\n🔬 Benchmark mode : {mode_label}")
+    print(f"   Output directory: {results_subdir.relative_to(ROOT)}\n")
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run B-Learn benchmark suites and artifact dumps")
+    parser = argparse.ArgumentParser(
+        description="Run B-Learn benchmark suites and artifact dumps",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "Examples:\n"
+            "  python benchmark_suite.py all             # baseline run\n"
+            "  python benchmark_suite.py all --comet     # Comet-accelerated run\n"
+            "  python benchmark_suite.py ingestion --comet\n"
+            "  python benchmark_suite.py verify --comet\n"
+        ),
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     subparsers.add_parser("all", help="Run the full benchmark chain")
@@ -652,12 +798,29 @@ def main() -> None:
     subparsers.add_parser("greenops", help="Run only the greenops audit")
     subparsers.add_parser("verify", help="Verify all benchmark artifacts exist")
 
+    # --- Global flag: tag outputs with _comet suffix and route to results/comet/ ---
+    parser.add_argument(
+        "--comet",
+        action="store_true",
+        default=False,
+        help=(
+            "Tag output files with a _comet suffix and write to results/comet/ for "
+            "side-by-side comparison with baseline. Also records peak_spark_cpu_cores_utilized "
+            "and spark_microbatch_processing_ms as Comet delta metrics."
+        ),
+    )
+
     args = parser.parse_args()
+
+    # Redirect module-level path globals before any benchmark function runs
+    _apply_comet_flag(args.comet)
 
     if args.command == "all":
         run_all()
     elif args.command == "ingestion":
-        run_ingestion_benchmark()
+        result = run_ingestion_benchmark()
+        print("\n📊 Ingestion result:")
+        print(json.dumps(result, indent=2))
     elif args.command == "gateway":
         run_gateway_stress_test()
     elif args.command == "fault-tolerance":
