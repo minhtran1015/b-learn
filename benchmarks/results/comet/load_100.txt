@@ -1,0 +1,7 @@
+target_rate_qps=100
+duration_seconds=1
+total_requests=100
+p50_latency_ms=2.36
+p95_latency_ms=3.56
+p99_latency_ms=4.36
+success_rate_percent=100.0

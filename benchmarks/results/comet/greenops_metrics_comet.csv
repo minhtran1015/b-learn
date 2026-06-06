@@ -1,0 +1,3 @@
+operational_mode,ram_consumption_gib,monthly_cost_usd,carbon_footprint_percentage
+Baseline_24_7,2.65,182.4,100.0
+FinOps_GreenOps_Sleep,1.58,43.8,24.1
