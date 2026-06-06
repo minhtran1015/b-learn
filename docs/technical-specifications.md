@@ -138,7 +138,7 @@ He thong van hanh theo chuoi:
 
 ### Hai server surface khac nhau trong repo
 
-- `data_pipeline/jobs/serving_gateway.py`: serving gateway co JWT, click tracking, recommendation, submit-assessment, reset-assessment-shifts.
+- `backend-api/serving_gateway.py`: serving gateway co JWT, click tracking, recommendation, submit-assessment, reset-assessment-shifts.
 - `dashboard/api_server.py`: serving API doc du lieu Gold trong RAM, nhe I/O, phuc vu trang Web/REST giu do trễ thap.
 
 ### Su khac nhau ve muc dich
@@ -151,7 +151,7 @@ He thong van hanh theo chuoi:
 | K8s object | Command / image | Port | Purpose |
 |---|---|---:|---|
 | `blearn-frontend-demo` | `acrblearnminh2026.azurecr.io/oulad-frontend:latest` | 80 | Giao dien hoc vien |
-| `blearn-api-gateway` | `python -m data_pipeline.jobs.serving_gateway` | 8000 | JWT + click + recommendation + assessment |
+| `blearn-api-gateway` | `python backend-api/serving_gateway.py` | 8000 | JWT + click + recommendation + assessment |
 | `blearn-api-serving` | `uvicorn dashboard.api_server:app --host 0.0.0.0 --port 8000` | 8000 | REST phuc vu Gold data |
 | `blearn-streamlit-ui` | `streamlit run /app/dashboard/app.py` | 8501 | Dashboard giang vien |
 | `spark-streaming-job` | `python -m data_pipeline.jobs.stream_clickstream` | n/a | Streaming pipeline |
@@ -202,7 +202,7 @@ He thong van hanh theo chuoi:
 6. `gold_bkt_pipeline.py` trains pyBKT and writes mastery outputs.
 7. `gold_recsys_pipeline.py` trains LightGCN and writes user/item embeddings.
 8. `export_to_serving.py` flattens Gold tables to the serving container.
-9. `dashboard/api_server.py` and `data_pipeline/jobs/serving_gateway.py` consume serving files.
+9. `dashboard/api_server.py` and `backend-api/serving_gateway.py` consume serving files.
 10. `dashboard/app.py` visualizes metrics, Grafana iframe, and SLA drift.
 
 ## 11. Model-Specific Details That Matter Operationally
@@ -233,7 +233,7 @@ He thong van hanh theo chuoi:
 
 ## 12. Repo Surfaces That Are Supporting, Not Primary
 
-- `backend-api/` is a placeholder folder in the current workspace.
+- `backend-api/` contains the decoupled API serving gateway server.
 - `data_pipeline/jobs/ednet.py` and `data_pipeline/jobs/sed.py` only carry dataset-specific defaults/helpers.
 - `data_pipeline/README.md` documents the older Bronze-first, Medallion-oriented execution path and the EdNet consolidation story.
 - `infra/manifests/oulad-bronze-cronjob.yaml`, `oulad-silver-cronjob.yaml`, and `oulad-nrt-cronjob.yaml` are failover or scheduled execution paths around the core pipeline.

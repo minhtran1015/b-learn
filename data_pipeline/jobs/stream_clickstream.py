@@ -35,11 +35,11 @@ def build_streaming_spark():
                 "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0")
     )
     
+    sql_extensions = []
     if storage_account_key:
         builder = (
             builder
             .config(f"spark.hadoop.fs.azure.account.key.{storage_account}.dfs.core.windows.net", storage_account_key)
-            .config("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions")
             .config("spark.sql.catalog.bronze_catalog", "org.apache.iceberg.spark.SparkCatalog")
             .config("spark.sql.catalog.bronze_catalog.type", "hadoop")
             .config("spark.sql.catalog.bronze_catalog.warehouse", f"abfss://bronze@{storage_account}.dfs.core.windows.net/iceberg_warehouse")
@@ -47,6 +47,31 @@ def build_streaming_spark():
             .config("spark.sql.catalog.silver_catalog.type", "hadoop")
             .config("spark.sql.catalog.silver_catalog.warehouse", f"abfss://silver@{storage_account}.dfs.core.windows.net/iceberg_warehouse")
         )
+        sql_extensions.append("org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions")
+
+    # Configure Apache Comet if the JAR is present
+    comet_jar = "/app/jars/comet-spark-spark3.5_2.12-0.16.0.jar"
+    enable_comet = os.getenv("ENABLE_COMET", "true").lower() == "true"
+    if enable_comet and os.path.exists(comet_jar):
+        builder = (
+            builder
+            .config("spark.jars", comet_jar)
+            .config("spark.driver.extraClassPath", comet_jar)
+            .config("spark.executor.extraClassPath", comet_jar)
+            .config("spark.plugins", "org.apache.spark.CometPlugin")
+            .config("spark.comet.enabled", "true")
+            .config("spark.comet.exec.enabled", "true")
+            .config("spark.comet.exec.all.enabled", "true")
+            .config("spark.shuffle.manager", "org.apache.spark.sql.comet.execution.shuffle.CometShuffleManager")
+            .config("spark.comet.exec.shuffle.enabled", "true")
+            .config("spark.memory.offHeap.enabled", "true")
+            .config("spark.memory.offHeap.size", os.getenv("SPARK_OFFHEAP_SIZE", "256m"))
+        )
+        sql_extensions.append("org.apache.comet.CometSparkSessionExtensions")
+
+    if sql_extensions:
+        builder = builder.config("spark.sql.extensions", ",".join(sql_extensions))
+
     return builder.getOrCreate()
 
 def main():

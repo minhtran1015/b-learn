@@ -191,3 +191,18 @@ make demo-reset
 - [ ] `AnalyticsPage` hien pass rate duoc cap nhat sau submit.
 - [ ] `ProfilePage` chinh sua duoc thong tin va luu lai trong browser.
 - [ ] Cua so Terminal giu `make kafka-consume-stream` khong bi dong khi demo dang chay.
+
+## 11. Benchmark Artifact Flow
+
+- `python run_ingestion_bench.py ingestion` chay ingest benchmark va ghi `throughput_benchmark.json`.
+- `python benchmark_suite.py gateway` chay stress test gateway va ghi `latency_stress_test.csv` + `load_*.txt`.
+- `python benchmark_suite.py fault-tolerance` mo phong crash Kafka va ghi `fault_tolerance_log.json`.
+- `python benchmark_suite.py greenops` thu thap baseline / suspend metrics va ghi `greenops_metrics.csv`.
+- `python benchmark_suite.py verify` kiem tra 4 artifact co ton tai tai root project.
+
+## 12. Nhom can chu y
+
+- Dung ten cluster va resource group theo repo: `aks-blearn-dev` va `RG-BLEarn-Compute`, tru khi co env override.
+- `make demo-connect` phai duoc chay sau khi cluster va pod da san sang, neu khong local port 8000/8080 se khong mo.
+- Poison-pill benchmark gio phu thuoc vao `_corrupt_record` va validation `clicks` khong hop le trong Spark streaming job.
+- `kubectl top` co the can metrics-server; neu khong co, lay so lieu benchmark ngay sau khi metrics-server san sang.
