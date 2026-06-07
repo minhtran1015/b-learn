@@ -66,26 +66,47 @@ def get_activity_icon(act_type):
 
 # ─── PLOTLY GRAPH RENDERING FUNCTIONS ───
 def render_cohort_heatmap(df_pivot, key_suffix=""):
-    """Renders a high-contrast interactive heatmap for cohort skill masteries."""
+    """Renders a high-contrast interactive heatmap for cohort skill masteries using go.Heatmap."""
     z_data = df_pivot.values
     x_labels = df_pivot.columns.tolist()
-    y_labels = df_pivot.index.tolist()
     
-    fig = px.imshow(
-        z_data,
+    # Strip emojis from index labels to prevent browser text layout crashes
+    y_labels = []
+    for val in df_pivot.index.tolist():
+        s = str(val)
+        for emoji in ["🟢", "🟡", "🔴", "🟢 ", "🟡 ", "🔴 "]:
+            s = s.replace(emoji, "")
+        y_labels.append(s.strip())
+        
+    # Scale values to percentage (0 - 100) for display
+    z_display = z_data * 100
+    
+    fig = go.Figure(data=go.Heatmap(
+        z=z_display,
         x=x_labels,
         y=y_labels,
-        labels=dict(x="Knowledge Components (Chapters)", y="Cohort Group", color="Mastery %"),
-        color_continuous_scale=[[0, "#EF4444"], [0.5, "#F59E0B"], [1, "#10B981"]], # Red -> Yellow -> Green
-        text_auto=".1f"
-    )
+        colorscale=[[0.0, "#EF4444"], [0.5, "#F59E0B"], [1.0, "#10B981"]],
+        zmin=0.0,
+        zmax=100.0,
+        text=z_display,
+        texttemplate="%{text:.1f}%",
+        textfont={"size": 11, "family": "Outfit", "color": "#0F172A"},
+        showscale=True,
+        colorbar=dict(
+            title="Mastery %",
+            titleside="top",
+            tickfont=dict(color="#64748B"),
+            titlefont=dict(color="#64748B")
+        )
+    ))
     
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(color="#0F172A", family="Outfit"),
-        coloraxis_showscale=True,
-        margin=dict(l=20, r=20, t=20, b=20),
+        xaxis=dict(tickfont=dict(color="#64748B")),
+        yaxis=dict(tickfont=dict(color="#64748B")),
+        margin=dict(l=20, r=20, t=10, b=20),
         height=280
     )
     
