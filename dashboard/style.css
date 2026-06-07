@@ -47,25 +47,24 @@ div[data-testid="stMetricValue"] {
     font-size: 1.8rem !important;
 }
 
-/* Move block container higher with breathing margins */
+/* Add clean spacing margins to container */
 .block-container {
-    margin-top: 2rem !important;
-    padding-top: 4.5rem !important;
-    padding-bottom: 2rem !important;
+    padding-top: 3.5rem !important;
+    padding-bottom: 2.5rem !important;
 }
 
-/* Hide Streamlit default headers & footers while keeping sidebar toggle visible */
-#MainMenu {display: none;}
-header {
+/* Hide default menu elements but keep the collapse/expand sidebar button visible */
+[data-testid="stHeader"] {
     background-color: transparent !important;
+    background: transparent !important;
 }
-[data-testid="stHeaderActionElements"] {
+[data-testid="stHeaderActionElements"], #MainMenu {
+    display: none !important;
+    visibility: hidden !important;
+}
+footer {
     display: none !important;
 }
-[data-testid="stDecoration"] {
-    display: none !important;
-}
-footer {display: none;}
 
 /* Custom Glass Cards */
 .glass-card {

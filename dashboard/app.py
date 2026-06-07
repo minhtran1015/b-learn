@@ -8,6 +8,8 @@ from azure.storage.blob import ContainerClient
 import io
 import requests
 import jwt
+import plotly.express as px
+import plotly.graph_objects as go
 
 # ─── PAGE CONFIGURATION ───
 st.set_page_config(
@@ -17,7 +19,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Load custom styling rules from style.css
+# Load custom styling rules from style.css (copied pattern from example)
 style_path = 'dashboard/style.css'
 if not os.path.exists(style_path):
     style_path = '/app/dashboard/style.css'
@@ -62,10 +64,395 @@ def get_activity_icon(act_type):
     else:
         return "💻"
 
-def get_risk_band(p):
-    if p <= 0.3: return "Safe"
-    elif p <= 0.7: return "Warning"
-    else: return "Alert"
+# ─── PLOTLY GRAPH RENDERING FUNCTIONS ───
+def render_cohort_heatmap(df_pivot, key_suffix=""):
+    """Renders a high-contrast interactive heatmap for cohort skill masteries using go.Heatmap."""
+    z_data = df_pivot.values
+    x_labels = df_pivot.columns.tolist()
+    
+    # Strip emojis from index labels to prevent browser text layout crashes
+    y_labels = []
+    for val in df_pivot.index.tolist():
+        s = str(val)
+        for emoji in ["🟢", "🟡", "🔴", "🟢 ", "🟡 ", "🔴 "]:
+            s = s.replace(emoji, "")
+        y_labels.append(s.strip())
+        
+    # Scale values to percentage (0 - 100) for display
+    z_display = z_data * 100
+    
+    fig = go.Figure(data=go.Heatmap(
+        z=z_display,
+        x=x_labels,
+        y=y_labels,
+        colorscale=[[0.0, "#EF4444"], [0.5, "#F59E0B"], [1.0, "#10B981"]],
+        zmin=0.0,
+        zmax=100.0,
+        text=z_display,
+        texttemplate="%{text:.1f}%",
+        textfont={"size": 11, "family": "Outfit", "color": "#0F172A"},
+        showscale=True,
+        colorbar=dict(
+            title=dict(
+                text="Mastery %",
+                side="top",
+                font=dict(color="#64748B")
+            ),
+            tickfont=dict(color="#64748B")
+        )
+    ))
+    
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#0F172A", family="Outfit"),
+        xaxis=dict(tickfont=dict(color="#64748B")),
+        yaxis=dict(tickfont=dict(color="#64748B")),
+        margin=dict(l=20, r=20, t=10, b=20),
+        height=280
+    )
+    
+    st.plotly_chart(fig, use_container_width=True, key=f"cohort_mastery_heatmap_{key_suffix}")
+
+def render_student_radar(bkt_mastery_dict, key_suffix=""):
+    """Generates an elegant Radar chart mapping current student chapter masteries."""
+    categories = sorted(list(bkt_mastery_dict.keys()))
+    values = [float(bkt_mastery_dict[cat]) for cat in categories]
+    
+    if not categories:
+        st.info("No mastery tracks initialized for mapping.")
+        return
+
+    categories_closed = categories + [categories[0]]
+    values_closed = values + [values[0]]
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatterpolar(
+        r=[v * 100 for v in values_closed],
+        theta=categories_closed,
+        fill="toself",
+        fillcolor="rgba(59, 130, 246, 0.15)",
+        line=dict(color="#3B82F6", width=3),
+        name="Student Mastery Profile"
+    ))
+
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, 100],
+                tickfont=dict(color="#64748B"),
+                gridcolor="rgba(0, 0, 0, 0.08)"
+            ),
+            angularaxis=dict(
+                tickfont=dict(color="#0F172A", size=11),
+                gridcolor="rgba(0, 0, 0, 0.08)"
+            ),
+            bgcolor="rgba(241, 245, 249, 0.4)"
+        ),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=40, r=40, t=25, b=25),
+        height=280,
+        showlegend=False
+    )
+    
+    st.plotly_chart(fig, use_container_width=True, key=f"student_radar_chart_{key_suffix}")
+
+def render_engagement_comparison(student_clicks, cohort_avg_clicks, key_suffix=""):
+    """Compare selected student clicks against peer average using a gauge indicator."""
+    fig = go.Figure(go.Indicator(
+        mode = "gauge+number+delta",
+        value = student_clicks,
+        domain = {'x': [0, 1], 'y': [0, 1]},
+        delta = {'reference': cohort_avg_clicks, 'increasing': {'color': '#10B981'}, 'decreasing': {'color': '#EF4444'}},
+        gauge = {
+            'axis': {'range': [0, max(float(student_clicks), float(cohort_avg_clicks), 10.0) * 1.4], 'tickwidth': 1, 'tickcolor': "#64748B"},
+            'bar': {'color': "#3B82F6"},
+            'bgcolor': "white",
+            'borderwidth': 1,
+            'bordercolor': "#E2E8F0",
+            'steps': [
+                {'range': [0, cohort_avg_clicks * 0.7], 'color': 'rgba(239, 68, 68, 0.08)'},
+                {'range': [cohort_avg_clicks * 0.7, cohort_avg_clicks * 1.2], 'color': 'rgba(245, 158, 11, 0.08)'},
+                {'range': [cohort_avg_clicks * 1.2, max(float(student_clicks), float(cohort_avg_clicks), 10.0) * 1.4], 'color': 'rgba(16, 185, 129, 0.08)'}
+            ],
+        }
+    ))
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=30, r=30, t=40, b=20),
+        height=180
+    )
+    st.plotly_chart(fig, use_container_width=True, key=f"student_engagement_gauge_{key_suffix}")
+
+def render_module_risk_violin(df_risk, key_suffix=""):
+    """Displays a box plot showing the risk distribution across modules."""
+    fig = px.box(
+        df_risk,
+        x="code_module",
+        y="dropout_probability",
+        color="code_module",
+        points="all",
+        labels=dict(code_module="Course Module", dropout_probability="Dropout Risk Score"),
+        color_discrete_sequence=["#3B82F6", "#60A5FA", "#8B5CF6", "#10B981", "#F59E0B", "#EF4444"]
+    )
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#0F172A", family="Outfit"),
+        margin=dict(l=20, r=20, t=20, b=20),
+        height=280,
+        showlegend=False
+    )
+    st.plotly_chart(fig, use_container_width=True, key=f"universal_violin_risk_{key_suffix}")
+
+def render_student_cohort_scatter(student_hash, df_risk_merged, student_clicks, student_score, key_suffix=""):
+    """Plots Average Assignment Score vs Total Clicks for the cohort, highlighting the selected student."""
+    df_bg = df_risk_merged[df_risk_merged['student_id_hash'] != student_hash]
+    
+    fig = go.Figure()
+    
+    # Cohort background scatter
+    fig.add_trace(go.Scatter(
+        x=df_bg['total_clicks'],
+        y=df_bg['avg_score'],
+        mode='markers',
+        marker=dict(
+            size=6,
+            color=df_bg['dropout_probability'] * 100,
+            colorscale=[[0, '#10B981'], [0.5, '#F59E0B'], [1, '#EF4444']],
+            showscale=True,
+            colorbar=dict(
+                title=dict(
+                    text="Risk %",
+                    font=dict(color="#64748B")
+                ),
+                tickfont=dict(color="#64748B")
+            ),
+            opacity=0.6
+        ),
+        name="Cohort Peers",
+        hovertemplate="Peer Student<br>Clicks: %{x}<br>Avg Score: %{y:.1f}%<br>Risk: %{marker.color:.1f}%<extra></extra>"
+    ))
+    
+    # Current student highlight
+    fig.add_trace(go.Scatter(
+        x=[student_clicks],
+        y=[student_score],
+        mode='markers',
+        marker=dict(
+            size=14,
+            color='#8B5CF6', # Premium Purple/Amethyst for contrast
+            symbol='star',
+            line=dict(color='#0F172A', width=2)
+        ),
+        name="Selected Student",
+        hovertemplate="<b>Selected Student</b><br>Clicks: %{x}<br>Avg Score: %{y:.1f}%<extra></extra>"
+    ))
+    
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#0F172A", family="Outfit"),
+        xaxis=dict(
+            title="Total Clicks",
+            gridcolor="rgba(0, 0, 0, 0.05)",
+            tickfont=dict(color="#64748B")
+        ),
+        yaxis=dict(
+            title="Average Score (%)",
+            gridcolor="rgba(0, 0, 0, 0.05)",
+            tickfont=dict(color="#64748B"),
+            range=[0, 105]
+        ),
+        margin=dict(l=40, r=20, t=10, b=40),
+        height=280,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
+    )
+    st.plotly_chart(fig, use_container_width=True, key=f"student_cohort_scatter_{key_suffix}")
+
+def render_student_timeline_plotly(df_timeline, key_suffix=""):
+    """Displays an elegant, double-axis interactive line chart for risk & BKT mastery."""
+    fig = go.Figure()
+    
+    # Dropout risk
+    fig.add_trace(go.Scatter(
+        x=df_timeline["Mốc thời gian"],
+        y=df_timeline["Xác suất bỏ học (%)"],
+        mode='lines+markers',
+        name="Student Risk (%)",
+        line=dict(color="#EF4444", width=3),
+        marker=dict(size=8),
+        yaxis="y1"
+    ))
+    
+    # Risk baseline
+    fig.add_trace(go.Scatter(
+        x=df_timeline["Mốc thời gian"],
+        y=df_timeline["Trường học (Risk Baseline) (%)"],
+        mode='lines',
+        name="Risk Baseline (%)",
+        line=dict(color="#EF4444", width=1.5, dash='dash'),
+        yaxis="y1"
+    ))
+    
+    # BKT mastery
+    fig.add_trace(go.Scatter(
+        x=df_timeline["Mốc thời gian"],
+        y=df_timeline["Độ thành thục BKT (%)"],
+        mode='lines+markers',
+        name="BKT Mastery (%)",
+        line=dict(color="#10B981", width=3),
+        marker=dict(size=8),
+        yaxis="y2"
+    ))
+    
+    # BKT baseline
+    fig.add_trace(go.Scatter(
+        x=df_timeline["Mốc thời gian"],
+        y=df_timeline["Trường học (BKT Baseline) (%)"],
+        mode='lines',
+        name="BKT Baseline (%)",
+        line=dict(color="#10B981", width=1.5, dash='dash'),
+        yaxis="y2"
+    ))
+    
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#0F172A", family="Outfit"),
+        xaxis=dict(
+            gridcolor="rgba(0, 0, 0, 0.05)",
+            tickfont=dict(color="#64748B")
+        ),
+        yaxis=dict(
+            title=dict(
+                text="Dropout Risk (%)",
+                font=dict(color="#EF4444")
+            ),
+            tickfont=dict(color="#EF4444"),
+            gridcolor="rgba(0, 0, 0, 0.05)",
+            range=[0, 105]
+        ),
+        yaxis2=dict(
+            title=dict(
+                text="BKT Mastery (%)",
+                font=dict(color="#10B981")
+            ),
+            tickfont=dict(color="#10B981"),
+            overlaying="y",
+            side="right",
+            range=[0, 105]
+        ),
+        margin=dict(l=40, r=40, t=10, b=30),
+        height=280,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="center",
+            x=0.5
+        )
+    )
+    st.plotly_chart(fig, use_container_width=True, key=f"timeline_plotly_{key_suffix}")
+
+def render_universal_scatter(df_risk_merged, key_suffix=""):
+    """Plots Average Assignment Score vs Total Clicks for all students, colored by predicted risk."""
+    fig = px.scatter(
+        df_risk_merged,
+        x='total_clicks',
+        y='avg_score',
+        color='dropout_probability',
+        color_continuous_scale=[[0, '#10B981'], [0.5, '#F59E0B'], [1, '#EF4444']],
+        labels=dict(total_clicks="Total Clicks", avg_score="Average Score (%)", dropout_probability="Dropout Risk"),
+        hover_data=['id_student', 'predicted_class', 'highest_education']
+    )
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#0F172A", family="Outfit"),
+        xaxis=dict(gridcolor="rgba(0, 0, 0, 0.05)", title="Total Clicks"),
+        yaxis=dict(gridcolor="rgba(0, 0, 0, 0.05)", range=[0, 105], title="Average Score (%)"),
+        margin=dict(l=40, r=20, t=10, b=40),
+        height=280
+    )
+    st.plotly_chart(fig, use_container_width=True, key=f"universal_risk_scatter_{key_suffix}")
+
+def render_demographic_risk_bars(df_risk_merged, demographic_col, key_suffix=""):
+    """Displays average dropout probability across different categories of a demographic variable."""
+    df_grouped = df_risk_merged.groupby(demographic_col)['dropout_probability'].mean().reset_index()
+    df_grouped['dropout_probability'] = df_grouped['dropout_probability'] * 100
+    df_grouped = df_grouped.sort_values(by='dropout_probability', ascending=True)
+    
+    fig = px.bar(
+        df_grouped,
+        y=demographic_col,
+        x='dropout_probability',
+        orientation='h',
+        labels={demographic_col: demographic_col.replace('_', ' ').title(), 'dropout_probability': 'Avg Dropout Risk (%)'},
+        color='dropout_probability',
+        color_continuous_scale=[[0, '#10B981'], [0.5, '#F59E0B'], [1, '#EF4444']],
+    )
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#0F172A", family="Outfit"),
+        xaxis=dict(gridcolor="rgba(0, 0, 0, 0.05)", range=[0, 100], title="Avg Dropout Risk (%)"),
+        yaxis=dict(gridcolor="rgba(0, 0, 0, 0.05)", title=""),
+        coloraxis_showscale=False,
+        margin=dict(l=40, r=20, t=10, b=40),
+        height=280
+    )
+    st.plotly_chart(fig, use_container_width=True, key=f"demographic_risk_bars_{demographic_col}_{key_suffix}")
+
+def render_feature_correlation_heatmap(df_risk_merged, key_suffix=""):
+    """Plots correlation matrix of key numeric features and predicted dropout probability."""
+    features = [
+        'dropout_probability', 'total_clicks', 'active_days', 
+        'avg_daily_clicks', 'engagement_span', 'engagement_momentum', 
+        'avg_score', 'submission_count', 'late_submissions', 'studied_credits'
+    ]
+    valid_features = [f for f in features if f in df_risk_merged.columns]
+    df_corr = df_risk_merged[valid_features].corr()
+    
+    label_map = {
+        'dropout_probability': 'Dropout Risk',
+        'total_clicks': 'Total Clicks',
+        'active_days': 'Active Days',
+        'avg_daily_clicks': 'Avg Daily Clicks',
+        'engagement_span': 'Engagement Span',
+        'engagement_momentum': 'Eng. Momentum',
+        'avg_score': 'Avg Score',
+        'submission_count': 'Submissions',
+        'late_submissions': 'Late Subs',
+        'studied_credits': 'Credits'
+    }
+    x_labels = [label_map.get(f, f) for f in valid_features]
+    
+    fig = px.imshow(
+        df_corr.values,
+        x=x_labels,
+        y=x_labels,
+        color_continuous_scale='RdBu_r',
+        zmin=-1,
+        zmax=1,
+        text_auto=".2f"
+    )
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#0F172A", family="Outfit"),
+        margin=dict(l=20, r=20, t=20, b=20),
+        height=320
+    )
+    st.plotly_chart(fig, use_container_width=True, key=f"feature_correlation_heatmap_{key_suffix}")
 
 # ─── API CONNECTIVITY UTILITIES ───
 def get_auth_token():
@@ -390,6 +777,12 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
+# Helper function for risk bands
+def get_risk_band(p):
+    if p <= 0.3: return "🟢 Safe"
+    elif p <= 0.7: return "🟡 Medium"
+    else: return "🔴 High"
+
 # ====================================================================
 # VIEW 1: SINGLE STUDENT INSPECTION
 # ====================================================================
@@ -421,7 +814,7 @@ if view_mode == "👤 Single Student Inspection":
                 if ch in skill:
                     bkt_mastery_dict[ch] = float(row['correct_predictions'])
 
-    # Calculate student BKT averages
+    # Calculate student metrics
     bkt_avg = np.mean(list(bkt_mastery_dict.values())) * 100 if bkt_mastery_dict else 65.0
     cohort_risk_avg = df_filtered_risk['dropout_probability'].mean() * 100
 
@@ -441,17 +834,9 @@ if view_mode == "👤 Single Student Inspection":
     if not df_student_feats.empty:
         student_clicks = float(df_student_feats.iloc[0].get('total_clicks', 45.0))
         student_score = float(df_student_feats.iloc[0].get('avg_score', 75.0))
-        active_days = int(df_student_feats.iloc[0].get('active_days', 10))
-        submission_count = int(df_student_feats.iloc[0].get('submission_count', 3))
-        late_submissions = int(df_student_feats.iloc[0].get('late_submissions', 0))
-        studied_credits = int(df_student_feats.iloc[0].get('studied_credits', 60))
     else:
         student_clicks = 45.0
         student_score = 75.0
-        active_days = 10
-        submission_count = 3
-        late_submissions = 0
-        studied_credits = 60
 
     # Add simulated clickstream interactions locally
     student_clicks += st.session_state.get('simulated_clicks', 0)
@@ -466,119 +851,77 @@ if view_mode == "👤 Single Student Inspection":
     if not df_cohort_module.empty:
         cohort_clicks_avg = df_cohort_module['total_clicks'].mean()
         cohort_score_avg = df_cohort_module['avg_score'].mean()
-        cohort_active_avg = df_cohort_module['active_days'].mean()
-        cohort_sub_avg = df_cohort_module['submission_count'].mean()
-        cohort_late_avg = df_cohort_module['late_submissions'].mean()
-        cohort_credits_avg = df_cohort_module['studied_credits'].mean()
     else:
         cohort_clicks_avg = 52.0
         cohort_score_avg = 72.8
-        cohort_active_avg = 12.5
-        cohort_sub_avg = 4.2
-        cohort_late_avg = 0.5
-        cohort_credits_avg = 90.0
 
-    # ─── ROW A: DENSE ACADEMIC PERFORMANCE METRICS ───
-    st.markdown('### 📊 Student Academic Diagnostics')
-    col1, col2, col3, col4 = st.columns(4)
+    # ROW A: KEY PERFORMANCE METRICS
+    st.markdown('### Learning Key Metrics')
+    col1, col2, col3 = st.columns(3)
 
-    # 1. Dropout Risk Metric Card
     risk_pct = f"{prob * 100:.2f}%"
-    risk_band = get_risk_band(prob)
-    risk_delta = f"{((prob * 100) - cohort_risk_avg):+.1f}% vs Cohort"
-    col1.metric("Dropout Risk Probability", risk_pct, risk_delta, delta_color="inverse")
+    risk_label = "Student Dropout Risk"
+    if prob <= 0.3:
+        status_label = "🟢 Safe"
+    elif prob <= 0.7:
+        status_label = "🟡 Warning"
+    else:
+        status_label = "🔴 Alert"
+    col1.metric(risk_label, risk_pct, f"Status: {status_label} ({pred_class})")
 
-    # 2. Avg Assignment Grade
-    score_pct = f"{student_score:.1f}%"
-    score_delta = f"{(student_score - cohort_score_avg):+.1f}% vs Cohort"
-    col2.metric("Avg Assignment Grade", score_pct, score_delta)
+    col2.metric("Cohort Average Risk", f"{cohort_risk_avg:.2f}%", f"Total: {len(df_filtered_risk)} Students")
+    col3.metric("Student BKT Avg Mastery", f"{bkt_avg:.1f}%", f"Active Chapters: {len(bkt_mastery_dict)}")
 
-    # 3. Chapter BKT Mastery
-    mastery_str = f"{bkt_avg:.1f}%"
-    cohort_bkt_avg = 68.4
-    bkt_delta = f"{(bkt_avg - cohort_bkt_avg):+.1f}% vs Average"
-    col3.metric("BKT Avg Skill Mastery", mastery_str, bkt_delta)
+    # ROW B: HEATMAP & PEER SCATTER PLOT
+    c1, c2 = st.columns((6, 4))
 
-    # 4. Total studied credits
-    credits_str = f"{studied_credits} credits"
-    credits_delta = f"{(studied_credits - cohort_credits_avg):+.0f} vs Cohort"
-    col4.metric("Academic Load (Credits)", credits_str, credits_delta)
+    with c1:
+        st.markdown('### BKT skill mastery Heatmap across Cohort Risk Groups')
+        df_student_risk = df_filtered_risk[['student_id_hash', 'dropout_probability']].copy()
+        df_student_risk['risk_band'] = df_student_risk['dropout_probability'].apply(get_risk_band)
+        
+        df_module_bkt_all = df_bkt[df_bkt['skill_name'].str.startswith(selected_module)]
+        
+        if not df_module_bkt_all.empty:
+            df_bkt_merged = df_module_bkt_all.merge(df_student_risk, left_on='user_id', right_on='student_id_hash', how='inner')
+            if not df_bkt_merged.empty:
+                df_pivot = df_bkt_merged.groupby(['risk_band', 'skill_name'])['correct_predictions'].mean().unstack().fillna(0.0)
+                render_cohort_heatmap(df_pivot, key_suffix="student_view")
+            else:
+                st.info("No matching BKT mastery data found for this cohort.")
+        else:
+            st.info(f"No BKT mastery records found matching module {selected_module}.")
 
-    # ─── ROW B: DENSE BEHAVIORAL ENGAGEMENT METRICS ───
-    st.markdown('### ⚡ Student Engagement & LMS Load')
-    col_b1, col_b2, col_b3, col_b4 = st.columns(4)
+    with c2:
+        st.markdown('### Academic position vs Cohort')
+        render_student_cohort_scatter(selected_student, df_cohort_module, student_clicks, student_score, key_suffix="student_view")
 
-    # 1. Total click count
-    clicks_str = f"{int(student_clicks)} clicks"
-    clicks_delta = f"{(student_clicks - cohort_clicks_avg):+.0f} vs Cohort"
-    col_b1.metric("Total LMS Clicks", clicks_str, clicks_delta)
-
-    # 2. Active days count
-    days_str = f"{active_days} days"
-    days_delta = f"{(active_days - cohort_active_avg):+.1f} vs Cohort"
-    col_b2.metric("LMS Active Days", days_str, days_delta)
-
-    # 3. Submissions count
-    subs_str = f"{submission_count} submissions"
-    subs_delta = f"{(submission_count - cohort_sub_avg):+.1f} vs Cohort"
-    col_b3.metric("Assignments Submitted", subs_str, subs_delta)
-
-    # 4. Late submissions count
-    late_str = f"{late_submissions} late"
-    late_delta = f"{(late_submissions - cohort_late_avg):+.1f} vs Cohort"
-    col_b4.metric("Late Submissions", late_str, late_delta, delta_color="inverse")
-
-    # ─── ROW C: TIMELINE & SKILL BARS ───
-    st.markdown('### 📈 Student Diagnostics curves & Skill Profile')
-    col_c1, col_c2 = st.columns(2)
+    # ROW C: CHECKPOINT TIMELINE & ENGAGEMENT GAUGE
+    st.markdown('### Student Diagnostics & Timeline')
+    col_c1, col_c2 = st.columns((6, 4))
     
     with col_c1:
-        st.markdown("##### Cumulative Checkpoint Timelines (Dropout Risk vs BKT)")
+        st.markdown("##### 📈 Longitudinal Checkpoint Timelines")
         df_timeline = get_student_timeline_data(selected_student, prob)
-        chart_data = df_timeline.set_index("Mốc thời gian")[["Xác suất bỏ học (%)", "Độ thành thục BKT (%)"]]
-        # Native line chart provides high performance and aligns perfectly with styling
-        st.line_chart(chart_data, height=plot_height)
+        render_student_timeline_plotly(df_timeline, key_suffix="student_view")
         
     with col_c2:
-        st.markdown("##### BKT Chapter Mastery Profile (Chapters C1 - C6)")
-        if bkt_mastery_dict:
-            df_bkt_profile = pd.DataFrame({
-                "Chương": [f"Chương {ch}" for ch in bkt_mastery_dict.keys()],
-                "Độ thành thục (%)": [v * 100 for v in bkt_mastery_dict.values()]
-            }).set_index("Chương")
-            st.bar_chart(df_bkt_profile, height=plot_height)
-        else:
-            st.info("Không có dữ liệu BKT cho học viên này.")
+        st.markdown("##### ⚡ Student Engagement Peer Comparison")
+        render_engagement_comparison(student_clicks, cohort_clicks_avg, key_suffix="student_clicks")
 
-    # ─── ROW D: PEER COMPARISON & SITE INTERACTIONS ───
-    st.markdown('### 👥 Engagement Comparison & Learning Breakdown')
-    col_d1, col_d2 = st.columns(2)
+    # ROW D: RADAR PROFILE & RECOMMENDATIONS & PLAYGROUND
+    st.markdown('### Adaptive Learning Sandboxes & Recommendations')
+    col_d1, col_d2, col_d3 = st.columns((4, 4, 4))
 
     with col_d1:
-        st.markdown("##### Total Clicks comparison (Selected Student vs Cohort)")
-        df_clicks_comp = pd.DataFrame({
-            "Đối tượng": ["Học viên", "Trung bình khóa"],
-            "Lượt clicks": [student_clicks, cohort_clicks_avg]
-        }).set_index("Đối tượng")
-        st.bar_chart(df_clicks_comp, height=180)
+        st.markdown("##### 🧠 Bayesian Knowledge Tracing Mastery Profile")
+        if bkt_mastery_dict:
+            render_student_radar(bkt_mastery_dict, key_suffix="student_radar")
+        else:
+            st.info("No chapter BKT mastery recorded yet for this student.")
 
     with col_d2:
-        st.markdown("##### LMS Site Content Click Breakdown")
-        vle_counts = {"Video": 15, "PDF": 10, "Quiz": 8, "Forum": 18, "Resource": 6}
-        vle_counts["Quiz"] += len(sim_scores)
-        vle_counts["Video"] += st.session_state.get('simulated_clicks', 0)
-        df_vle = pd.DataFrame({
-            "Hoạt động": list(vle_counts.keys()),
-            "Lượt tương tác": list(vle_counts.values())
-        }).set_index("Hoạt động")
-        st.bar_chart(df_vle, height=180)
-
-    # ─── ROW E: ADAPTIVE PLAYGROUND & RECOMMENDATIONS ───
-    st.markdown('### 🎯 Sandbox & Personalized Recommendations')
-    col_e1, col_e2 = st.columns(2)
-
-    with col_e1:
-        st.markdown('##### Personalized Learning Materials (LightGCN recommendations)')
+        st.markdown('##### 🎯 Personalized Recommendations (LightGCN)')
         top_5_items = None
         if live_data and "recommendations" in live_data:
             recs_df_data = []
@@ -618,7 +961,7 @@ if view_mode == "👤 Single Student Inspection":
         else:
             st.warning("No embedding vectors found to generate recommendations.")
 
-    with col_e2:
+    with col_d3:
         st.markdown('##### 🎮 LMS Simulator Sandbox')
         with st.container(border=True):
             sim_col1, sim_col2 = st.columns(2)
@@ -703,81 +1046,62 @@ else:
         df_univ_bkt = df_bkt[df_bkt['skill_name'].str.startswith(mod)]
         scope_title = f"Module {mod}"
 
-    # Calculate global cohort stats
+    # ROW A: KEY PERFORMANCE METRICS
+    st.markdown(f'### Universal Analytics KPIs — {scope_title}')
+    col_u1, col_u2, col_u3 = st.columns(3)
+    
     total_enrolled = len(df_univ_risk_merged)
     avg_univ_risk = df_univ_risk_merged['dropout_probability'].mean() * 100 if total_enrolled > 0 else 0.0
-    avg_univ_score = df_univ_risk_merged['avg_score'].mean() if total_enrolled > 0 else 0.0
-    avg_univ_clicks = df_univ_risk_merged['total_clicks'].mean() if total_enrolled > 0 else 0.0
-    avg_univ_active_days = df_univ_risk_merged['active_days'].mean() if total_enrolled > 0 else 0.0
-    avg_univ_submissions = df_univ_risk_merged['submission_count'].mean() if total_enrolled > 0 else 0.0
-    avg_univ_late = df_univ_risk_merged['late_submissions'].mean() if total_enrolled > 0 else 0.0
-    avg_univ_late_rate = (avg_univ_late / avg_univ_submissions * 100) if avg_univ_submissions > 0 else 0.0
-    avg_univ_credits = df_univ_risk_merged['studied_credits'].mean() if total_enrolled > 0 else 0.0
     avg_univ_mastery = df_univ_bkt['correct_predictions'].astype(float).mean() * 100 if not df_univ_bkt.empty else 67.8
-
-    # ─── ROW A: DENSE ACADEMIC KPIs ───
-    st.markdown(f'### 📊 Universal Academic KPIs — {scope_title}')
-    col_u1, col_u2, col_u3, col_u4 = st.columns(4)
     
     col_u1.metric("Total Cohort Size", f"{total_enrolled:,} Students")
-    col_u2.metric("Cohort Avg Dropout Risk", f"{avg_univ_risk:.2f}%")
-    col_u3.metric("Cohort Avg Grade Score", f"{avg_univ_score:.1f}%")
-    col_u4.metric("Avg BKT Skill Mastery", f"{avg_univ_mastery:.1f}%")
+    col_u2.metric("Cohort Average Risk", f"{avg_univ_risk:.2f}%")
+    col_u3.metric("Cohort Average Mastery", f"{avg_univ_mastery:.1f}%")
 
-    # ─── ROW B: DENSE BEHAVIORAL KPIs ───
-    st.markdown('### ⚡ Universal Engagement & LMS Load')
-    col_ub1, col_ub2, col_ub3, col_ub4 = st.columns(4)
+    # ROW B: COMPREHENSIVE BKT HEATMAP & PEER SCATTER PLOT
+    col_b1, col_b2 = st.columns((6, 4))
+    
+    with col_b1:
+        st.markdown('### BKT skill mastery Heatmap across all Modules')
+        if not df_univ_bkt.empty:
+            df_bkt_all = df_univ_bkt.copy()
+            df_bkt_all['module'] = df_bkt_all['skill_name'].apply(lambda x: x.split('_')[0] if '_' in x else 'Unknown')
+            df_bkt_all['type'] = df_bkt_all['skill_name'].apply(lambda x: x.split('_')[1] if '_' in x else 'Unknown')
+            df_pivot_all = df_bkt_all.groupby(['module', 'type'])['correct_predictions'].mean().unstack().fillna(0.0)
+            render_cohort_heatmap(df_pivot_all, key_suffix="universal_view")
+        else:
+            st.info("No universal BKT records found.")
 
-    total_clicks_sum = df_univ_risk_merged['total_clicks'].sum() if total_enrolled > 0 else 0
-    col_ub1.metric("Total LMS Clicks Volume", f"{int(total_clicks_sum):,} clicks")
-    col_ub2.metric("Avg LMS Active Days", f"{avg_univ_active_days:.1f} days")
-    col_ub3.metric("Avg Submissions", f"{avg_univ_submissions:.1f}")
-    col_ub4.metric("Late Submission Rate", f"{avg_univ_late_rate:.1f}%", delta_color="inverse")
+    with col_b2:
+        st.markdown('### Cohort Score vs Clicks Distribution')
+        render_universal_scatter(df_univ_risk_merged, key_suffix="universal")
 
-    # ─── ROW C: LONGITUDINAL TRENDS & MODULE RISK ───
-    st.markdown('### 📈 Cohort Trends & Module Comparison')
-    col_uc1, col_uc2 = st.columns(2)
-
-    with col_uc1:
-        st.markdown("##### Cohort Average Longitudinal Timeline (Risk vs BKT)")
+    # ROW C: COMPREHENSIVE COHORT TIMELINE & VIOLIN DISTRIBUTION
+    st.markdown('### Cohort Longitudinal Timeline & Variance')
+    col_c1, col_c2 = st.columns((6, 4))
+    
+    with col_c1:
+        st.markdown('##### Cohort Longitudinal Timeline (Average Performance)')
         df_cohort_timeline = get_student_timeline_data("cohort_average_seed", avg_univ_risk / 100.0)
-        chart_data_univ = df_cohort_timeline.set_index("Mốc thời gian")[["Xác suất bỏ học (%)", "Độ thành thục BKT (%)"]]
-        st.line_chart(chart_data_univ, height=plot_height)
+        render_student_timeline_plotly(df_cohort_timeline, key_suffix="universal_view")
+        
+    with col_c2:
+        st.markdown('##### Course Module Risk Variance (Box Distribution)')
+        render_module_risk_violin(df_risk_merged, key_suffix="universal_box")
 
-    with col_uc2:
-        st.markdown("##### Average Dropout Risk by Course Module (%)")
-        df_mod_risk = df_risk_merged.groupby('code_module')['dropout_probability'].mean().reset_index()
-        df_mod_risk['dropout_probability'] = df_mod_risk['dropout_probability'] * 100
-        df_mod_risk.columns = ["Module", "Avg Risk (%)"]
-        st.bar_chart(df_mod_risk.set_index("Module"), color="#F59E0B", height=plot_height)
-
-    # ─── ROW D: DEMOGRAPHICS AND RISKS ───
-    st.markdown('### 👥 Demographic Risk profiles & BKT Masteries')
-    col_ud1, col_ud2 = st.columns(2)
-
-    with col_ud1:
-        st.markdown('##### Average Dropout Risk by Demographic Attribute')
+    # ROW D: DEMOGRAPHIC RISKS & FEATURE CORRELATIONS
+    col_d1, col_d2 = st.columns(2)
+    
+    with col_d1:
+        st.markdown('### Demographic Dropout Risk Tiers')
         demo_attr = st.selectbox(
-            "Select Demographic Attribute for Breakdown",
+            "Select Demographic Breakdown Attribute",
             ["highest_education", "gender", "age_band", "disability", "imd_band", "region"],
             index=0,
             key="univ_demo_selectbox"
         )
-        df_grouped = df_univ_risk_merged.groupby(demo_attr)['dropout_probability'].mean().reset_index()
-        df_grouped['dropout_probability'] = df_grouped['dropout_probability'] * 100
-        df_grouped.columns = [demo_attr.replace('_', ' ').title(), 'Avg Dropout Risk (%)']
-        st.bar_chart(df_grouped.set_index(df_grouped.columns[0]), color="#EF4444", height=200)
+        render_demographic_risk_bars(df_univ_risk_merged, demo_attr, key_suffix="universal")
 
-    with col_ud2:
-        st.markdown('##### Average BKT Mastery by Dropout Risk Band')
-        # Map risk values to bands
-        df_student_risk = df_univ_risk_merged[['student_id_hash', 'dropout_probability']].copy()
-        df_student_risk['risk_band'] = df_student_risk['dropout_probability'].apply(get_risk_band)
-        df_bkt_merged = df_bkt.merge(df_student_risk, left_on='user_id', right_on='student_id_hash', how='inner')
-        if not df_bkt_merged.empty:
-            df_bkt_risk = df_bkt_merged.groupby('risk_band')['correct_predictions'].mean().reset_index()
-            df_bkt_risk['correct_predictions'] = df_bkt_risk['correct_predictions'] * 100
-            df_bkt_risk.columns = ["Risk Band", "Avg Mastery (%)"]
-            st.bar_chart(df_bkt_risk.set_index("Risk Band"), color="#10B981", height=200)
-        else:
-            st.info("Không tìm thấy dữ liệu BKT tương thích.")
+    with col_d2:
+        st.markdown('### Behavioral Feature Correlation Heatmap')
+        render_feature_correlation_heatmap(df_univ_risk_merged, key_suffix="universal")
