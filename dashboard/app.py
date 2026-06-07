@@ -17,7 +17,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Inject Custom Google Font & Glassmorphism styles
+# Inject Custom Google Font & Glassmorphism styles matching style.css exactly
 st.markdown(
     """
     <style>
@@ -25,39 +25,36 @@ st.markdown(
     
     /* Global font override */
     html, body, [class*="css"] {
-        font-family: 'Outfit', sans-serif;
+        font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        color: #f8fafc !important;
     }
     
-    /* Premium Headers */
-    .main-title {
-        font-size: 2.6rem;
-        font-weight: 700;
-        color: #4D96FF !important;
-        margin-bottom: 2rem;
+    /* Background style override for streamlit elements */
+    .stApp {
+        background-color: #0f172a;
     }
     
-    /* Glassmorphism styling */
+    /* Glassmorphic card styling matching style.css */
     .glass-card {
-        background: rgba(255, 255, 255, 0.08) !important;
-        border-radius: 12px !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        background: rgba(255, 255, 255, 0.05) !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        margin-bottom: 1rem;
-        padding: 1.5rem;
+        border-radius: 12px !important;
+        padding: 1.5rem !important;
+        margin-bottom: 1.5rem !important;
     }
     
     /* Specific Status Indicators */
     .status-badge-safe {
-        background: rgba(46, 213, 115, 0.2);
-        color: #2ed573 !important;
+        background: rgba(16, 185, 129, 0.2);
+        color: #10b981 !important;
         padding: 0.4rem 0.8rem;
         border-radius: 20px;
         font-weight: 600;
         display: inline-block;
     }
     .status-badge-risk {
-        background: rgba(255, 71, 87, 0.2);
-        color: #ff4757 !important;
+        background: rgba(239, 68, 68, 0.2);
+        color: #ef4444 !important;
         padding: 0.4rem 0.8rem;
         border-radius: 20px;
         font-weight: 600;
@@ -66,24 +63,51 @@ st.markdown(
     
     /* Console-style logs */
     .console-log {
-        background-color: #1e1e24;
-        color: #7bed9f;
+        background-color: #0f172a;
+        color: #10b981;
         font-family: 'Courier New', Courier, monospace;
         padding: 1rem;
         border-radius: 8px;
         font-size: 0.85rem;
-        border-left: 4px solid #2ed573;
+        border-left: 4px solid #10b981;
         margin-top: 1rem;
         max-height: 300px;
         overflow-y: auto;
     }
+    
+    /* Sidebar styling overrides */
+    section[data-testid="stSidebar"] {
+        background-color: #1e293b !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    /* Field labels */
+    .field-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #94a3b8;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Sidebar footer */
+    .sidebar-footer {
+        margin-top: 2rem;
+        font-size: 0.85rem;
+        color: #94a3b8;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .status-indicator.online {
+        width: 8px;
+        height: 8px;
+        background-color: #10b981;
+        border-radius: 50%;
+        display: inline-block;
+    }
     </style>
     """,
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    '<h1 style="color: #4D96FF !important; font-size: 2.6rem !important; font-weight: 700 !important; margin-bottom: 2rem !important; font-family: \'Outfit\', sans-serif !important;">🎓 B-LEARN: Hệ Thống Phân Tích & Cá Nhân Hóa Học Tập (OULAD)</h1>', 
     unsafe_allow_html=True
 )
 
@@ -296,18 +320,16 @@ def get_activity_icon(activity_type):
     }
     return icons.get(activity_type, "📄")
 
-# ─── SIDEBAR: GLOBAL FILTERS ───
+# ─── SIDEBAR: GLOBAL FILTERS (Wireframe Theme) ───
 st.sidebar.markdown(
     """
-    <div style="text-align: center; margin-bottom: 2rem;">
-        <h2 style="font-weight: 600; color: #4D96FF; margin: 0;">B-LEARN</h2>
-        <span style="font-size: 0.85rem; color: #888;">Learning Analytics Console</span>
+    <div style="margin-bottom: 2rem;">
+        <h2 style="color: #3b82f6; font-size: 1.5rem; font-weight: bold; margin: 0;">🎓 B-LEARN</h2>
+        <span style="font-size: 0.8rem; color: #94a3b8;">EdTech Analytics Platform</span>
     </div>
     """,
     unsafe_allow_html=True
 )
-
-st.sidebar.header("🎯 Context Selection")
 
 # Load data with local caching
 with st.spinner("⏳ Loading serving data..."):
@@ -338,14 +360,23 @@ if 'id_student' not in df_risk.columns:
     import hashlib
     df_risk['id_student'] = df_risk['student_id_hash'].apply(lambda h: str(int(hashlib.md5(h.encode('utf-8')).hexdigest()[:6], 16) % 900000 + 100000))
 
-# Course Filter
+# Chọn Khóa Học
+st.sidebar.markdown('<div class="field-label">Chọn Khóa Học</div>', unsafe_allow_html=True)
 unique_modules = sorted(df_risk['code_module'].unique().tolist())
-course_options = [f"OULAD {m}" for m in unique_modules]
-selected_course_option = st.sidebar.selectbox("📚 Course Module", course_options)
-selected_module = selected_course_option.split(" ")[1]
+course_options = [f"Machine Learning (OULAD {m})" for m in unique_modules]
+# Add a generic fallback option if needed
+if "Machine Learning (OULAD AAA)" not in course_options:
+    course_options = ["Machine Learning (OULAD AAA)"] + course_options
+selected_course_option = st.sidebar.selectbox("Select Course", course_options, label_visibility="collapsed")
+if "(OULAD " in selected_course_option:
+    selected_module = selected_course_option.split(" (OULAD ")[1].replace(")", "")
+else:
+    selected_module = "AAA"
 
 # Filter datasets based on module
 df_filtered_risk = df_risk[df_risk['code_module'] == selected_module].copy()
+if df_filtered_risk.empty:
+    df_filtered_risk = df_risk.copy()
 
 # Student Selector
 curated_student_list = generate_curated_student_list(df_filtered_risk)
@@ -361,20 +392,23 @@ for idx, raw_hash in enumerate(curated_student_list):
     else:
         hash_to_friendly[raw_hash] = f"👤 Student #{(idx+1)} ({raw_hash[:8]}...)"
 
-search_mode = st.sidebar.radio("Selection Mode:", ["Select from sample list", "Enter custom ID hash"])
+st.sidebar.markdown('<div class="field-label">Tra Cứu Học Viên (Student Hash)</div>', unsafe_allow_html=True)
+search_mode = st.sidebar.radio("Chế độ tìm kiếm", ["Chọn từ danh sách", "Nhập mã hash thủ công"], label_visibility="collapsed")
 
-if search_mode == "Select from sample list":
+if search_mode == "Chọn từ danh sách":
     selected_student = st.sidebar.selectbox(
-        "👤 Select Student Profile",
+        "Chọn học viên",
         curated_student_list,
-        format_func=lambda x: hash_to_friendly.get(x, x)
+        format_func=lambda x: hash_to_friendly.get(x, x),
+        label_visibility="collapsed"
     )
 else:
-    search_input = st.sidebar.text_input("Paste SHA-256 student ID hash:")
-    if search_input:
-        selected_student = search_input.strip()
-    else:
-        selected_student = curated_student_list[0] if curated_student_list else "demo_student_hash_placeholder"
+    selected_student = st.sidebar.text_input(
+        "Nhập mã hash",
+        value="79d86f4d0c556c37c879fb9ba278f9996d5f1f50468d8e26e13a19ba6b09c219",
+        placeholder="Nhập mã hash...",
+        label_visibility="collapsed"
+    )
 
 # Initialize session state for mock interactions log
 if 'interactions_log' not in st.session_state:
@@ -388,74 +422,118 @@ if 'current_student' not in st.session_state or st.session_state.current_student
     else:
         st.session_state.custom_u_emb = None
 
+# Gateway status check for footer
+gateway_status = "online"
+try:
+    resp = requests.get(f"{GATEWAY_URL}/health", timeout=1.0)
+    if resp.status_code != 200:
+        gateway_status = "offline"
+except Exception:
+    gateway_status = "offline"
+    
+status_color = "#10b981" if gateway_status == "online" else "#ef4444"
+status_text = "Gateway Connected" if gateway_status == "online" else "Gateway Offline"
 
-# ─── MAIN APPLICATION NAVIGATION ───
+st.sidebar.markdown(
+    f"""
+    <div class="sidebar-footer">
+        <span class="status-indicator online" style="background-color: {status_color};"></span> {status_text}
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# ─── MAIN APPLICATION NAVIGATION (Tabs) ───
 tab_cohort, tab_student, tab_playground = st.tabs([
-    "📊 Global Cohort Analytics (Course View)",
-    "👤 Individual Student Inspection (Deep-Dive View)",
-    "🎮 Adaptive LMS Simulation Playground"
+    "📊 Global Cohort Analytics",
+    "👤 Individual Student Inspection",
+    "🧪 Adaptive LMS Simulation"
 ])
 
 # ====================================================================
 # TAB 1: GLOBAL COHORT ANALYTICS
 # ====================================================================
 with tab_cohort:
-    st.markdown(f"### 📊 Cohort Overview — Module {selected_module}")
+    st.markdown(
+        """
+        <div style="margin-bottom: 2rem;">
+            <h1 style="font-size: 2rem; margin-bottom: 0.5rem; color: #f8fafc;">📊 Global Cohort Analytics</h1>
+            <p style="color: #94a3b8; font-size: 1rem; margin: 0;">Phân tích tổng quan hiệu năng và phân phối rủi ro của toàn bộ lớp học.</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     
-    # Simple aggregated metrics
-    total_students = len(df_filtered_risk)
-    avg_risk = df_filtered_risk['dropout_probability'].mean() * 100
+    col1, col2 = st.columns(2)
     
-    df_module_bkt_all = df_bkt[df_bkt['skill_name'].str.startswith(selected_module)]
-    avg_mastery = df_module_bkt_all['correct_predictions'].astype(float).mean() * 100 if not df_module_bkt_all.empty else 68.5
-    
-    col_m1, col_m2, col_m3 = st.columns(3)
-    col_m1.metric("Total Enrolled Students", f"{total_students:,}")
-    col_m2.metric("Average Dropout Risk", f"{avg_risk:.2f}%")
-    col_m3.metric("BKT Concept Mastery Average", f"{avg_mastery:.1f}%")
-    
-    col_g1, col_g2 = st.columns(2)
-    
-    with col_g1:
-        st.markdown("##### 🚨 Dropout Risk Density distribution (LightGBM Predictions)")
-        with st.container(border=True):
-            risk_bins = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-            risk_labels = ["0-10%", "10-20%", "20-30%", "30-40%", "40-50%", "50-60%", "60-70%", "70-80%", "80-90%", "90-100%"]
-            df_hist = pd.cut(df_filtered_risk['dropout_probability'], bins=risk_bins, labels=risk_labels, include_lowest=True).value_counts().reset_index()
-            df_hist.columns = ['Risk Range', 'Student Count']
-            df_hist['Risk Range'] = pd.Categorical(df_hist['Risk Range'], categories=risk_labels, ordered=True)
-            df_hist = df_hist.sort_values(by='Risk Range')
-            st.bar_chart(df_hist.set_index('Risk Range')[['Student Count']], color="#FF4757", use_container_width=True)
+    with col1:
+        st.markdown(
+            """
+            <div class="glass-card" style="margin-bottom: 1rem;">
+                <h3 style="font-size: 1.1rem; margin-bottom: 1rem; color: #f8fafc;">Mô hình phân phối rủi ro bỏ học (LightGBM)</h3>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        
+        # Display actual risk density histogram
+        risk_bins = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+        risk_labels = ["0-10%", "10-20%", "20-30%", "30-40%", "40-50%", "50-60%", "60-70%", "70-80%", "80-90%", "90-100%"]
+        df_hist = pd.cut(df_filtered_risk['dropout_probability'], bins=risk_bins, labels=risk_labels, include_lowest=True).value_counts().reset_index()
+        df_hist.columns = ['Risk Range', 'Student Count']
+        df_hist['Risk Range'] = pd.Categorical(df_hist['Risk Range'], categories=risk_labels, ordered=True)
+        df_hist = df_hist.sort_values(by='Risk Range')
+        st.bar_chart(df_hist.set_index('Risk Range')[['Student Count']], color="#3b82f6", use_container_width=True)
 
-    with col_g2:
-        st.markdown("##### 🗺️ BKT Skill Mastery Heatmap Across Student Risk Groups")
-        with st.container(border=True):
-            df_student_risk = df_filtered_risk[['student_id_hash', 'dropout_probability']].copy()
-            def get_risk_band(prob):
-                if prob <= 0.3: return "🟢 Safe (<=30%)"
-                elif prob <= 0.7: return "🟡 Medium (30-70%)"
-                else: return "🔴 High (>70%)"
-            df_student_risk['risk_band'] = df_student_risk['dropout_probability'].apply(get_risk_band)
-            
-            if not df_module_bkt_all.empty:
-                df_bkt_merged = df_module_bkt_all.merge(df_student_risk, left_on='user_id', right_on='student_id_hash', how='inner')
-                if not df_bkt_merged.empty:
-                    df_pivot = df_bkt_merged.groupby(['risk_band', 'skill_name'])['correct_predictions'].mean().unstack().fillna(0.0) * 100
-                    df_pivot.index.name = "Cohort Risk Group"
-                    st.dataframe(df_pivot.style.background_gradient(cmap="RdYlGn", vmin=0, vmax=100), use_container_width=True)
-                else:
-                    st.info("No matching BKT mastery data found for this cohort.")
+    with col2:
+        st.markdown(
+            """
+            <div class="glass-card" style="margin-bottom: 1rem;">
+                <h3 style="font-size: 1.1rem; margin-bottom: 1rem; color: #f8fafc;">Bản đồ nhiệt thấu hiểu kỹ năng (BKT Heatmap)</h3>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        
+        # Display BKT Skill Heatmap grouped by student risk bands
+        df_student_risk = df_filtered_risk[['student_id_hash', 'dropout_probability']].copy()
+        def get_risk_band(prob):
+            if prob <= 0.3: return "🟢 Safe (<=30%)"
+            elif prob <= 0.7: return "🟡 Medium (30-70%)"
+            else: return "🔴 High (>70%)"
+        df_student_risk['risk_band'] = df_student_risk['dropout_probability'].apply(get_risk_band)
+        
+        df_module_bkt_all = df_bkt[df_bkt['skill_name'].str.startswith(selected_module)]
+        
+        if not df_module_bkt_all.empty:
+            df_bkt_merged = df_module_bkt_all.merge(df_student_risk, left_on='user_id', right_on='student_id_hash', how='inner')
+            if not df_bkt_merged.empty:
+                df_pivot = df_bkt_merged.groupby(['risk_band', 'skill_name'])['correct_predictions'].mean().unstack().fillna(0.0) * 100
+                df_pivot.index.name = "Cohort Risk Group"
+                st.dataframe(df_pivot, use_container_width=True)
             else:
-                st.info(f"No BKT mastery records found matching module {selected_module}.")
+                st.info("No matching BKT mastery data found for this cohort.")
+        else:
+            st.info(f"No BKT mastery records found matching module {selected_module}.")
 
 # ====================================================================
 # TAB 2: INDIVIDUAL STUDENT INSPECTION
 # ====================================================================
 with tab_student:
-    # Fetch live data from gateway
+    st.markdown(
+        """
+        <div style="margin-bottom: 2rem;">
+            <h1 style="font-size: 2rem; margin-bottom: 0.5rem; color: #f8fafc;">👤 Individual Student Inspection</h1>
+            <p style="color: #94a3b8; font-size: 1rem; margin: 0;">Phân tích chi tiết hành vi và cập nhật mức độ hiểu bài trực tiếp của từng học viên.</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    # Fetch student gateway profile
     live_data = fetch_student_profile_from_gateway(selected_student)
     
-    # Fallback to local files if gateway is offline
+    # Local fallback
     student_risk_rows = df_risk[df_risk['student_id_hash'] == selected_student]
     if student_risk_rows.empty:
         fallback_risk = {"student_id_hash": selected_student, "dropout_probability": 0.0, "predicted_class": "Success", "id_student": "Unknown"}
@@ -465,26 +543,24 @@ with tab_student:
     if live_data:
         prob = live_data.get("dropout_probability", fallback_risk.get("dropout_probability", 0.0))
         pred_class = fallback_risk.get("predicted_class", "Success")
-        st.caption("⚡ Serving live data from FastAPI Gateway API (Refreshed automatically)")
     else:
         prob = fallback_risk.get("dropout_probability", 0.0)
         pred_class = fallback_risk.get("predicted_class", "Success")
-        st.caption("📂 Gateway Offline. Loading from local database backup.")
-
-    # 1. ALERT BADGE
+        
+    # Badge element
     badge_class = "status-badge-risk" if prob > 0.5 else "status-badge-safe"
     badge_text = f"🔴 HIGH DROPOUT RISK ({prob*100:.2f}%)" if prob > 0.5 else f"🟢 SAFE ({prob*100:.2f}%)"
     
     st.markdown(
         f"""
-        <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between;">
+        <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
             <div>
-                <h3 style="margin: 0; color: #4D96FF !important;">Student ID Profile Inspection</h3>
-                <p style="margin: 0.2rem 0 0 0; color: #bbb;">Cloud ID Hash: <code>{selected_student}</code></p>
-                <p style="margin: 0.2rem 0 0 0; color: #bbb;">Final Predicted Outcome: <strong>{pred_class}</strong></p>
+                <h3 style="margin: 0; color: #3b82f6 !important;">Student ID Profile Inspection</h3>
+                <p style="margin: 0.2rem 0 0 0; color: #94a3b8;">Cloud ID Hash: <code>{selected_student}</code></p>
+                <p style="margin: 0.2rem 0 0 0; color: #94a3b8;">Outcome Prediction: <strong>{pred_class}</strong></p>
             </div>
             <div>
-                <span class="{badge_class}" style="font-size: 1.4rem; padding: 0.6rem 1.2rem;">{badge_text}</span>
+                <span class="{badge_class}" style="font-size: 1.3rem; padding: 0.6rem 1.2rem;">{badge_text}</span>
             </div>
         </div>
         """,
@@ -493,9 +569,8 @@ with tab_student:
     
     col_inspect_left, col_inspect_right = st.columns(2)
     
-    # 2. BKT MASTERY PROGRESS BARS
     with col_inspect_left:
-        st.markdown("##### 🧠 Bayesian Knowledge Tracing Mastery Progress")
+        st.markdown("##### 🧠 Chapter BKT Mastery Levels")
         with st.container(border=True):
             bkt_mastery_dict = {}
             if live_data and "bkt_mastery" in live_data:
@@ -510,21 +585,20 @@ with tab_student:
             
             if bkt_mastery_dict:
                 for ch, val in sorted(bkt_mastery_dict.items()):
-                    st.write(f"**Chapter {ch} Mastery:** {val*100:.1f}%")
+                    st.write(f"**Chapter {ch} Mastery State:** {val*100:.1f}%")
                     st.progress(float(val))
             else:
-                st.info("No chapter BKT mastery recorded yet for this student. Submit assignments to initiate BKT modeling.")
+                st.info("No chapter BKT mastery recorded yet for this student.")
 
-    # Longitudinal trend
     with col_inspect_right:
-        st.markdown("##### 📈 Longitudinal Checkpoint Trends")
+        st.markdown("##### 📈 Weekly Course Engagement Checkpoints")
         df_timeline = get_student_timeline_data(selected_student, prob)
         with st.container(border=True):
             chart_data = df_timeline.set_index("Mốc thời gian")[["Xác suất bỏ học (%)", "Độ thành thục BKT (%)"]]
-            st.line_chart(chart_data, color=["#FF4757", "#2ed573"], use_container_width=True)
+            st.line_chart(chart_data, color=["#ef4444", "#10b981"], use_container_width=True)
 
-    # 3. REC SYSTEM
-    st.markdown("##### 🎯 Recommended Remedial Learning Materials (LightGCN)")
+    # Personalized Recommendations
+    st.markdown("##### 🎯 Personalized Learning Materials Recommendations (LightGCN)")
     with st.container(border=True):
         top_5_items = None
         if live_data and "recommendations" in live_data:
@@ -536,11 +610,10 @@ with tab_student:
                 recs_df_data.append({
                     "Material ID (VLE Site ID)": str(site_id),
                     "Content Type": f"{icon} {act_type}",
-                    "Personalization Alignment Match": f"{item['score']:.4f}"
+                    "Relevance Score": f"{item['score']:.4f}"
                 })
             top_5_items = pd.DataFrame(recs_df_data)
         else:
-            # Local matrix multiplication fallback
             if st.session_state.custom_u_emb is not None:
                 u_emb = st.session_state.custom_u_emb
                 i_embs = np.stack(df_item_emb['item_embedding'].values)
@@ -557,28 +630,24 @@ with tab_student:
                     recs_df_data.append({
                         "Material ID (VLE Site ID)": str(site_id),
                         "Content Type": f"{icon} {act_type}",
-                        "Personalization Alignment Match": f"{row['recommendation_score']:.4f}"
+                        "Relevance Score": f"{row['recommendation_score']:.4f}"
                     })
                 top_5_items = pd.DataFrame(recs_df_data)
                 
         if top_5_items is not None and not top_5_items.empty:
             st.dataframe(top_5_items, use_container_width=True)
         else:
-            st.warning("No embedding vectors found to generate personalized recommendations.")
+            st.warning("No embedding vectors found to generate recommendations.")
 
 # ====================================================================
-# TAB 3: ADAPTIVE LMS SIMULATION PLAYGROUND
+# TAB 3: ADAPTIVE LMS SIMULATION
 # ====================================================================
 with tab_playground:
-    st.markdown("### 🎮 Third-Party LMS Simulator Playground")
     st.markdown(
         """
-        <div class="glass-card" style="margin-bottom: 2rem;">
-            <h4>School LMS Portal Event Mocking</h4>
-            <p style="color: #bbb; font-size: 0.9rem; margin: 0;">
-                Submit telemetry to mock real-time loop feedback loops. Clicks stream through Kafka to recalculate embeddings. 
-                Grades submit directly to trigger immediate Bayesian BKT updates and LightGBM model inferences on the gateway.
-            </p>
+        <div style="margin-bottom: 2rem;">
+            <h1 style="font-size: 2rem; margin-bottom: 0.5rem; color: #f8fafc;">🧪 Adaptive LMS Simulation</h1>
+            <p style="color: #94a3b8; font-size: 1rem; margin: 0;">Môi trường giả lập hành vi click stream và nộp bài kiểm tra để cập nhật mô hình thời gian thực.</p>
         </div>
         """,
         unsafe_allow_html=True
@@ -593,12 +662,11 @@ with tab_playground:
             site_options = sorted(df_lms['id_site'].unique().astype(int).tolist())[:20]
             selected_site = st.selectbox("Select Learning Resource ID", site_options)
             activity_label = get_vle_activity(selected_site, df_lms)
-            st.write(f"Resource type detected: **{activity_label}**")
+            st.write(f"Resource type: **{activity_label}**")
             
             click_submit = st.form_submit_button("🚀 Submit Clickstream Event")
             if click_submit:
                 t_now = datetime.now().strftime('%H:%M:%S')
-                # Modify local embedding state for visual feedback
                 item_row = df_item_emb[df_item_emb['id_site'] == str(selected_site)]
                 if not item_row.empty and st.session_state.custom_u_emb is not None:
                     i_emb = np.array(item_row.iloc[0]['item_embedding'])
@@ -607,7 +675,7 @@ with tab_playground:
                     
                 success, details = send_kafka_event(selected_student, selected_site, activity_label)
                 if success:
-                    st.session_state.interactions_log.append(f"🟢 [{t_now}] Click tracked successfully: site={selected_site} ({activity_label})")
+                    st.session_state.interactions_log.append(f"🟢 [{t_now}] Click tracked: site={selected_site} ({activity_label})")
                 else:
                     st.session_state.interactions_log.append(f"⚠️ [{t_now}] Gateway Click Error: {details}")
                 st.rerun()
@@ -622,7 +690,7 @@ with tab_playground:
             grade_submit = st.form_submit_button("📝 Submit Assignment Grade")
             if grade_submit:
                 t_now = datetime.now().strftime('%H:%M:%S')
-                clean_assignment_id = selected_assignment.split(" ")[1] # C1, C2, etc.
+                clean_assignment_id = selected_assignment.split(" ")[1]
                 success, details = send_assessment_submission(selected_student, clean_assignment_id, mock_score)
                 if success:
                     st.session_state.interactions_log.append(f"🟢 [{t_now}] Score {mock_score}% recorded for assignment {clean_assignment_id}: {details}")
@@ -635,7 +703,6 @@ with tab_playground:
             success, details = reset_gateway_demo_state()
             if success:
                 st.session_state.interactions_log.append(f"🔄 [{t_now}] {details}")
-                # Reset local embeddings
                 user_row = df_user_emb[df_user_emb['student_id_hash'] == selected_student]
                 if not user_row.empty:
                     st.session_state.custom_u_emb = np.array(user_row.iloc[0]['user_embedding'])
@@ -653,6 +720,6 @@ with tab_playground:
             )
         else:
             st.markdown(
-                '<div class="console-log" style="color: #ff4757;">[No events transmitted in this session yet]</div>',
+                '<div class="console-log" style="color: #ef4444;">[No events transmitted in this session yet]</div>',
                 unsafe_allow_html=True
             )
