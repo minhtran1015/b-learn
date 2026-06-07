@@ -407,7 +407,7 @@ with c2:
     df_hist.columns = ['Risk Range', 'Student Count']
     df_hist['Risk Range'] = pd.Categorical(df_hist['Risk Range'], categories=risk_labels, ordered=True)
     df_hist = df_hist.sort_values(by='Risk Range')
-    st.bar_chart(df_hist.set_index('Risk Range')[['Student Count']], color="#3b82f6", use_container_width=True)
+    st.bar_chart(df_hist.set_index('Risk Range')[['Student Count']], color="#8be9fd", use_container_width=True)
 
 
 # ====================================================================
@@ -422,7 +422,7 @@ for ch in plot_chapters:
     timeline_cols.append("Độ thành thục BKT (%)")  # Simple mapping
 
 chart_data = df_timeline.set_index("Mốc thời gian")[["Xác suất bỏ học (%)", "Độ thành thục BKT (%)"]]
-st.line_chart(chart_data, color=["#ef4444", "#10b981"], height=plot_height, use_container_width=True)
+st.line_chart(chart_data, color=["#ff5555", "#50fa7b"], height=plot_height, use_container_width=True)
 
 
 # ====================================================================
