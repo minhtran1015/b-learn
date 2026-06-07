@@ -530,7 +530,7 @@ if view_mode == "👤 Single Student Inspection":
 
     # ─── ROW C: TIMELINE & SKILL BARS ───
     st.markdown('### 📈 Student Diagnostics curves & Skill Profile')
-    col_c1, col_c2 = st.columns((7, 5))
+    col_c1, col_c2 = st.columns(2)
     
     with col_c1:
         st.markdown("##### Cumulative Checkpoint Timelines (Dropout Risk vs BKT)")
@@ -736,7 +736,7 @@ else:
 
     # ─── ROW C: LONGITUDINAL TRENDS & MODULE RISK ───
     st.markdown('### 📈 Cohort Trends & Module Comparison')
-    col_uc1, col_uc2 = st.columns((7, 5))
+    col_uc1, col_uc2 = st.columns(2)
 
     with col_uc1:
         st.markdown("##### Cohort Average Longitudinal Timeline (Risk vs BKT)")
