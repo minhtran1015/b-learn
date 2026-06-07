@@ -362,7 +362,13 @@ col1, col2, col3 = st.columns(3)
 # Selected Student Risk
 risk_pct = f"{prob * 100:.2f}%"
 risk_label = "Student Dropout Risk"
-col1.metric(risk_label, risk_pct, f"Class: {pred_class}")
+if prob <= 0.3:
+    status_label = "🟢 Safe"
+elif prob <= 0.7:
+    status_label = "🟡 Warning"
+else:
+    status_label = "🔴 Alert"
+col1.metric(risk_label, risk_pct, f"Status: {status_label} ({pred_class})")
 
 # Cohort Avg Risk
 col2.metric("Cohort Average Risk", f"{cohort_risk_avg:.2f}%", f"Total: {len(df_filtered_risk)} Students")
@@ -407,7 +413,7 @@ with c2:
     df_hist.columns = ['Risk Range', 'Student Count']
     df_hist['Risk Range'] = pd.Categorical(df_hist['Risk Range'], categories=risk_labels, ordered=True)
     df_hist = df_hist.sort_values(by='Risk Range')
-    st.bar_chart(df_hist.set_index('Risk Range')[['Student Count']], color="#8be9fd", use_container_width=True)
+    st.bar_chart(df_hist.set_index('Risk Range')[['Student Count']], color="#60A5FA", use_container_width=True)
 
 
 # ====================================================================
@@ -422,7 +428,7 @@ for ch in plot_chapters:
     timeline_cols.append("Độ thành thục BKT (%)")  # Simple mapping
 
 chart_data = df_timeline.set_index("Mốc thời gian")[["Xác suất bỏ học (%)", "Độ thành thục BKT (%)"]]
-st.line_chart(chart_data, color=["#ff5555", "#50fa7b"], height=plot_height, use_container_width=True)
+st.line_chart(chart_data, color=["#EF4444", "#10B981"], height=plot_height, use_container_width=True)
 
 
 # ====================================================================

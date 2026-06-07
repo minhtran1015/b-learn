@@ -1,34 +1,40 @@
-/* Dracula Theme design tokens */
+/* Custom Core Environment Backgrounds */
 :root {
-    --dracula-bg: #282a36;
-    --dracula-card: #44475a;
-    --dracula-fg: #f8f8f2;
-    --dracula-comment: #6272a4;
-    --dracula-purple: #bd93f9;
-    --dracula-cyan: #8be9fd;
-    --dracula-green: #50fa7b;
-    --dracula-red: #ff5555;
+    --bg-main: #0F172A;
+    --bg-sidebar: #1E293B;
+    --comp-surface: #29354F;
+    
+    --primary: #3B82F6;
+    --secondary: #60A5FA;
+    --tertiary: #8B5CF6;
+    
+    --text-main: #F8FAFC;
+    --text-muted: #94A3B8;
+    
+    --status-safe: #10B981;
+    --status-warning: #F59E0B;
+    --status-alert: #EF4444;
 }
 
 /* Sidebar customization */
 [data-testid="stSidebar"] {
-    background-color: var(--dracula-card) !important;
-    border-right: 1px solid var(--dracula-comment) !important;
+    background-color: var(--bg-sidebar) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
-/* Metric Card Styling - Dracula Theme */
+/* Metric Card Styling */
 div[data-testid="stMetric"] {
-    background-color: var(--dracula-card) !important;
-    border: 1px solid var(--dracula-comment) !important;
+    background-color: var(--comp-surface) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
     padding: 1.25rem !important;
     border-radius: 8px !important;
-    border-left: 0.5rem solid var(--dracula-purple) !important;
-    box-shadow: 0 0.15rem 1.75rem 0 rgba(0, 0, 0, 0.35) !important;
+    border-left: 0.5rem solid var(--primary) !important;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(0, 0, 0, 0.3) !important;
 }
 
 /* Metric Label Style */
 div[data-testid="stMetric"] label {
-    color: var(--dracula-cyan) !important;
+    color: var(--secondary) !important;
     font-weight: 700 !important;
     text-transform: uppercase !important;
     font-size: 0.8rem !important;
@@ -36,7 +42,7 @@ div[data-testid="stMetric"] label {
 
 /* Metric Value Style */
 div[data-testid="stMetricValue"] {
-    color: var(--dracula-fg) !important;
+    color: var(--text-main) !important;
     font-weight: 700 !important;
     font-size: 1.8rem !important;
 }
@@ -55,8 +61,8 @@ footer {display: none;}
 
 /* Custom Glass Cards */
 .glass-card {
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: var(--comp-surface) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
     border-radius: 8px !important;
     padding: 1.5rem !important;
     margin-bottom: 1.5rem !important;
@@ -64,14 +70,42 @@ footer {display: none;}
 
 /* Console-style logs */
 .console-log {
-    background-color: var(--dracula-bg);
-    color: var(--dracula-green);
+    background-color: var(--bg-main);
+    color: var(--status-safe);
     font-family: 'Courier New', Courier, monospace;
     padding: 1rem;
     border-radius: 8px;
     font-size: 0.85rem;
-    border-left: 4px solid var(--dracula-green);
+    border-left: 4px solid var(--status-safe);
     margin-top: 1rem;
     max-height: 250px;
     overflow-y: auto;
+}
+
+/* Learning Analytics Diagnostic Badges */
+.status-badge-safe {
+    background: rgba(16, 185, 129, 0.15) !important;
+    color: var(--status-safe) !important;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.status-badge-warning {
+    background: rgba(245, 158, 11, 0.15) !important;
+    color: var(--status-warning) !important;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.status-badge-risk {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: var(--status-alert) !important;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-weight: 600;
+    display: inline-block;
 }
