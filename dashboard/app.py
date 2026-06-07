@@ -234,7 +234,7 @@ def get_activity_icon(activity_type):
     }
     return icons.get(activity_type, "📄")
 
-# ─── SIDEBAR: PARAMETERS (Pattern matching example) ───
+# ─── SIDEBAR: NAVIGATION & SELECTION ───
 st.sidebar.header("🎓 B-Learn `version 2`")
 
 # Load data with local caching
@@ -266,41 +266,64 @@ if 'id_student' not in df_risk.columns:
     import hashlib
     df_risk['id_student'] = df_risk['student_id_hash'].apply(lambda h: str(int(hashlib.md5(h.encode('utf-8')).hexdigest()[:6], 16) % 900000 + 100000))
 
-# Course Filter Parameter
-unique_modules = sorted(df_risk['code_module'].unique().tolist())
-course_options = [f"OULAD {m}" for m in unique_modules]
-selected_course_option = st.sidebar.selectbox("Select Course Module", course_options)
-selected_module = selected_course_option.split(" ")[1]
-
-# Filter datasets based on module selection
-df_filtered_risk = df_risk[df_risk['code_module'] == selected_module].copy()
-
-# Student Selector Parameter
-curated_student_list = generate_curated_student_list(df_filtered_risk)
-if not curated_student_list:
-    curated_student_list = ["demo_student_hash_placeholder"]
-
-hash_to_friendly = {}
-for idx, raw_hash in enumerate(curated_student_list):
-    row_data = df_filtered_risk[df_filtered_risk['student_id_hash'] == raw_hash]
-    if not row_data.empty:
-        real_id = row_data.iloc[0]['id_student']
-        hash_to_friendly[raw_hash] = f"👤 MSSV: {real_id} (#{(idx+1)})"
-    else:
-        hash_to_friendly[raw_hash] = f"👤 Student #{(idx+1)} ({raw_hash[:8]}...)"
-
-selected_student = st.sidebar.selectbox(
-    "Select Student Hash",
-    curated_student_list,
-    format_func=lambda x: hash_to_friendly.get(x, x)
+# View Mode toggle
+view_mode = st.sidebar.radio(
+    "Navigation Mode",
+    ["👤 Single Student Inspection", "📊 Universal Analytics Statistics"]
 )
 
-# Line Chart Parameter: Select BKT chapters to show
 bkt_options = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6']
-plot_chapters = st.sidebar.multiselect('Select BKT Chapters', bkt_options, bkt_options[:3])
 
-# Timeline height parameter
-plot_height = st.sidebar.slider('Specify timeline height', 150, 400, 200)
+if view_mode == "👤 Single Student Inspection":
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("Student Context Filters")
+    
+    # Course Filter Parameter
+    unique_modules = sorted(df_risk['code_module'].unique().tolist())
+    course_options = [f"OULAD {m}" for m in unique_modules]
+    selected_course_option = st.sidebar.selectbox("Select Course Module", course_options)
+    selected_module = selected_course_option.split(" ")[1]
+    
+    # Filter datasets based on module selection
+    df_filtered_risk = df_risk[df_risk['code_module'] == selected_module].copy()
+
+    # Student Selector Parameter
+    curated_student_list = generate_curated_student_list(df_filtered_risk)
+    if not curated_student_list:
+        curated_student_list = ["demo_student_hash_placeholder"]
+
+    hash_to_friendly = {}
+    for idx, raw_hash in enumerate(curated_student_list):
+        row_data = df_filtered_risk[df_filtered_risk['student_id_hash'] == raw_hash]
+        if not row_data.empty:
+            real_id = row_data.iloc[0]['id_student']
+            hash_to_friendly[raw_hash] = f"👤 MSSV: {real_id} (#{(idx+1)})"
+        else:
+            hash_to_friendly[raw_hash] = f"👤 Student #{(idx+1)} ({raw_hash[:8]}...)"
+
+    selected_student = st.sidebar.selectbox(
+        "Select Student Hash",
+        curated_student_list,
+        format_func=lambda x: hash_to_friendly.get(x, x)
+    )
+
+    # Line Chart Parameter: Select BKT chapters to show
+    plot_chapters = st.sidebar.multiselect('Select BKT Chapters', bkt_options, bkt_options[:3])
+
+    # Timeline height parameter
+    plot_height = st.sidebar.slider('Specify timeline height', 150, 400, 200)
+
+else:
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("Universal Filters")
+    
+    # Universal scope modules
+    unique_modules = sorted(df_risk['code_module'].unique().tolist())
+    course_options = ["All Modules"] + [f"OULAD {m}" for m in unique_modules]
+    selected_course_option = st.sidebar.selectbox("Select Course Scope", course_options)
+    
+    # Line chart height parameter
+    plot_height = st.sidebar.slider('Specify chart height', 150, 400, 250)
 
 st.sidebar.markdown(
     """
@@ -309,232 +332,314 @@ st.sidebar.markdown(
     """
 )
 
-# Fetch student gateway profile
-live_data = fetch_student_profile_from_gateway(selected_student)
-
-# Local fallback
-student_risk_rows = df_risk[df_risk['student_id_hash'] == selected_student]
-if student_risk_rows.empty:
-    fallback_risk = {"student_id_hash": selected_student, "dropout_probability": 0.0, "predicted_class": "Success", "id_student": "Unknown"}
-else:
-    fallback_risk = student_risk_rows.iloc[0]
+# Gateway status check for footer
+gateway_status = "online"
+try:
+    resp = requests.get(f"{GATEWAY_URL}/health", timeout=1.0)
+    if resp.status_code != 200:
+        gateway_status = "offline"
+except Exception:
+    gateway_status = "offline"
     
-if live_data:
-    prob = live_data.get("dropout_probability", fallback_risk.get("dropout_probability", 0.0))
-    pred_class = fallback_risk.get("predicted_class", "Success")
-    bkt_mastery_dict = live_data.get("bkt_mastery", {})
-else:
-    prob = fallback_risk.get("dropout_probability", 0.0)
-    pred_class = fallback_risk.get("predicted_class", "Success")
-    
-    # Extract BKT masteries from dataframe
-    bkt_mastery_dict = {}
-    student_bkt_df = df_bkt[df_bkt['user_id'] == selected_student]
-    for _, row in student_bkt_df.iterrows():
-        skill = row['skill_name']
-        for ch in bkt_options:
-            if ch in skill:
-                bkt_mastery_dict[ch] = float(row['correct_predictions'])
+status_color = "#10B981" if gateway_status == "online" else "#EF4444"
+status_text = "Gateway Connected" if gateway_status == "online" else "Gateway Offline"
 
-# Calculate selected student avg BKT mastery
-bkt_avg = np.mean(list(bkt_mastery_dict.values())) * 100 if bkt_mastery_dict else 65.0
-cohort_risk_avg = df_filtered_risk['dropout_probability'].mean() * 100
+st.sidebar.markdown(
+    f"""
+    <div class="sidebar-footer">
+        <span class="status-indicator online" style="background-color: {status_color};"></span> {status_text}
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
-# Initialize session state for mock interactions log
-if 'interactions_log' not in st.session_state:
-    st.session_state.interactions_log = []
+# Helper function for risk bands
+def get_risk_band(p):
+    if p <= 0.3: return "🟢 Safe"
+    elif p <= 0.7: return "🟡 Medium"
+    else: return "🔴 High"
 
-if 'current_student' not in st.session_state or st.session_state.current_student != selected_student:
-    st.session_state.current_student = selected_student
-    user_row = df_user_emb[df_user_emb['student_id_hash'] == selected_student]
-    if not user_row.empty:
-        st.session_state.custom_u_emb = np.array(user_row.iloc[0]['user_embedding'])
+# ====================================================================
+# VIEW 1: SINGLE STUDENT INSPECTION
+# ====================================================================
+if view_mode == "👤 Single Student Inspection":
+    # Fetch student gateway profile
+    live_data = fetch_student_profile_from_gateway(selected_student)
+
+    # Local fallback
+    student_risk_rows = df_risk[df_risk['student_id_hash'] == selected_student]
+    if student_risk_rows.empty:
+        fallback_risk = {"student_id_hash": selected_student, "dropout_probability": 0.0, "predicted_class": "Success", "id_student": "Unknown"}
     else:
-        st.session_state.custom_u_emb = None
+        fallback_risk = student_risk_rows.iloc[0]
+        
+    if live_data:
+        prob = live_data.get("dropout_probability", fallback_risk.get("dropout_probability", 0.0))
+        pred_class = fallback_risk.get("predicted_class", "Success")
+        bkt_mastery_dict = live_data.get("bkt_mastery", {})
+    else:
+        prob = fallback_risk.get("dropout_probability", 0.0)
+        pred_class = fallback_risk.get("predicted_class", "Success")
+        
+        # Extract BKT masteries from dataframe
+        bkt_mastery_dict = {}
+        student_bkt_df = df_bkt[df_bkt['user_id'] == selected_student]
+        for _, row in student_bkt_df.iterrows():
+            skill = row['skill_name']
+            for ch in bkt_options:
+                if ch in skill:
+                    bkt_mastery_dict[ch] = float(row['correct_predictions'])
 
+    # Calculate selected student avg BKT mastery
+    bkt_avg = np.mean(list(bkt_mastery_dict.values())) * 100 if bkt_mastery_dict else 65.0
+    cohort_risk_avg = df_filtered_risk['dropout_probability'].mean() * 100
 
-# ====================================================================
-# ROW A: KEY PERFORMANCE METRICS
-# ====================================================================
-st.markdown('### Learning Key Metrics')
-col1, col2, col3 = st.columns(3)
+    if 'interactions_log' not in st.session_state:
+        st.session_state.interactions_log = []
 
-# Selected Student Risk
-risk_pct = f"{prob * 100:.2f}%"
-risk_label = "Student Dropout Risk"
-if prob <= 0.3:
-    status_label = "🟢 Safe"
-elif prob <= 0.7:
-    status_label = "🟡 Warning"
-else:
-    status_label = "🔴 Alert"
-col1.metric(risk_label, risk_pct, f"Status: {status_label} ({pred_class})")
-
-# Cohort Avg Risk
-col2.metric("Cohort Average Risk", f"{cohort_risk_avg:.2f}%", f"Total: {len(df_filtered_risk)} Students")
-
-# Student BKT Avg Mastery
-col3.metric("Student BKT Avg Mastery", f"{bkt_avg:.1f}%", f"Active Chapters: {len(bkt_mastery_dict)}")
-
-
-# ====================================================================
-# ROW B: HEATMAP & DISTRIBUTION PLOT
-# ====================================================================
-c1, c2 = st.columns((7, 3))
-
-with c1:
-    st.markdown('### BKT skill mastery Heatmap across Cohort Risk Groups')
-    df_student_risk = df_filtered_risk[['student_id_hash', 'dropout_probability']].copy()
-    def get_risk_band(p):
-        if p <= 0.3: return "🟢 Safe"
-        elif p <= 0.7: return "🟡 Medium"
-        else: return "🔴 High"
-    df_student_risk['risk_band'] = df_student_risk['dropout_probability'].apply(get_risk_band)
-    
-    df_module_bkt_all = df_bkt[df_bkt['skill_name'].str.startswith(selected_module)]
-    
-    if not df_module_bkt_all.empty:
-        df_bkt_merged = df_module_bkt_all.merge(df_student_risk, left_on='user_id', right_on='student_id_hash', how='inner')
-        if not df_bkt_merged.empty:
-            df_pivot = df_bkt_merged.groupby(['risk_band', 'skill_name'])['correct_predictions'].mean().unstack().fillna(0.0) * 100
-            df_pivot.index.name = "Cohort Risk Group"
-            st.dataframe(df_pivot, use_container_width=True)
+    if 'current_student' not in st.session_state or st.session_state.current_student != selected_student:
+        st.session_state.current_student = selected_student
+        user_row = df_user_emb[df_user_emb['student_id_hash'] == selected_student]
+        if not user_row.empty:
+            st.session_state.custom_u_emb = np.array(user_row.iloc[0]['user_embedding'])
         else:
-            st.info("No matching BKT mastery data found for this cohort.")
+            st.session_state.custom_u_emb = None
+
+    # ROW A: KEY PERFORMANCE METRICS
+    st.markdown('### Learning Key Metrics')
+    col1, col2, col3 = st.columns(3)
+
+    # Selected Student Risk
+    risk_pct = f"{prob * 100:.2f}%"
+    risk_label = "Student Dropout Risk"
+    if prob <= 0.3:
+        status_label = "🟢 Safe"
+    elif prob <= 0.7:
+        status_label = "🟡 Warning"
     else:
-        st.info(f"No BKT mastery records found matching module {selected_module}.")
+        status_label = "🔴 Alert"
+    col1.metric(risk_label, risk_pct, f"Status: {status_label} ({pred_class})")
 
-with c2:
-    st.markdown('### Dropout Risk Distribution')
-    # Build clean risk distribution
-    risk_bins = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
-    risk_labels = ["0-20%", "20-40%", "40-60%", "60-80%", "80-100%"]
-    df_hist = pd.cut(df_filtered_risk['dropout_probability'], bins=risk_bins, labels=risk_labels, include_lowest=True).value_counts().reset_index()
-    df_hist.columns = ['Risk Range', 'Student Count']
-    df_hist['Risk Range'] = pd.Categorical(df_hist['Risk Range'], categories=risk_labels, ordered=True)
-    df_hist = df_hist.sort_values(by='Risk Range')
-    st.bar_chart(df_hist.set_index('Risk Range')[['Student Count']], color="#60A5FA", use_container_width=True)
+    # Cohort Avg Risk
+    col2.metric("Cohort Average Risk", f"{cohort_risk_avg:.2f}%", f"Total: {len(df_filtered_risk)} Students")
 
+    # Student BKT Avg Mastery
+    col3.metric("Student BKT Avg Mastery", f"{bkt_avg:.1f}%", f"Active Chapters: {len(bkt_mastery_dict)}")
 
-# ====================================================================
-# ROW C: CHECKPOINT TIMELINE LINE CHART
-# ====================================================================
-st.markdown('### Longitudinal Checkpoint Timelines')
-df_timeline = get_student_timeline_data(selected_student, prob)
+    # ROW B: HEATMAP & DISTRIBUTION PLOT
+    c1, c2 = st.columns((7, 3))
 
-# Filter timeline BKT columns according to selected chapters parameter in sidebar
-timeline_cols = ["Xác suất bỏ học (%)"]
-for ch in plot_chapters:
-    timeline_cols.append("Độ thành thục BKT (%)")  # Simple mapping
+    with c1:
+        st.markdown('### BKT skill mastery Heatmap across Cohort Risk Groups')
+        df_student_risk = df_filtered_risk[['student_id_hash', 'dropout_probability']].copy()
+        df_student_risk['risk_band'] = df_student_risk['dropout_probability'].apply(get_risk_band)
+        
+        df_module_bkt_all = df_bkt[df_bkt['skill_name'].str.startswith(selected_module)]
+        
+        if not df_module_bkt_all.empty:
+            df_bkt_merged = df_module_bkt_all.merge(df_student_risk, left_on='user_id', right_on='student_id_hash', how='inner')
+            if not df_bkt_merged.empty:
+                df_pivot = df_bkt_merged.groupby(['risk_band', 'skill_name'])['correct_predictions'].mean().unstack().fillna(0.0) * 100
+                df_pivot.index.name = "Cohort Risk Group"
+                st.dataframe(df_pivot, use_container_width=True)
+            else:
+                st.info("No matching BKT mastery data found for this cohort.")
+        else:
+            st.info(f"No BKT mastery records found matching module {selected_module}.")
 
-chart_data = df_timeline.set_index("Mốc thời gian")[["Xác suất bỏ học (%)", "Độ thành thục BKT (%)"]]
-st.line_chart(chart_data, color=["#EF4444", "#10B981"], height=plot_height, use_container_width=True)
+    with c2:
+        st.markdown('### Dropout Risk Distribution')
+        risk_bins = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+        risk_labels = ["0-20%", "20-40%", "40-60%", "60-80%", "80-100%"]
+        df_hist = pd.cut(df_filtered_risk['dropout_probability'], bins=risk_bins, labels=risk_labels, include_lowest=True).value_counts().reset_index()
+        df_hist.columns = ['Risk Range', 'Student Count']
+        df_hist['Risk Range'] = pd.Categorical(df_hist['Risk Range'], categories=risk_labels, ordered=True)
+        df_hist = df_hist.sort_values(by='Risk Range')
+        st.bar_chart(df_hist.set_index('Risk Range')[['Student Count']], color="#60A5FA", use_container_width=True)
 
+    # ROW C: CHECKPOINT TIMELINE LINE CHART
+    st.markdown('### Longitudinal Checkpoint Timelines')
+    df_timeline = get_student_timeline_data(selected_student, prob)
+    chart_data = df_timeline.set_index("Mốc thời gian")[["Xác suất bỏ học (%)", "Độ thành thục BKT (%)"]]
+    st.line_chart(chart_data, color=["#EF4444", "#10B981"], height=plot_height, use_container_width=True)
 
-# ====================================================================
-# ROW D: RECOMMENDATIONS & INTERACTIVE LMS SIMULATOR
-# ====================================================================
-col_d1, col_d2 = st.columns((6, 6))
+    # ROW D: RECOMMENDATIONS & INTERACTIVE LMS SIMULATOR
+    col_d1, col_d2 = st.columns((6, 6))
 
-with col_d1:
-    st.markdown('### Personalized Content Recommendations (LightGCN)')
-    top_5_items = None
-    if live_data and "recommendations" in live_data:
-        recs_df_data = []
-        for item in live_data["recommendations"]:
-            site_id = item["id_site"]
-            act_type = get_vle_activity(site_id, df_lms)
-            icon = get_activity_icon(act_type)
-            recs_df_data.append({
-                "VLE Site ID": str(site_id),
-                "Content Type": f"{icon} {act_type}",
-                "Relevance Score": f"{item['score']:.4f}"
-            })
-        top_5_items = pd.DataFrame(recs_df_data)
-    else:
-        if st.session_state.custom_u_emb is not None:
-            u_emb = st.session_state.custom_u_emb
-            i_embs = np.stack(df_item_emb['item_embedding'].values)
-            scores = np.dot(i_embs, u_emb)
-            df_item_emb_scored = df_item_emb.copy()
-            df_item_emb_scored['recommendation_score'] = scores
-            top_5_raw = df_item_emb_scored.sort_values(by='recommendation_score', ascending=False).head(5)
-            
+    with col_d1:
+        st.markdown('### Personalized Content Recommendations (LightGCN)')
+        top_5_items = None
+        if live_data and "recommendations" in live_data:
             recs_df_data = []
-            for idx, row in top_5_raw.iterrows():
-                site_id = row['id_site']
+            for item in live_data["recommendations"]:
+                site_id = item["id_site"]
                 act_type = get_vle_activity(site_id, df_lms)
                 icon = get_activity_icon(act_type)
                 recs_df_data.append({
                     "VLE Site ID": str(site_id),
                     "Content Type": f"{icon} {act_type}",
-                    "Relevance Score": f"{row['recommendation_score']:.4f}"
+                    "Relevance Score": f"{item['score']:.4f}"
                 })
             top_5_items = pd.DataFrame(recs_df_data)
-            
-    if top_5_items is not None and not top_5_items.empty:
-        st.dataframe(top_5_items, use_container_width=True)
-    else:
-        st.warning("No embedding vectors found to generate recommendations.")
-
-with col_d2:
-    st.markdown('### Adaptive LMS Simulator & Real-time loops')
-    with st.container(border=True):
-        st.caption("Submit clickstream or scores to trigger direct Bayesian BKT updates and LightGBM models.")
-        
-        sim_col1, sim_col2 = st.columns(2)
-        with sim_col1:
-            site_options = sorted(df_lms['id_site'].unique().astype(int).tolist())[:10]
-            selected_site = st.selectbox("Mock Site ID", site_options)
-            activity_label = get_vle_activity(selected_site, df_lms)
-            
-            if st.button("🚀 Send Clickstream"):
-                t_now = datetime.now().strftime('%H:%M:%S')
-                item_row = df_item_emb[df_item_emb['id_site'] == str(selected_site)]
-                if not item_row.empty and st.session_state.custom_u_emb is not None:
-                    i_emb = np.array(item_row.iloc[0]['item_embedding'])
-                    new_vec = st.session_state.custom_u_emb + 0.3 * i_emb
-                    st.session_state.custom_u_emb = new_vec / np.linalg.norm(new_vec)
-                    
-                success, details = send_kafka_event(selected_student, selected_site, activity_label)
-                if success:
-                    st.session_state.interactions_log.append(f"🟢 [{t_now}] Click: site={selected_site} ({activity_label})")
-                else:
-                    st.session_state.interactions_log.append(f"⚠️ [{t_now}] Gateway Error: {details}")
-                st.rerun()
-                
-        with sim_col2:
-            assignment_options = ["TMA C1", "TMA C2", "TMA C3", "TMA C4", "TMA C5", "TMA C6"]
-            selected_assignment = st.selectbox("Assignment Chapter", assignment_options)
-            mock_score = st.slider("Score (%)", 0, 100, 80)
-            
-            if st.button("📝 Submit Grade"):
-                t_now = datetime.now().strftime('%H:%M:%S')
-                clean_assignment_id = selected_assignment.split(" ")[1]
-                success, details = send_assessment_submission(selected_student, clean_assignment_id, mock_score)
-                if success:
-                    st.session_state.interactions_log.append(f"🟢 [{t_now}] Grade {mock_score}% on {clean_assignment_id}: {details}")
-                else:
-                    st.session_state.interactions_log.append(f"⚠️ [{t_now}] Gateway Error: {details}")
-                st.rerun()
-
-        col_reset, col_space = st.columns((4, 8))
-        with col_reset:
-            if st.button("🔄 Reset Demo State", use_container_width=True):
-                t_now = datetime.now().strftime('%H:%M:%S')
-                success, details = reset_gateway_demo_state()
-                if success:
-                    st.session_state.interactions_log.append(f"🔄 [{t_now}] {details}")
-                    user_row = df_user_emb[df_user_emb['student_id_hash'] == selected_student]
-                    if not user_row.empty:
-                        st.session_state.custom_u_emb = np.array(user_row.iloc[0]['user_embedding'])
-                else:
-                    st.session_state.interactions_log.append(f"⚠️ [{t_now}] Reset Error: {details}")
-                st.rerun()
-
-        # Console logs
-        if st.session_state.interactions_log:
-            log_html = "<br>".join(st.session_state.interactions_log[::-1])
-            st.markdown(f'<div class="console-log">{log_html}</div>', unsafe_allow_html=True)
         else:
-            st.markdown('<div class="console-log" style="color: #ef4444;">[No events logged]</div>', unsafe_allow_html=True)
+            if st.session_state.custom_u_emb is not None:
+                u_emb = st.session_state.custom_u_emb
+                i_embs = np.stack(df_item_emb['item_embedding'].values)
+                scores = np.dot(i_embs, u_emb)
+                df_item_emb_scored = df_item_emb.copy()
+                df_item_emb_scored['recommendation_score'] = scores
+                top_5_raw = df_item_emb_scored.sort_values(by='recommendation_score', ascending=False).head(5)
+                
+                recs_df_data = []
+                for idx, row in top_5_raw.iterrows():
+                    site_id = row['id_site']
+                    act_type = get_vle_activity(site_id, df_lms)
+                    icon = get_activity_icon(act_type)
+                    recs_df_data.append({
+                        "VLE Site ID": str(site_id),
+                        "Content Type": f"{icon} {act_type}",
+                        "Relevance Score": f"{row['recommendation_score']:.4f}"
+                    })
+                top_5_items = pd.DataFrame(recs_df_data)
+                
+        if top_5_items is not None and not top_5_items.empty:
+            st.dataframe(top_5_items, use_container_width=True)
+        else:
+            st.warning("No embedding vectors found to generate recommendations.")
+
+    with col_d2:
+        st.markdown('### Adaptive LMS Simulator & Real-time loops')
+        with st.container(border=True):
+            st.caption("Submit clickstream or scores to trigger direct Bayesian BKT updates and LightGBM models.")
+            
+            sim_col1, sim_col2 = st.columns(2)
+            with sim_col1:
+                site_options = sorted(df_lms['id_site'].unique().astype(int).tolist())[:10]
+                selected_site = st.selectbox("Mock Site ID", site_options)
+                activity_label = get_vle_activity(selected_site, df_lms)
+                
+                if st.button("🚀 Send Clickstream"):
+                    t_now = datetime.now().strftime('%H:%M:%S')
+                    item_row = df_item_emb[df_item_emb['id_site'] == str(selected_site)]
+                    if not item_row.empty and st.session_state.custom_u_emb is not None:
+                        i_emb = np.array(item_row.iloc[0]['item_embedding'])
+                        new_vec = st.session_state.custom_u_emb + 0.3 * i_emb
+                        st.session_state.custom_u_emb = new_vec / np.linalg.norm(new_vec)
+                        
+                    success, details = send_kafka_event(selected_student, selected_site, activity_label)
+                    if success:
+                        st.session_state.interactions_log.append(f"🟢 [{t_now}] Click: site={selected_site} ({activity_label})")
+                    else:
+                        st.session_state.interactions_log.append(f"⚠️ [{t_now}] Gateway Error: {details}")
+                    st.rerun()
+                    
+            with sim_col2:
+                assignment_options = ["TMA C1", "TMA C2", "TMA C3", "TMA C4", "TMA C5", "TMA C6"]
+                selected_assignment = st.selectbox("Assignment Chapter", assignment_options)
+                mock_score = st.slider("Score (%)", 0, 100, 80)
+                
+                if st.button("📝 Submit Grade"):
+                    t_now = datetime.now().strftime('%H:%M:%S')
+                    clean_assignment_id = selected_assignment.split(" ")[1]
+                    success, details = send_assessment_submission(selected_student, clean_assignment_id, mock_score)
+                    if success:
+                        st.session_state.interactions_log.append(f"🟢 [{t_now}] Grade {mock_score}% on {clean_assignment_id}: {details}")
+                    else:
+                        st.session_state.interactions_log.append(f"⚠️ [{t_now}] Gateway Error: {details}")
+                    st.rerun()
+
+            col_reset, col_space = st.columns((4, 8))
+            with col_reset:
+                if st.button("🔄 Reset Demo State", use_container_width=True):
+                    t_now = datetime.now().strftime('%H:%M:%S')
+                    success, details = reset_gateway_demo_state()
+                    if success:
+                        st.session_state.interactions_log.append(f"🔄 [{t_now}] {details}")
+                        user_row = df_user_emb[df_user_emb['student_id_hash'] == selected_student]
+                        if not user_row.empty:
+                            st.session_state.custom_u_emb = np.array(user_row.iloc[0]['user_embedding'])
+                    else:
+                        st.session_state.interactions_log.append(f"⚠️ [{t_now}] Reset Error: {details}")
+                    st.rerun()
+
+            # Console logs
+            if st.session_state.interactions_log:
+                log_html = "<br>".join(st.session_state.interactions_log[::-1])
+                st.markdown(f'<div class="console-log">{log_html}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="console-log" style="color: #ef4444;">[No events logged]</div>', unsafe_allow_html=True)
+
+# ====================================================================
+# VIEW 2: UNIVERSAL ANALYTICS STATISTICS
+# ====================================================================
+else:
+    # Filter datasets based on module scope selection
+    if selected_course_option == "All Modules":
+        df_univ_risk = df_risk
+        df_univ_bkt = df_bkt
+        scope_title = "All OULAD Modules"
+    else:
+        mod = selected_course_option.split(" ")[1]
+        df_univ_risk = df_risk[df_risk['code_module'] == mod]
+        df_univ_bkt = df_bkt[df_bkt['skill_name'].str.startswith(mod)]
+        scope_title = f"Module {mod}"
+
+    # ROW A: KEY PERFORMANCE METRICS
+    st.markdown(f'### Universal Analytics KPIs — {scope_title}')
+    col_u1, col_u2, col_u3 = st.columns(3)
+    
+    total_enrolled = len(df_univ_risk)
+    avg_univ_risk = df_univ_risk['dropout_probability'].mean() * 100
+    avg_univ_mastery = df_univ_bkt['correct_predictions'].astype(float).mean() * 100 if not df_univ_bkt.empty else 67.8
+    
+    col_u1.metric("Total Cohort Size", f"{total_enrolled:,} Students")
+    col_u2.metric("Cohort Average Risk", f"{avg_univ_risk:.2f}%")
+    col_u3.metric("Cohort Average Mastery", f"{avg_univ_mastery:.1f}%")
+
+    # ROW B: COMPREHENSIVE BKT HEATMAP & RISK DISTRIBUTION
+    col_b1, col_b2 = st.columns((7, 3))
+    
+    with col_b1:
+        st.markdown('### BKT skill mastery Heatmap across all Modules')
+        if not df_univ_bkt.empty:
+            df_bkt_all = df_univ_bkt.copy()
+            df_bkt_all['module'] = df_bkt_all['skill_name'].apply(lambda x: x.split('_')[0] if '_' in x else 'Unknown')
+            df_bkt_all['type'] = df_bkt_all['skill_name'].apply(lambda x: x.split('_')[1] if '_' in x else 'Unknown')
+            df_pivot_all = df_bkt_all.groupby(['module', 'type'])['correct_predictions'].mean().unstack().fillna(0.0) * 100
+            df_pivot_all.index.name = "Module"
+            df_pivot_all.columns.name = "Assessment Type"
+            st.dataframe(df_pivot_all, use_container_width=True)
+        else:
+            st.info("No universal BKT records found.")
+
+    with col_b2:
+        st.markdown('### Cohort Dropout Risk Distribution')
+        risk_bins = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+        risk_labels = ["0-20%", "20-40%", "40-60%", "60-80%", "80-100%"]
+        df_hist = pd.cut(df_univ_risk['dropout_probability'], bins=risk_bins, labels=risk_labels, include_lowest=True).value_counts().reset_index()
+        df_hist.columns = ['Risk Range', 'Student Count']
+        df_hist['Risk Range'] = pd.Categorical(df_hist['Risk Range'], categories=risk_labels, ordered=True)
+        df_hist = df_hist.sort_values(by='Risk Range')
+        st.bar_chart(df_hist.set_index('Risk Range')[['Student Count']], color="#60A5FA", use_container_width=True)
+
+    # ROW C: COMPREHENSIVE COHORT TIMELINE
+    st.markdown('### Cohort Longitudinal Timeline (Average Performance)')
+    df_cohort_timeline = get_student_timeline_data("cohort_average_seed", avg_univ_risk / 100.0)
+    chart_data = df_cohort_timeline.set_index("Mốc thời gian")[["Xác suất bỏ học (%)", "Độ thành thục BKT (%)"]]
+    st.line_chart(chart_data, color=["#EF4444", "#10B981"], height=plot_height, use_container_width=True)
+
+    # ROW D: DEMOGRAPHIC AND RISK RELATIONSHIPS
+    col_d1, col_d2 = st.columns(2)
+    
+    with col_d1:
+        st.markdown('### Average Dropout Risk by Student Education Level')
+        df_edu_group = df_univ_risk.groupby('highest_education')['dropout_probability'].mean().reset_index()
+        df_edu_group['dropout_probability'] = df_edu_group['dropout_probability'] * 100
+        df_edu_group.columns = ['Education Level', 'Average Risk (%)']
+        st.bar_chart(df_edu_group.set_index('Education Level')[['Average Risk (%)']], color="#8B5CF6", use_container_width=True)
+
+    with col_d2:
+        st.markdown('### Cohort Demographic Distribution')
+        df_demo_count = df_univ_risk['highest_education'].value_counts().reset_index()
+        df_demo_count.columns = ['Education Level', 'Student Count']
+        st.bar_chart(df_demo_count.set_index('Education Level')[['Student Count']], color="#60A5FA", use_container_width=True)
