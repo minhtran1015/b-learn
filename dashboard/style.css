@@ -1,15 +1,15 @@
-/* Custom Core Environment Backgrounds */
+/* Custom Core Environment Backgrounds (Light Theme) */
 :root {
-    --bg-main: #0F172A;
-    --bg-sidebar: #1E293B;
-    --comp-surface: #29354F;
+    --bg-main: #F8FAFC;
+    --bg-sidebar: #F1F5F9;
+    --comp-surface: #FFFFFF;
     
     --primary: #3B82F6;
     --secondary: #60A5FA;
     --tertiary: #8B5CF6;
     
-    --text-main: #F8FAFC;
-    --text-muted: #94A3B8;
+    --text-main: #0F172A;
+    --text-muted: #64748B;
     
     --status-safe: #10B981;
     --status-warning: #F59E0B;
@@ -19,22 +19,22 @@
 /* Sidebar customization */
 [data-testid="stSidebar"] {
     background-color: var(--bg-sidebar) !important;
-    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-right: 1px solid #E2E8F0 !important;
 }
 
 /* Metric Card Styling */
 div[data-testid="stMetric"] {
     background-color: var(--comp-surface) !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid #E2E8F0 !important;
     padding: 1.25rem !important;
     border-radius: 8px !important;
     border-left: 0.5rem solid var(--primary) !important;
-    box-shadow: 0 0.15rem 1.75rem 0 rgba(0, 0, 0, 0.3) !important;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(0, 0, 0, 0.05) !important;
 }
 
 /* Metric Label Style */
 div[data-testid="stMetric"] label {
-    color: var(--secondary) !important;
+    color: var(--primary) !important;
     font-weight: 700 !important;
     text-transform: uppercase !important;
     font-size: 0.8rem !important;
@@ -62,7 +62,7 @@ footer {display: none;}
 /* Custom Glass Cards */
 .glass-card {
     background: var(--comp-surface) !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid #E2E8F0 !important;
     border-radius: 8px !important;
     padding: 1.5rem !important;
     margin-bottom: 1.5rem !important;
@@ -70,7 +70,7 @@ footer {display: none;}
 
 /* Console-style logs */
 .console-log {
-    background-color: var(--bg-main);
+    background-color: #0F172A;
     color: var(--status-safe);
     font-family: 'Courier New', Courier, monospace;
     padding: 1rem;
