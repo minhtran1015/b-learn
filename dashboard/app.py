@@ -3,8 +3,11 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime
+import datetime as dt
 from azure.storage.blob import ContainerClient
 import io
+import requests
+import jwt
 
 # ─── PREMIUM MODERN DESIGN THEME (GLASSMORPHISM & CUSTOM TYPOGRAPHY) ───
 st.set_page_config(
@@ -29,28 +32,16 @@ st.markdown(
     .main-title {
         font-size: 2.6rem;
         font-weight: 700;
-        color: #4D96FF !important; /* Hoặc #1e1e24 tùy gu của bạn */
-        background: none !important;
-        -webkit-text-fill-color: initial !important;
+        color: #4D96FF !important;
         margin-bottom: 2rem;
     }
     
-    /* Đảm bảo màu chữ hiển thị rõ ràng trên nền sáng */
-    h1, h2, h3, h4, h5, h6, p, label {
-        color: #1e1e24 !important;
-    }
-
-    /* Đảm bảo console log không bị ghi đè màu chữ */
-    .console-log * {
-        color: inherit !important;
-    }
-
-    /* Giữ kiểu dáng cho class glass-card tự chế */
+    /* Glassmorphism styling */
     .glass-card {
-        background: rgba(255, 255, 255, 0.6) !important;
+        background: rgba(255, 255, 255, 0.08) !important;
         border-radius: 12px !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
-        border: 1px solid rgba(0, 0, 0, 0.05) !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
         margin-bottom: 1rem;
         padding: 1.5rem;
     }
@@ -83,6 +74,8 @@ st.markdown(
         font-size: 0.85rem;
         border-left: 4px solid #2ed573;
         margin-top: 1rem;
+        max-height: 300px;
+        overflow-y: auto;
     }
     </style>
     """,
@@ -98,10 +91,6 @@ st.markdown(
 storage_account = os.getenv("AZURE_STORAGE_ACCOUNT", "stblearnminhdata2026")
 storage_key = os.getenv("AZURE_STORAGE_KEY")
 
-import shutil
-import requests
-import jwt
-
 GATEWAY_URL = os.getenv("GATEWAY_URL", "http://localhost:8000")
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "b-learn-super-secret-key-1015")
 
@@ -109,7 +98,7 @@ def get_auth_token():
     payload = {
         "sub": "admin_dashboard",
         "role": "admin",
-        "exp": datetime.utcnow() + datetime.timedelta(hours=1)
+        "exp": datetime.utcnow() + dt.timedelta(hours=1)
     }
     return jwt.encode(payload, JWT_SECRET_KEY, algorithm="HS256")
 
@@ -150,15 +139,45 @@ def send_kafka_event(student_id_hash: str, id_site: int, activity_type: str = ""
     except Exception as e:
         return False, str(e)
 
-# @st.cache_data: correct decorator for DataFrames — hashes arguments, serializes
-# return value to disk, safe for multi-user Streamlit. Restored to ttl=3600 since data is cached on disk.
+def send_assessment_submission(student_id_hash: str, assignment_id: str, score: float) -> tuple[bool, str]:
+    """Send an assignment submission score to the FastAPI Serving Gateway's `/submit-assessment` endpoint."""
+    try:
+        token = get_auth_token()
+        headers = {"Authorization": f"Bearer {token}"}
+        payload = {
+            "student_id_hash": student_id_hash,
+            "assignment_id": str(assignment_id),
+            "score": float(score)
+        }
+        url = f"{GATEWAY_URL}/submit-assessment"
+        response = requests.post(url, json=payload, headers=headers, timeout=2.0)
+        if response.status_code == 200:
+            return True, f"Status {response.status_code}: {response.json().get('message', 'assessment tracked')}"
+        else:
+            return False, f"Status {response.status_code}: {response.text}"
+    except Exception as e:
+        return False, str(e)
+
+def reset_gateway_demo_state() -> tuple[bool, str]:
+    """Reset the demo state on the Serving Gateway using `/reset-assessment-shifts`."""
+    try:
+        token = get_auth_token()
+        headers = {"Authorization": f"Bearer {token}"}
+        url = f"{GATEWAY_URL}/reset-assessment-shifts"
+        response = requests.post(url, headers=headers, timeout=2.0)
+        if response.status_code == 200:
+            return True, "Demo state successfully reset on Serving Gateway."
+        else:
+            return False, f"Status {response.status_code}: {response.text}"
+    except Exception as e:
+        return False, str(e)
+
 @st.cache_data(ttl=3600, show_spinner=False)
 def load_serving_data(file_name):
     """Load a Parquet file using local Pod-Disk cache (Local File Mirroring) to prevent network I/O hangs."""
     t0 = datetime.now()
     local_cache_path = f"/tmp/{file_name}"
     
-    # Khối điều hướng cho chế độ chạy thử cục bộ (Local Mock)
     if not storage_key:
         url = f"https://{storage_account}.blob.core.windows.net/serving/ui_data/{file_name}"
         df = pd.read_parquet(url)
@@ -166,7 +185,6 @@ def load_serving_data(file_name):
         print(f"[LOCAL MOCK] Loaded {file_name}: {len(df)} rows in {elapsed:.2f}s")
         return df
         
-    # NẾU CHƯA CÓ TRÊN ĐĨA POD: Tiến hành tải phẳng một lần duy nhất
     if not os.path.exists(local_cache_path):
         try:
             container_client = ContainerClient(
@@ -187,20 +205,16 @@ def load_serving_data(file_name):
                     
             if dfs:
                 combined_df = pd.concat(dfs, ignore_index=True)
-                # Ghi thẳng bản sao xuống bộ nhớ đệm của Pod để tái sử dụng siêu tốc
                 combined_df.to_parquet(local_cache_path)
             else:
-                # Fallback to direct HTTP URL read if no partition blobs are listed
                 url = f"https://{storage_account}.blob.core.windows.net/serving/ui_data"
                 df = pd.read_parquet(f"{url}/{file_name}")
                 df.to_parquet(local_cache_path)
         except Exception as e:
-            # Fallback to direct HTTP URL read if SDK call fails
             url = f"https://{storage_account}.blob.core.windows.net/serving/ui_data"
             df = pd.read_parquet(f"{url}/{file_name}")
             df.to_parquet(local_cache_path)
                 
-    # NẾU ĐÃ CÓ TRÊN ĐĨA POD: Đọc trực tiếp bằng Pandas mất < 5ms, chặn hoàn toàn treo mạng
     if os.path.exists(local_cache_path):
         df = pd.read_parquet(local_cache_path)
         elapsed = (datetime.now() - t0).total_seconds()
@@ -209,60 +223,29 @@ def load_serving_data(file_name):
     else:
         raise FileNotFoundError(f"Không thể khởi tạo bản sao dữ liệu cho {file_name}")
 
-
-
-@st.cache_data(ttl=60)
-def precompute_cohort_metrics(_df_risk, _df_bkt):
-    total_students = len(_df_risk['student_id_hash'].unique())
-    avg_risk = _df_risk['dropout_probability'].mean() * 100
-    
-    stuck_skill_name = "N/A"
-    stuck_skill_val = 0.0
-    if not _df_bkt.empty:
-        try:
-            _df_bkt_clean = _df_bkt.copy()
-            _df_bkt_clean['correct_predictions'] = _df_bkt_clean['correct_predictions'].astype(float)
-            skill_averages = _df_bkt_clean.groupby('skill_name')['correct_predictions'].mean().reset_index()
-            if not skill_averages.empty:
-                lowest_skill = skill_averages.sort_values(by='correct_predictions').iloc[0]
-                stuck_skill_name = lowest_skill['skill_name']
-                stuck_skill_val = lowest_skill['correct_predictions']
-        except Exception:
-            pass
-            
-    return total_students, avg_risk, stuck_skill_name, stuck_skill_val
-
-
 @st.cache_data(ttl=60)
 def generate_curated_student_list(_df_risk):
-    # TỐI ƯU CỐT LÕI: Trích xuất ra danh sách rút gọn gồm 25 sinh viên rủi ro nhất 
-    # và 25 sinh viên an toàn nhất để demo mượt mà, tránh nhét 25k dòng làm sập DOM trình duyệt
+    # Extract top 25 high risk and top 25 low risk students for smooth select list
     top_at_risk = _df_risk.sort_values(by='dropout_probability', ascending=False).head(25)
     top_safe = _df_risk.sort_values(by='dropout_probability', ascending=True).head(25)
     curated_df = pd.concat([top_at_risk, top_safe]).drop_duplicates(subset=['student_id_hash'])
     return curated_df['student_id_hash'].tolist()
 
-
 @st.cache_data(ttl=60)
 def get_student_timeline_data(student_id, base_prob):
-    # Sử dụng seed dựa trên mã hash để tạo tính nhất quán khi demo
     try:
-        # student_id có thể là chuỗi hexa SHA-256
         seed_val = int(student_id[:6], 16) % 1000
     except ValueError:
         import hashlib
         seed_val = int(hashlib.md5(student_id.encode('utf-8')).hexdigest()[:6], 16) % 1000
         
     np.random.seed(seed_val)
-    
-    # Sinh dữ liệu biến đổi xác suất rủi ro qua 4 mốc cho sinh viên cụ thể
-    # Học viên rủi ro cao sẽ có xu hướng tăng dần xác suất rủi ro, học viên an toàn sẽ giảm dần
     trend_factor = 1.1 if base_prob > 0.5 else 0.8
     
     timeline_records = []
     checkpoints = ["Tuần 4", "Tuần 8", "Tuần 12", "Tuần 16"]
-    cohort_baselines_risk = [22.4, 28.1, 32.5, 30.2] # Trung bình toàn trường
-    cohort_baselines_bkt = [45.0, 58.2, 65.4, 72.1]  # Độ thành thục trung bình
+    cohort_baselines_risk = [22.4, 28.1, 32.5, 30.2]
+    cohort_baselines_bkt = [45.0, 58.2, 65.4, 72.1]
     
     current_risk = base_prob
     current_bkt = 40.0 + np.random.randint(-10, 15)
@@ -280,190 +263,17 @@ def get_student_timeline_data(student_id, base_prob):
         })
     df_timeline = pd.DataFrame(timeline_records)
     
-    # Khai báo mảng thứ tự mốc thời gian chuẩn giáo dục
     checkpoint_order = ["Tuần 4", "Tuần 8", "Tuần 12", "Tuần 16"]
-
-    # Ép kiểu định dạng tuần tự nghiêm ngặt cho Pandas
     df_timeline["Mốc thời gian"] = pd.Categorical(
         df_timeline["Mốc thời gian"], 
         categories=checkpoint_order, 
         ordered=True
     )
-    # Sắp xếp lại DataFrame theo thứ tự logic đã thiết lập
     df_timeline = df_timeline.sort_values(by="Mốc thời gian")
     return df_timeline
 
-
-
-
-@st.cache_data(ttl=60)
-def load_and_cache_system_metrics():
-    try:
-        # Gọi hàm stream HTTPS từ ContainerClient đã tối ưu ở lượt trước
-        return load_serving_data("system_metrics.parquet")
-    except Exception:
-        # Mock dataframe dự phòng chuẩn kiến trúc phục vụ demo mượt mà nếu file trống
-        return pd.DataFrame([
-            {"metric_type": "job_duration", "key_name": "1. Bronze Ingest", "value": 45},
-            {"metric_type": "job_duration", "key_name": "2. Silver Cleanse", "value": 60},
-            {"metric_type": "job_duration", "key_name": "3. Gold BKT Pipeline", "value": 580},
-            {"metric_type": "job_duration", "key_name": "4. Gold RecSys Deep", "value": 319},
-            {"metric_type": "job_duration", "key_name": "5. Serving Export", "value": 65},
-            
-            {"metric_type": "api_traffic", "key_name": "00:00", "value": 15},
-            {"metric_type": "api_traffic", "key_name": "04:00", "value": 8},
-            {"metric_type": "api_traffic", "key_name": "08:00", "value": 92},
-            {"metric_type": "api_traffic", "key_name": "12:00", "value": 156},
-            {"metric_type": "api_traffic", "key_name": "16:00", "value": 110},
-            {"metric_type": "api_traffic", "key_name": "20:00", "value": 185},
-            
-            {"metric_type": "resource_quota", "key_name": "CPU Usage (Cores)", "value": 1.25},
-            {"metric_type": "resource_quota", "key_name": "RAM Footprint (Gi)", "value": 6.4},
-
-            {"metric_type": "mlops_metric", "key_name": "lightgbm_training_cycle_seconds", "value": 134},
-            {"metric_type": "mlops_metric", "key_name": "lightgbm_pr_auc", "value": 0.6406},
-            {"metric_type": "mlops_metric", "key_name": "pybkt_training_cycle_seconds", "value": 65},
-            {"metric_type": "mlops_metric", "key_name": "pybkt_auc", "value": 0.7619},
-            {"metric_type": "mlops_metric", "key_name": "lightgcn_training_cycle_seconds", "value": 319},
-            {"metric_type": "mlops_metric", "key_name": "lightgcn_recall_at_10", "value": 0.3302}
-        ])
-
-
-def get_metric_value(df_metrics, key_name, default=None):
-    try:
-        rows = df_metrics[(df_metrics["metric_type"] == "mlops_metric") & (df_metrics["key_name"] == key_name)]
-        if not rows.empty:
-            return float(rows.iloc[0]["value"])
-    except Exception:
-        pass
-    return default
-
-
-def format_duration(seconds):
-    if seconds is None:
-        return "N/A"
-
-    total_seconds = max(0, int(round(float(seconds))))
-    minutes, secs = divmod(total_seconds, 60)
-    if minutes >= 60:
-        hours, minutes = divmod(minutes, 60)
-        return f"{hours}h {minutes:02d}m {secs:02d}s"
-    return f"{minutes}m {secs:02d}s"
-
-
-SLA_THRESHOLDS = {
-    "lightgbm_auc": 0.82,
-    "pybkt_auc": 0.70,
-    "lightgcn_recall": 0.10,
-}
-
-
-# ─── SIDEBAR: SETUP DEBUG & SANDBOX FIRST ───
-st.sidebar.markdown(
-    """
-    <div style="text-align: center; margin-bottom: 2rem;">
-        <h2 style="font-weight: 600; color: #4D96FF; margin: 0;">B-LEARN UI</h2>
-        <span style="font-size: 0.85rem; color: #888;">Medallion Serving Console</span>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-st.sidebar.header("🛠️ Debug & Sandbox")
-sandbox_mode = st.sidebar.checkbox("Bật dữ liệu cứng Sandbox (Mỏ neo)", value=False)
-st.sidebar.markdown("---")
-
-with st.spinner("⏳ Đang nạp dữ liệu từ Azure Cloud (lần đầu mất ~10-15s, sau đó phục vụ từ bộ nhớ)..."):
-    try:
-        df_risk = load_serving_data("risk_predictions.parquet")
-        df_bkt = load_serving_data("bkt_mastery.parquet")
-        df_user_emb = load_serving_data("user_embeddings.parquet")
-        df_item_emb = load_serving_data("item_embeddings.parquet")
-        
-        # Load descriptive stats with local mock fallback
-        try:
-            df_cohort_raw = load_serving_data("cohort_stats.parquet")
-            
-            # LỚP CHUẨN HÓA DỮ LIỆU ĐỀ PHÒNG SCHEMA MISMATCH TỪ SPARK JOB
-            if "metric_name" not in df_cohort_raw.columns:
-                normalized_chunks = []
-                
-                # Chuẩn hoá cột giới tính
-                if "gender" in df_cohort_raw.columns:
-                    g_df = df_cohort_raw[["gender", "count"]].dropna().rename(columns={"gender": "category"})
-                    g_df["metric_name"] = "gender"
-                    g_df["value"] = None
-                    normalized_chunks.append(g_df)
-                    
-                # Chuẩn hoá cột trình độ học vấn
-                if "highest_education" in df_cohort_raw.columns:
-                    e_df = df_cohort_raw[["highest_education", "count"]].dropna().rename(columns={"highest_education": "category"})
-                    e_df["metric_name"] = "highest_education"
-                    e_df["value"] = None
-                    normalized_chunks.append(e_df)
-                    
-                # Chuẩn hoá cột vùng miền
-                if "region" in df_cohort_raw.columns:
-                    r_df = df_cohort_raw[["region", "count"]].dropna().rename(columns={"region": "category"})
-                    r_df["metric_name"] = "region"
-                    r_df["value"] = None
-                    normalized_chunks.append(r_df)
-                    
-                df_cohort = pd.concat(normalized_chunks, ignore_index=True) if normalized_chunks else df_cohort_raw
-            else:
-                df_cohort = df_cohort_raw
-        except Exception as e:
-            df_cohort = pd.DataFrame([
-                {"metric_name": "gender", "category": "M", "value": None, "count": 1500},
-                {"metric_name": "gender", "category": "F", "value": None, "count": 1300},
-                {"metric_name": "highest_education", "category": "HE Qualification", "value": None, "count": 800},
-                {"metric_name": "highest_education", "category": "A Level or Equivalent", "value": None, "count": 1200},
-                {"metric_name": "highest_education", "category": "Lower Than A Level", "value": None, "count": 800},
-                {"metric_name": "region", "category": "London Region", "value": None, "count": 600},
-                {"metric_name": "region", "category": "South Region", "value": None, "count": 700},
-                {"metric_name": "region", "category": "North Region", "value": None, "count": 500},
-                {"metric_name": "region", "category": "Wales", "value": None, "count": 400},
-                {"metric_name": "region", "category": "Scotland", "value": None, "count": 600},
-                {"metric_name": "engagement_weekly", "category": "0", "value": 15.2, "count": None},
-                {"metric_name": "engagement_weekly", "category": "1", "value": 18.5, "count": None},
-                {"metric_name": "engagement_weekly", "category": "2", "value": 22.1, "count": None},
-                {"metric_name": "engagement_weekly", "category": "3", "value": 19.8, "count": None},
-                {"metric_name": "engagement_weekly", "category": "4", "value": 24.3, "count": None},
-            ])
-            
-        # Làm sạch tuyệt đối các cột text để tránh bẫy khoảng trắng từ Spark
-        if not df_cohort.empty:
-            df_cohort['metric_name'] = df_cohort['metric_name'].astype(str).str.strip().str.lower()
-            if 'category' in df_cohort.columns:
-                df_cohort['category'] = df_cohort['category'].astype(str).str.strip()
-            
-        # Load VLE metadata with local fallback
-        try:
-            df_lms = load_serving_data("lms_simulator.parquet")
-        except Exception as e:
-            df_lms = pd.DataFrame({
-                "id_site": df_item_emb["id_site"].unique().astype(int),
-                "activity_type": np.random.choice(["oucontent", "forumng", "url", "resource", "subpage", "quiz"], size=len(df_item_emb["id_site"].unique()))
-            })
-    except Exception as e:
-        st.error(f"Lỗi nạp dữ liệu từ Serving Layer Cloud: {e}")
-        st.stop()
-
-# Đặt ngay sau khối nạp dữ liệu tổng
-if sandbox_mode:
-    df_cohort = pd.DataFrame([
-        {"metric_name": "gender", "category": "M", "count": 1500, "value": 0.0},
-        {"metric_name": "gender", "category": "F", "count": 1300, "value": 0.0},
-        {"metric_name": "highest_education", "category": "HE Qualification", "count": 1200, "value": 0.0},
-        {"metric_name": "highest_education", "category": "A Level", "count": 1500, "value": 0.0},
-        {"metric_name": "engagement_weekly", "category": "1", "count": 0, "value": 25.4},
-        {"metric_name": "engagement_weekly", "category": "2", "count": 0, "value": 28.2}
-    ])
-    # Đảm bảo làm sạch chuỗi cho cả dữ liệu Sandbox
-    df_cohort['metric_name'] = df_cohort['metric_name'].astype(str).str.strip().str.lower()
-    df_cohort['category'] = df_cohort['category'].astype(str).str.strip()
-
 # Helper function to get activity type for VLE sites
-def get_vle_activity(site_id):
+def get_vle_activity(site_id, df_lms):
     try:
         val = int(site_id)
         row = df_lms[df_lms['id_site'] == val]
@@ -486,656 +296,363 @@ def get_activity_icon(activity_type):
     }
     return icons.get(activity_type, "📄")
 
-@st.cache_data(ttl=60, show_spinner=False)
-def compute_recommendations(student_id_hash: str):
-    """Cache dot-product scoring per student_id_hash (recomputed only on student change)."""
+# ─── SIDEBAR: GLOBAL FILTERS ───
+st.sidebar.markdown(
+    """
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h2 style="font-weight: 600; color: #4D96FF; margin: 0;">B-LEARN</h2>
+        <span style="font-size: 0.85rem; color: #888;">Learning Analytics Console</span>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+st.sidebar.header("🎯 Context Selection")
+
+# Load data with local caching
+with st.spinner("⏳ Loading serving data..."):
     try:
-        _user_emb = load_serving_data("user_embeddings.parquet")
-        _item_emb = load_serving_data("item_embeddings.parquet")
-        user_row = _user_emb[_user_emb['student_id_hash'] == student_id_hash]
-        if user_row.empty:
-            return None
-        u_emb = np.array(user_row.iloc[0]['user_embedding'])
-        i_embs = np.stack(_item_emb['item_embedding'].values)
-        scores = np.dot(i_embs, u_emb)
-        df_scored = _item_emb.copy()
-        df_scored['recommendation_score'] = scores
-        return df_scored.sort_values(by='recommendation_score', ascending=False).head(5).copy()
-    except Exception:
-        return None
+        df_risk = load_serving_data("risk_predictions.parquet")
+        df_bkt = load_serving_data("bkt_mastery.parquet")
+        df_user_emb = load_serving_data("user_embeddings.parquet")
+        df_item_emb = load_serving_data("item_embeddings.parquet")
+        
+        try:
+            df_cohort = load_serving_data("cohort_stats.parquet")
+        except Exception:
+            df_cohort = pd.DataFrame()
+            
+        try:
+            df_lms = load_serving_data("lms_simulator.parquet")
+        except Exception:
+            df_lms = pd.DataFrame({
+                "id_site": df_item_emb["id_site"].unique().astype(int),
+                "activity_type": np.random.choice(["oucontent", "forumng", "url", "resource", "subpage", "quiz"], size=len(df_item_emb["id_site"].unique()))
+            })
+    except Exception as e:
+        st.error(f"Error loading serving layer: {e}")
+        st.stop()
 
-# ─── SIDEBAR: BỘ LỌC TÌM KIẾM ĐÃ ĐƯỢC LÀM ĐẸP ───
-st.sidebar.header("🔑 Quyền hạn truy cập")
-is_admin = st.sidebar.toggle("🔓 Chế độ Giảng viên (Hiện danh tính thực)", value=False)
-admin_mode = st.sidebar.toggle("⚙️ Chế độ Quản trị (Admin Mode)", value=False)
+# Ensure standard columns are available
+if 'id_student' not in df_risk.columns:
+    import hashlib
+    df_risk['id_student'] = df_risk['student_id_hash'].apply(lambda h: str(int(hashlib.md5(h.encode('utf-8')).hexdigest()[:6], 16) % 900000 + 100000))
 
-selected_student = None
-if not admin_mode:
-    st.sidebar.header("🔍 Quản Lý Học Viên")
+# Course Filter
+unique_modules = sorted(df_risk['code_module'].unique().tolist())
+course_options = [f"OULAD {m}" for m in unique_modules]
+selected_course_option = st.sidebar.selectbox("📚 Course Module", course_options)
+selected_module = selected_course_option.split(" ")[1]
 
-    # Lấy danh sách 50 học viên tiêu biểu đã được cache tăng tốc
-    df_risk = df_risk.copy()
-    if df_risk.empty:
-        df_risk = pd.DataFrame([{"student_id_hash": "demo_student_hash_placeholder", "dropout_probability": 0.25, "predicted_class": "Success", "id_student": "Unknown"}])
+# Filter datasets based on module
+df_filtered_risk = df_risk[df_risk['code_module'] == selected_module].copy()
 
-    curated_student_list = generate_curated_student_list(df_risk)
-    if not curated_student_list:
-        curated_student_list = ["demo_student_hash_placeholder"]
+# Student Selector
+curated_student_list = generate_curated_student_list(df_filtered_risk)
+if not curated_student_list:
+    curated_student_list = ["demo_student_hash_placeholder"]
 
-    # Đảm bảo cột id_student luôn tồn tại
-    if 'id_student' not in df_risk.columns:
-        import hashlib
-        # Sinh MSSV giả định dài 6 chữ số dựa trên hash của sinh viên để ổn định khi thay đổi trang
-        def get_stable_fake_id(h):
-            return str(int(hashlib.md5(h.encode('utf-8')).hexdigest()[:6], 16) % 900000 + 100000)
-        df_risk['id_student'] = df_risk['student_id_hash'].apply(get_stable_fake_id)
-
-    # Tạo từ điển mapping để hiển thị danh sách thân thiện hoặc giải mã MSSV thực tế
-    hash_to_friendly = {}
-    for idx, raw_hash in enumerate(curated_student_list):
-        row_data = df_risk[df_risk['student_id_hash'] == raw_hash]
-        if is_admin and not row_data.empty:
-            real_id = row_data.iloc[0]['id_student']
-            hash_to_friendly[raw_hash] = f"👤 MSSV: {real_id} (#{(idx+1)})"
-        else:
-            hash_to_friendly[raw_hash] = f"👤 Học viên #{(idx+1)} ({raw_hash[:8]}...)"
-
-    # Công tắc chọn phương thức tìm kiếm để linh hoạt khi chấm điểm
-    search_mode = st.sidebar.radio("Chế độ chọn:", ["Chọn từ danh sách tiêu biểu", "Nhập mã Cloud ID thủ công"])
-
-    if search_mode == "Chọn từ danh sách tiêu biểu":
-        selected_student = st.sidebar.selectbox(
-            "Chọn học viên mẫu (Top Risk/Safe):", 
-            curated_student_list, 
-            format_func=lambda x: hash_to_friendly.get(x, x)
-        )
+hash_to_friendly = {}
+for idx, raw_hash in enumerate(curated_student_list):
+    row_data = df_filtered_risk[df_filtered_risk['student_id_hash'] == raw_hash]
+    if not row_data.empty:
+        real_id = row_data.iloc[0]['id_student']
+        hash_to_friendly[raw_hash] = f"👤 MSSV: {real_id} (#{(idx+1)})"
     else:
-        search_input = st.sidebar.text_input("Dán mã SHA-256 Cloud ID của sinh viên vào đây:")
-        if search_input:
-            selected_student = search_input.strip()
-        else:
-            selected_student = curated_student_list[0] if curated_student_list else "demo_student_hash_placeholder"
+        hash_to_friendly[raw_hash] = f"👤 Student #{(idx+1)} ({raw_hash[:8]}...)"
 
-    # Lọc dữ liệu riêng của sinh viên được chọn
+search_mode = st.sidebar.radio("Selection Mode:", ["Select from sample list", "Enter custom ID hash"])
+
+if search_mode == "Select from sample list":
+    selected_student = st.sidebar.selectbox(
+        "👤 Select Student Profile",
+        curated_student_list,
+        format_func=lambda x: hash_to_friendly.get(x, x)
+    )
+else:
+    search_input = st.sidebar.text_input("Paste SHA-256 student ID hash:")
+    if search_input:
+        selected_student = search_input.strip()
+    else:
+        selected_student = curated_student_list[0] if curated_student_list else "demo_student_hash_placeholder"
+
+# Initialize session state for mock interactions log
+if 'interactions_log' not in st.session_state:
+    st.session_state.interactions_log = []
+
+if 'current_student' not in st.session_state or st.session_state.current_student != selected_student:
+    st.session_state.current_student = selected_student
+    user_row = df_user_emb[df_user_emb['student_id_hash'] == selected_student]
+    if not user_row.empty:
+        st.session_state.custom_u_emb = np.array(user_row.iloc[0]['user_embedding'])
+    else:
+        st.session_state.custom_u_emb = None
+
+
+# ─── MAIN APPLICATION NAVIGATION ───
+tab_cohort, tab_student, tab_playground = st.tabs([
+    "📊 Global Cohort Analytics (Course View)",
+    "👤 Individual Student Inspection (Deep-Dive View)",
+    "🎮 Adaptive LMS Simulation Playground"
+])
+
+# ====================================================================
+# TAB 1: GLOBAL COHORT ANALYTICS
+# ====================================================================
+with tab_cohort:
+    st.markdown(f"### 📊 Cohort Overview — Module {selected_module}")
+    
+    # Simple aggregated metrics
+    total_students = len(df_filtered_risk)
+    avg_risk = df_filtered_risk['dropout_probability'].mean() * 100
+    
+    df_module_bkt_all = df_bkt[df_bkt['skill_name'].str.startswith(selected_module)]
+    avg_mastery = df_module_bkt_all['correct_predictions'].astype(float).mean() * 100 if not df_module_bkt_all.empty else 68.5
+    
+    col_m1, col_m2, col_m3 = st.columns(3)
+    col_m1.metric("Total Enrolled Students", f"{total_students:,}")
+    col_m2.metric("Average Dropout Risk", f"{avg_risk:.2f}%")
+    col_m3.metric("BKT Concept Mastery Average", f"{avg_mastery:.1f}%")
+    
+    col_g1, col_g2 = st.columns(2)
+    
+    with col_g1:
+        st.markdown("##### 🚨 Dropout Risk Density distribution (LightGBM Predictions)")
+        with st.container(border=True):
+            risk_bins = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+            risk_labels = ["0-10%", "10-20%", "20-30%", "30-40%", "40-50%", "50-60%", "60-70%", "70-80%", "80-90%", "90-100%"]
+            df_hist = pd.cut(df_filtered_risk['dropout_probability'], bins=risk_bins, labels=risk_labels, include_lowest=True).value_counts().reset_index()
+            df_hist.columns = ['Risk Range', 'Student Count']
+            df_hist['Risk Range'] = pd.Categorical(df_hist['Risk Range'], categories=risk_labels, ordered=True)
+            df_hist = df_hist.sort_values(by='Risk Range')
+            st.bar_chart(df_hist.set_index('Risk Range')[['Student Count']], color="#FF4757", use_container_width=True)
+
+    with col_g2:
+        st.markdown("##### 🗺️ BKT Skill Mastery Heatmap Across Student Risk Groups")
+        with st.container(border=True):
+            df_student_risk = df_filtered_risk[['student_id_hash', 'dropout_probability']].copy()
+            def get_risk_band(prob):
+                if prob <= 0.3: return "🟢 Safe (<=30%)"
+                elif prob <= 0.7: return "🟡 Medium (30-70%)"
+                else: return "🔴 High (>70%)"
+            df_student_risk['risk_band'] = df_student_risk['dropout_probability'].apply(get_risk_band)
+            
+            if not df_module_bkt_all.empty:
+                df_bkt_merged = df_module_bkt_all.merge(df_student_risk, left_on='user_id', right_on='student_id_hash', how='inner')
+                if not df_bkt_merged.empty:
+                    df_pivot = df_bkt_merged.groupby(['risk_band', 'skill_name'])['correct_predictions'].mean().unstack().fillna(0.0) * 100
+                    df_pivot.index.name = "Cohort Risk Group"
+                    st.dataframe(df_pivot.style.background_gradient(cmap="RdYlGn", vmin=0, vmax=100), use_container_width=True)
+                else:
+                    st.info("No matching BKT mastery data found for this cohort.")
+            else:
+                st.info(f"No BKT mastery records found matching module {selected_module}.")
+
+# ====================================================================
+# TAB 2: INDIVIDUAL STUDENT INSPECTION
+# ====================================================================
+with tab_student:
+    # Fetch live data from gateway
+    live_data = fetch_student_profile_from_gateway(selected_student)
+    
+    # Fallback to local files if gateway is offline
     student_risk_rows = df_risk[df_risk['student_id_hash'] == selected_student]
     if student_risk_rows.empty:
-        student_risk = {"student_id_hash": selected_student, "dropout_probability": 0.0, "predicted_class": "Success", "id_student": "Unknown"}
-    else:
-        student_risk = student_risk_rows.iloc[0]
-
-    # BKT uses user_id as identifier (string type matching)
-    student_bkt = df_bkt[df_bkt['user_id'] == str(selected_student)]
-
-    # Initialize session state for embedding simulation
-    if 'current_student' not in st.session_state or st.session_state.current_student != selected_student:
-        st.session_state.current_student = selected_student
-        user_row = df_user_emb[df_user_emb['student_id_hash'] == selected_student]
-        if not user_row.empty:
-            st.session_state.custom_u_emb = np.array(user_row.iloc[0]['user_embedding'])
-        else:
-            st.session_state.custom_u_emb = None
-        st.session_state.interactions_log = []
-else:
-    curated_student_list = generate_curated_student_list(df_risk)
-    selected_student = curated_student_list[0] if curated_student_list else "demo_student_hash_placeholder"
-    student_risk = {"student_id_hash": selected_student, "dropout_probability": 0.0, "predicted_class": "Success", "id_student": "Unknown"}
-    student_bkt = pd.DataFrame()
-
-@st.fragment(run_every=3)
-def render_student_deep_dive_fragment(student_id):
-    # Try fetching live data from serving gateway
-    live_data = fetch_student_profile_from_gateway(student_id)
-    
-    # Baseline fallback values
-    student_risk_rows = df_risk[df_risk['student_id_hash'] == student_id]
-    if student_risk_rows.empty:
-        fallback_risk = {"student_id_hash": student_id, "dropout_probability": 0.0, "predicted_class": "Success", "id_student": "Unknown"}
+        fallback_risk = {"student_id_hash": selected_student, "dropout_probability": 0.0, "predicted_class": "Success", "id_student": "Unknown"}
     else:
         fallback_risk = student_risk_rows.iloc[0]
         
-    student_bkt = df_bkt[df_bkt['user_id'] == str(student_id)]
-    
     if live_data:
         prob = live_data.get("dropout_probability", fallback_risk.get("dropout_probability", 0.0))
         pred_class = fallback_risk.get("predicted_class", "Success")
-        st.caption("⚡ Đang hiển thị dữ liệu thời gian thực từ FastAPI Gateway API (Cập nhật tự động mỗi 3s)")
+        st.caption("⚡ Serving live data from FastAPI Gateway API (Refreshed automatically)")
     else:
         prob = fallback_risk.get("dropout_probability", 0.0)
         pred_class = fallback_risk.get("predicted_class", "Success")
-        st.caption("📂 Đang hiển thị dữ liệu từ bản sao lưu Parquet cục bộ (Gateway Offline)")
+        st.caption("📂 Gateway Offline. Loading from local database backup.")
 
-    st.subheader(f"📊 Hồ sơ cá nhân học tập: {hash_to_friendly.get(student_id, f'👤 Học viên ({student_id[:8]}...)')}")
-    st.info(f"🔑 Định danh bảo mật (SHA-256 Cloud ID): `{student_id}`")
-
-    # ─── VIEW 1: CẢNH BÁO RỦI RO (LIGHTGBM) ───
-    with st.container(border=True):
-        st.markdown("<h3 style='margin:0 0 1rem 0;'>🚨 Phân Tích Nguy Cơ Bỏ Học & Kết Quả (LightGBM)</h3>", unsafe_allow_html=True)
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric(label="Xác suất bỏ học", value=f"{prob*100:.2f}%")
-        with col2:
-            status_html = (
-                '<span class="status-badge-risk">🔴 Nguy cơ cao</span>'
-                if prob > 0.5 else
-                '<span class="status-badge-safe">🟢 An toàn</span>'
-            )
-            st.markdown(f"**Trạng thái hệ thống:** {status_html}", unsafe_allow_html=True)
-        with col3:
-            st.metric(label="Dự đoán kết quả cuối kỳ", value=pred_class)
-
-    st.markdown("##### 🎛️ Mô phỏng kịch bản can thiệp học tập (What-If Prescriptive Simulation)")
-    with st.container(border=True):
-        st.caption("Thử thay đổi hành vi của học viên dưới đây để xem sự thay đổi xác suất rủi ro dự báo:")
-        col_sim1, col_sim2 = st.columns(2)
-        with col_sim1:
-            sim_clicks = st.slider("Tăng số lượt tương tác bài tập (Quiz Clicks):", 0, 100, 0, step=5)
-        with col_sim2:
-            sim_docs = st.slider("Tăng số lượng học liệu đã đọc (Content Reads):", 0, 10, 0, step=1)
-        
-        risk_reduction = (sim_clicks * 0.003) + (sim_docs * 0.04)
-        new_sim_prob = max(0.01, float(prob) - risk_reduction)
-        
-        col_res1, col_res2 = st.columns(2)
-        col_res1.metric("Xác suất rủi ro ban đầu", f"{prob*100:.2f}%")
-        
-        delta_val = (new_sim_prob - float(prob)) * 100
-        status_sim = "🟢 Cải thiện tốt" if delta_val < -5 else "🟡 Thay đổi nhẹ"
-        col_res2.metric("Xác suất sau can thiệp giả lập", f"{new_sim_prob*100:.2f}%", delta=f"{delta_val:.2f}%", delta_color="inverse")
-        st.markdown(f"**Đánh giá hiệu quả phương án:** {status_sim}")
-
-    # ─── VIEW 2: LỖ HỔNG KIẾN THỨC (pyBKT) ───
-    with st.container(border=True):
-        st.markdown("<h3 style='margin:0 0 1rem 0;'>🧠 Biểu Đồ Thành Thục Kiến Thức (Bayesian Knowledge Tracing)</h3>", unsafe_allow_html=True)
-        if live_data and "bkt_mastery" in live_data:
-            bkt_data = []
-            for ch, val in live_data["bkt_mastery"].items():
-                bkt_data.append({
-                    "Kỹ năng / Phân mục học tập (Skill Name)": f"Chương {ch[1:]} (Chapter {ch})",
-                    "Độ thành thục kiến thức (Mastery State)": f"{val*100:.1f}%"
-                })
-            display_bkt = pd.DataFrame(bkt_data)
-            st.dataframe(display_bkt, use_container_width=True)
-        elif not student_bkt.empty:
-            display_bkt = student_bkt[['skill_name', 'correct_predictions']].copy()
-            display_bkt = display_bkt.rename(
-                columns={
-                    'skill_name': 'Kỹ năng / Phân mục học tập (Skill Name)',
-                    'correct_predictions': 'Độ thành thục kiến thức (Mastery State)'
-                }
-            )
-            try:
-                display_bkt['Độ thành thục kiến thức (Mastery State)'] = display_bkt['Độ thành thục kiến thức (Mastery State)'].astype(float).apply(lambda x: f"{x*100:.1f}%")
-            except Exception:
-                pass
-            st.dataframe(display_bkt, use_container_width=True)
-        else:
-            st.info("Sinh viên này chưa thực hiện bài tập chuỗi tuần tự tuần này.")
-
-    # ─── VIEW 2.5: BIẾN ĐỘNG CHỈ SỐ THEO HỌC KỲ (LONGITUDINAL TIMELINE) ───
-    st.markdown("### 📈 Biến Động Chỉ Số & Dự Báo Sớm Theo Học Kỳ")
-    df_timeline = get_student_timeline_data(student_id, prob)
-
-    col_t1, col_t2 = st.columns(2)
-    with col_t1:
-        st.markdown("##### 📉 Xu hướng nguy cơ bỏ học qua các Checkpoint (%)")
+    # 1. ALERT BADGE
+    badge_class = "status-badge-risk" if prob > 0.5 else "status-badge-safe"
+    badge_text = f"🔴 HIGH DROPOUT RISK ({prob*100:.2f}%)" if prob > 0.5 else f"🟢 SAFE ({prob*100:.2f}%)"
+    
+    st.markdown(
+        f"""
+        <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <h3 style="margin: 0; color: #4D96FF !important;">Student ID Profile Inspection</h3>
+                <p style="margin: 0.2rem 0 0 0; color: #bbb;">Cloud ID Hash: <code>{selected_student}</code></p>
+                <p style="margin: 0.2rem 0 0 0; color: #bbb;">Final Predicted Outcome: <strong>{pred_class}</strong></p>
+            </div>
+            <div>
+                <span class="{badge_class}" style="font-size: 1.4rem; padding: 0.6rem 1.2rem;">{badge_text}</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    col_inspect_left, col_inspect_right = st.columns(2)
+    
+    # 2. BKT MASTERY PROGRESS BARS
+    with col_inspect_left:
+        st.markdown("##### 🧠 Bayesian Knowledge Tracing Mastery Progress")
         with st.container(border=True):
-            chart_data = df_timeline.set_index("Mốc thời gian")[["Xác suất bỏ học (%)", "Trường học (Risk Baseline) (%)"]]
-            st.line_chart(chart_data, color=["#FF6B6B", "#95a5a6"], use_container_width=True)
+            bkt_mastery_dict = {}
+            if live_data and "bkt_mastery" in live_data:
+                bkt_mastery_dict = live_data["bkt_mastery"]
+            else:
+                student_bkt_df = df_bkt[df_bkt['user_id'] == selected_student]
+                for _, row in student_bkt_df.iterrows():
+                    skill = row['skill_name']
+                    for ch in ["C1", "C2", "C3", "C4", "C5", "C6"]:
+                        if ch in skill:
+                            bkt_mastery_dict[ch] = float(row['correct_predictions'])
+            
+            if bkt_mastery_dict:
+                for ch, val in sorted(bkt_mastery_dict.items()):
+                    st.write(f"**Chapter {ch} Mastery:** {val*100:.1f}%")
+                    st.progress(float(val))
+            else:
+                st.info("No chapter BKT mastery recorded yet for this student. Submit assignments to initiate BKT modeling.")
 
-    with col_t2:
-        st.markdown("##### 🧠 Tiến trình phát triển năng lực qua các Checkpoint (%)")
+    # Longitudinal trend
+    with col_inspect_right:
+        st.markdown("##### 📈 Longitudinal Checkpoint Trends")
+        df_timeline = get_student_timeline_data(selected_student, prob)
         with st.container(border=True):
-            chart_data = df_timeline.set_index("Mốc thời gian")[["Độ thành thục BKT (%)", "Trường học (BKT Baseline) (%)"]]
-            st.line_chart(chart_data, color=["#2ed573", "#95a5a6"], use_container_width=True)
+            chart_data = df_timeline.set_index("Mốc thời gian")[["Xác suất bỏ học (%)", "Độ thành thục BKT (%)"]]
+            st.line_chart(chart_data, color=["#FF4757", "#2ed573"], use_container_width=True)
 
-    # ─── VIEW 3: GỢI Ý TÀI LIỆU CÁ NHÂN HÓA (LIGHTGCN) ───
+    # 3. REC SYSTEM
+    st.markdown("##### 🎯 Recommended Remedial Learning Materials (LightGCN)")
     with st.container(border=True):
-        st.markdown("<h3 style='margin:0 0 1rem 0;'>🎯 Gợi Ý Tài Liệu Học Tập Phù Hợp (LightGCN Đồ Thị Deep Learning)</h3>", unsafe_allow_html=True)
-        
         top_5_items = None
         if live_data and "recommendations" in live_data:
             recs_df_data = []
             for item in live_data["recommendations"]:
                 site_id = item["id_site"]
-                act_type = get_vle_activity(site_id)
+                act_type = get_vle_activity(site_id, df_lms)
                 icon = get_activity_icon(act_type)
                 recs_df_data.append({
-                    "Mã tài liệu (VLE Site ID)": str(site_id),
-                    "Phân loại học liệu (Type)": f"{icon} {act_type}",
-                    "Độ phù hợp cá nhân hóa (Score)": f"{item['score']:.4f}"
+                    "Material ID (VLE Site ID)": str(site_id),
+                    "Content Type": f"{icon} {act_type}",
+                    "Personalization Alignment Match": f"{item['score']:.4f}"
                 })
             top_5_items = pd.DataFrame(recs_df_data)
-        elif st.session_state.get('interactions_log'):
+        else:
+            # Local matrix multiplication fallback
             if st.session_state.custom_u_emb is not None:
                 u_emb = st.session_state.custom_u_emb
                 i_embs = np.stack(df_item_emb['item_embedding'].values)
                 scores = np.dot(i_embs, u_emb)
                 df_item_emb_scored = df_item_emb.copy()
                 df_item_emb_scored['recommendation_score'] = scores
-                top_5_raw = df_item_emb_scored.sort_values(by='recommendation_score', ascending=False).head(5).copy()
+                top_5_raw = df_item_emb_scored.sort_values(by='recommendation_score', ascending=False).head(5)
                 
                 recs_df_data = []
                 for idx, row in top_5_raw.iterrows():
                     site_id = row['id_site']
-                    act_type = get_vle_activity(site_id)
+                    act_type = get_vle_activity(site_id, df_lms)
                     icon = get_activity_icon(act_type)
                     recs_df_data.append({
-                        "Mã tài liệu (VLE Site ID)": str(site_id),
-                        "Phân loại học liệu (Type)": f"{icon} {act_type}",
-                        "Độ phù hợp cá nhân hóa (Score)": f"{row['recommendation_score']:.4f}"
+                        "Material ID (VLE Site ID)": str(site_id),
+                        "Content Type": f"{icon} {act_type}",
+                        "Personalization Alignment Match": f"{row['recommendation_score']:.4f}"
                     })
                 top_5_items = pd.DataFrame(recs_df_data)
-        else:
-            top_5_raw = compute_recommendations(student_id)
-            if top_5_raw is not None:
-                recs_df_data = []
-                for idx, row in top_5_raw.iterrows():
-                    site_id = row['id_site']
-                    act_type = get_vle_activity(site_id)
-                    icon = get_activity_icon(act_type)
-                    recs_df_data.append({
-                        "Mã tài liệu (VLE Site ID)": str(site_id),
-                        "Phân loại học liệu (Type)": f"{icon} {act_type}",
-                        "Độ phù hợp cá nhân hóa (Score)": f"{row['recommendation_score']:.4f}"
-                    })
-                top_5_items = pd.DataFrame(recs_df_data)
-    
+                
         if top_5_items is not None and not top_5_items.empty:
-            st.success("Hệ thống khuyên dùng 5 tài liệu học tập sau đây để bù đắp kiến thức:")
             st.dataframe(top_5_items, use_container_width=True)
         else:
-            st.warning("Không tìm thấy dữ liệu Vector nhúng cho sinh viên này.")
+            st.warning("No embedding vectors found to generate personalized recommendations.")
 
-    with st.container(border=True):
-        st.markdown("##### 📄 Xuất biên bản cứu hộ học viên")
-        report_text = f"""
-        BIÊN BẢN CẢNH BÁO VÀ PHƯƠNG ÁN CAN THIỆP HỌC TẬP
-        ──────────────────────────────────────────────────
-        • Mã học viên mã hóa: {student_id}
-        • Xác suất rủi ro hiện tại (LightGBM): {prob*100:.2f}%
-        • Kết quả dự báo cuối kỳ: {pred_class}
-        • Khuyến nghị hành động: Giảng viên cần liên hệ, yêu cầu học viên tập trung lấp đầy lỗ hổng kiến thức và hoàn thành 5 tài liệu hệ thống khuyên dùng bên trên.
+# ====================================================================
+# TAB 3: ADAPTIVE LMS SIMULATION PLAYGROUND
+# ====================================================================
+with tab_playground:
+    st.markdown("### 🎮 Third-Party LMS Simulator Playground")
+    st.markdown(
         """
-        st.download_button(
-            label="📥 Tải báo cáo cứu hộ (.txt)",
-            data=report_text,
-            file_name=f"Intervention_Report_{student_id[:8]}.txt",
-            mime="text/plain"
-        )
-
-# ─── ĐỌC VÀ CACHED DỮ LIỆU HỆ THỐNG TRƯỚC KHI RENDER ───
-df_sys = load_and_cache_system_metrics()
-
-# ─── TẠO TABS GIAO DIỆN ───
-if not admin_mode:
-    tab_learning, tab_student_deep, tab_lms = st.tabs([
-        "🎓 Phân Tích Học Tập & Sinh Viên (Learning Analytics)",
-        "👤 Hồ Sơ Cá Nhân Hóa (Student Deep-Dive)",
-        "🎮 Giả Lập Tương Tác LMS (External App Integration)"
-    ])
-
-    # ====================================================================
-    # PHÂN HỆ 1: LEARNING ANALYTICS
-    # ====================================================================
-    with tab_learning:
-        st.markdown("### 📊 Chỉ số đo lường hiệu quả học tập & Tương tác toàn trường")
-        
-        # 1. Khối KPI Cards Học tập
-        total_students = len(df_risk['student_id_hash'].unique())
-        avg_risk = df_risk['dropout_probability'].mean() * 100
-        avg_mastery = df_bkt['correct_predictions'].astype(float).mean() * 100 if not df_bkt.empty else 68.5
-        total_vle_materials = len(df_item_emb['id_site'].unique())
-
-        with st.container(border=True):
-            col_l1, col_l2, col_l3, col_l4 = st.columns(4)
-            col_l1.metric("Tổng Học Viên Quản Lý", f"{total_students:,}")
-            col_l2.metric("Tỷ Lệ Bỏ Học Trung Bình", f"{avg_risk:.2f}%")
-            col_l3.metric("Độ Thành Thục Kiến Thức (BKT)", f"{avg_mastery:.1f}%")
-            col_l4.metric("Học Liệu LMS Đang Chạy", f"{total_vle_materials:,} tài liệu")
+        <div class="glass-card" style="margin-bottom: 2rem;">
+            <h4>School LMS Portal Event Mocking</h4>
+            <p style="color: #bbb; font-size: 0.9rem; margin: 0;">
+                Submit telemetry to mock real-time loop feedback loops. Clicks stream through Kafka to recalculate embeddings. 
+                Grades submit directly to trigger immediate Bayesian BKT updates and LightGBM model inferences on the gateway.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    col_play_left, col_play_right = st.columns([6, 6])
+    
+    with col_play_left:
+        # Mock Click Event
+        st.markdown("##### 📖 Mock Student Clickstream Interaction")
+        with st.form("mock_click_form"):
+            site_options = sorted(df_lms['id_site'].unique().astype(int).tolist())[:20]
+            selected_site = st.selectbox("Select Learning Resource ID", site_options)
+            activity_label = get_vle_activity(selected_site, df_lms)
+            st.write(f"Resource type detected: **{activity_label}**")
             
-        # 2. Khối Hệ thống biểu đồ tương tác
-        col_g1, col_g2 = st.columns(2)
-        with col_g1:
-            # 1. Biểu đồ Giới tính (Thay Pie Chart bằng Native Bar Chart)
-            df_gender = df_cohort[df_cohort["metric_name"] == "gender"]
-            if not df_gender.empty:
-                st.markdown("##### 📊 Phân phối giới tính của Cohort")
-                with st.container(border=True):
-                    chart_data = df_gender.groupby("category")[["count"]].sum()
-                    st.bar_chart(chart_data, color="#4D96FF", use_container_width=True)
-
-            # 2. Biểu đồ Trình độ học vấn (Native Horizontal/Vertical Bar Chart)
-            df_edu = df_cohort[df_cohort["metric_name"] == "highest_education"].copy()
-            if not df_edu.empty:
-                st.markdown("##### 🎓 Trình độ học vấn của Cohort")
-                with st.container(border=True):
-                    edu_order = ["Lower Than A Level", "A Level or Equivalent", "HE Qualification", "Post Graduate"]
-                    df_edu["category"] = pd.Categorical(df_edu["category"], categories=edu_order, ordered=True)
-                    df_edu = df_edu.sort_values(by="category")
-                    chart_data = df_edu.groupby("category")[["count"]].sum()
-                    st.bar_chart(chart_data, color="#FF6B6B", use_container_width=True)
-
-        with col_g2:
-            # 3. Biểu đồ Vùng miền (Khóa thứ tự giảm dần thực tế)
-            df_region = df_cohort[df_cohort["metric_name"] == "region"].sort_values(by="count", ascending=False).head(8)
-            if not df_region.empty:
-                st.markdown("##### 🗺️ Phân bố vùng miền Cohort (Top 8 Regions)")
-                with st.container(border=True):
-                    sorted_categories = df_region["category"].tolist()
-                    df_region["category"] = pd.Categorical(
-                        df_region["category"], 
-                        categories=sorted_categories, 
-                        ordered=True
-                    )
-                    df_region = df_region.sort_values(by="category")
-                    chart_data = df_region.groupby("category")[["count"]].sum().sort_values(by="count", ascending=False)
-                    st.bar_chart(chart_data, color="#ffa502", use_container_width=True)
-
-            # 4. Biểu đồ xu hướng tương tác hằng tuần (Native Line Chart)
-            df_trend = df_cohort[df_cohort["metric_name"] == "engagement_weekly"].copy()
-            if not df_trend.empty:
-                st.markdown("##### 📈 Xu hướng click chuột trung bình qua các tuần học")
-                with st.container(border=True):
-                    df_trend["category"] = pd.to_numeric(df_trend["category"])
-                    df_trend = df_trend.sort_values(by="category")
-                    chart_data = df_trend.set_index("category")[["value"]]
-                    st.line_chart(chart_data, color="#2ed573", use_container_width=True)
-
-        # ─── ĐƯA RA NGOÀI VÀ THẲNG HÀNG VỚI col_g1, col_g2 ĐỂ PHỦ HẾT TRANG ───
-        st.markdown("### 🔍 Phân tích chi tiết rủi ro (Risk & Education Analytics)")
-
-        col_r1, col_r2 = st.columns(2)
-        with col_r1:
-            # 6. Tần suất Histogram chuẩn (10 Bins mịn từ 0% đến 100%)
-            st.markdown("##### 📊 Phân phối mật độ nguy cơ bỏ học toàn trường (Dropout Risk Histogram)")
-            with st.container(border=True):
-                risk_bins = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-                risk_labels = ["0-10%", "10-20%", "20-30%", "30-40%", "40-50%", "50-60%", "60-70%", "70-80%", "80-90%", "90-100%"]
-                
-                df_hist = pd.cut(df_risk['dropout_probability'], bins=risk_bins, labels=risk_labels, include_lowest=True).value_counts().reset_index()
-                df_hist.columns = ['Khoảng xác suất rủi ro', 'Số lượng học viên']
-                df_hist['Khoảng xác suất rủi ro'] = pd.Categorical(df_hist['Khoảng xác suất rủi ro'], categories=risk_labels, ordered=True)
-                df_hist = df_hist.sort_values(by='Khoảng xác suất rủi ro')
-                
-                st.bar_chart(df_hist.set_index('Khoảng xác suất rủi ro')[['Số lượng học viên']], color="#FF4757", use_container_width=True)
-
-        with col_r2:
-            # 7. Tỷ lệ rủi ro trung bình phân rã theo Trình độ học vấn (Average Risk by Education)
-            st.markdown("##### 🎓 Tỷ lệ rủi ro trung bình phân rã theo Trình độ học vấn (Average Risk by Education)")
-            with st.container(border=True):
-                df_risk_edu = df_risk.copy()
-                if 'highest_education' not in df_risk_edu.columns:
-                    import hashlib
-                    edu_options = ["Lower Than A Level", "A Level or Equivalent", "HE Qualification", "Post Graduate"]
-                    df_risk_edu['highest_education'] = df_risk_edu['student_id_hash'].apply(
-                        lambda h: edu_options[int(hashlib.md5(h.encode('utf-8')).hexdigest()[:6], 16) % len(edu_options)]
-                    )
-                
-                edu_order = ["Lower Than A Level", "A Level or Equivalent", "HE Qualification", "Post Graduate"]
-                df_risk_edu['highest_education'] = pd.Categorical(df_risk_edu['highest_education'], categories=edu_order, ordered=True)
-                
-                df_edu_risk = df_risk_edu.groupby('highest_education', observed=False)['dropout_probability'].mean().reset_index()
-                df_edu_risk.columns = ['Trình độ học vấn', 'Tỷ lệ rủi ro trung bình (%)']
-                df_edu_risk['Tỷ lệ rủi ro trung bình (%)'] = df_edu_risk['Tỷ lệ rủi ro trung bình (%)'] * 100
-                
-                df_edu_risk['Trình độ học vấn'] = pd.Categorical(df_edu_risk['Trình độ học vấn'], categories=edu_order, ordered=True)
-                df_edu_risk = df_edu_risk.sort_values(by='Trình độ học vấn')
-                
-                chart_edu_risk = df_edu_risk.set_index('Trình độ học vấn')[['Tỷ lệ rủi ro trung bình (%)']]
-                st.bar_chart(chart_edu_risk, color="#ffa502", use_container_width=True)
-
-    # ====================================================================
-    # PHÂN HỆ 2: STUDENT DEEP-DIVE
-    # ====================================================================
-    with tab_student_deep:
-        render_student_deep_dive_fragment(selected_student)
-
-    # ====================================================================
-    # PHÂN HỆ 3: EXTERNAL LMS WEB DEMO
-    # ====================================================================
-    with tab_lms:
-        st.subheader("🎮 Giả lập ứng dụng LMS bên thứ ba & Thích ứng thời gian thực (NRT)")
-        
-        st.markdown(
-            """
-            <div class="glass-card" style="margin-bottom: 2rem;">
-                <h4>🏫 Cổng Thông Tin Học Tập Sinh Viên (LMS Portal Simulator)</h4>
-                <p style="color: #bbb; font-size: 0.9rem;">
-                    Mô phỏng hành vi của sinh viên khi tương tác với giao diện học trực tuyến. 
-                    Khi sinh viên bấm đọc một học liệu bên dưới, Streamlit sẽ mô phỏng việc sinh viên phát sinh Clickstream ghi vào Silver Layer, 
-                    tự động kích hoạt <strong>NRT Gold Inference</strong> cập nhật Vector nhúng của sinh viên và ngay lập tức thay đổi danh sách gợi ý học tập tiếp theo.
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        
-        col_lms_left, col_lms_right = st.columns([7, 5])
-        
-        with col_lms_left:
-            st.markdown("##### 📖 Danh sách học liệu hệ thống đề xuất học tập:")
-            
-            if st.session_state.custom_u_emb is not None:
-                u_emb = st.session_state.custom_u_emb
-                i_embs = np.stack(df_item_emb['item_embedding'].values)
-                scores = np.dot(i_embs, u_emb)
-                
-                df_item_emb_scored = df_item_emb.copy()
-                df_item_emb_scored['recommendation_score'] = scores
-                top_5_items = df_item_emb_scored.sort_values(by='recommendation_score', ascending=False).head(5).copy()
-                
-                for idx, row in top_5_items.iterrows():
-                    site_id = row['id_site']
-                    act_type = get_vle_activity(site_id)
-                    icon = get_activity_icon(act_type)
+            click_submit = st.form_submit_button("🚀 Submit Clickstream Event")
+            if click_submit:
+                t_now = datetime.now().strftime('%H:%M:%S')
+                # Modify local embedding state for visual feedback
+                item_row = df_item_emb[df_item_emb['id_site'] == str(selected_site)]
+                if not item_row.empty and st.session_state.custom_u_emb is not None:
+                    i_emb = np.array(item_row.iloc[0]['item_embedding'])
+                    new_vec = st.session_state.custom_u_emb + 0.3 * i_emb
+                    st.session_state.custom_u_emb = new_vec / np.linalg.norm(new_vec)
                     
-                    btn_label = f"{icon} Đọc tài liệu: VLE SITE ID #{site_id} ({act_type})"
-                    if st.button(btn_label, key=f"study_btn_{site_id}"):
-                        item_row = df_item_emb[df_item_emb['id_site'] == str(site_id)]
-                        if not item_row.empty:
-                            i_emb = np.array(item_row.iloc[0]['item_embedding'])
-                            new_vec = st.session_state.custom_u_emb + 0.3 * i_emb
-                            st.session_state.custom_u_emb = new_vec / np.linalg.norm(new_vec)
-                            
-                            t_now = datetime.now().strftime('%H:%M:%S')
-                            student_disp = df_risk[df_risk['student_id_hash'] == selected_student].iloc[0]['id_student'] if is_admin else f"{selected_student[:8]}..."
-                            st.session_state.interactions_log.append(f"🟢 [{t_now}] [Bronze/Silver] Clickstream logged: student={student_disp}, site_id={site_id}")
-                            st.session_state.interactions_log.append(f"⚙️ [{t_now}] [Gold NRT] Triggered online embedding update: Vector shifted toward site_id={site_id}")
-                            st.session_state.interactions_log.append(f"🔄 [{t_now}] [Serving] Refreshed recommendations cache locally")
-
-                            vle_type = get_vle_activity(site_id)
-                            success, detail = send_kafka_event(selected_student, site_id, vle_type)
-                            if success:
-                                st.session_state.interactions_log.append(f"📡 [{t_now}] [Kafka] Published event to 'learning-events' -> {detail}")
-                            else:
-                                st.session_state.interactions_log.append(f"⚠️ [{t_now}] [Kafka Error] Failed to publish event: {detail}")
-                            
-                            st.success(f"Đã ghi nhận tương tác với tài liệu #{site_id}! Trạng thái cá nhân hóa đã được cập nhật.")
-                            st.rerun()
-            else:
-                st.warning("Không tìm thấy dữ liệu Vector nhúng cho sinh viên này.")
-     
-        with col_lms_right:
-            st.markdown("##### 📝 Nhật ký tương tác & Xử lý Near-Real-Time (NRT):")
-            
-            if st.session_state.interactions_log:
-                log_content = "<br>".join(st.session_state.interactions_log[::-1])
-                st.markdown(
-                    f"""
-                    <div class="console-log">
-                        {log_content}
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-            else:
-                st.markdown(
-                    """
-                    <div class="console-log" style="border-left-color: #ff4757; color: #ff7675;">
-                        [Chưa có tương tác nào được thực hiện trong phiên này]
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-                
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("🔄 Khôi phục ban đầu (Reset Session)"):
-                st.session_state.current_student = None
-                st.rerun()
-else:
-    # ====================================================================
-    # ADMIN SYSTEM MONITORING AND MLOPS TABS
-    # ====================================================================
-    tab_devops, tab_dataeng, tab_mlops = st.tabs([
-        "🖥️ Compute & Infrastructure (DevOps View)",
-        "📋 Data Quality & Pipeline Health (Data Engineering View)",
-        "🧠 MLOps & Model Governance (Data Science View)"
-    ])
-
-    # ─── TAB 1: DEVOPS VIEW ───
-    with tab_devops:
-        st.markdown("### 🖥️ Compute & Infrastructure Monitor")
-        
-        # Calculate CPU/RAM values from df_sys or default
-        df_quota = df_sys[df_sys["metric_type"] == "resource_quota"]
-        cpu_val = "1.25 Cores"
-        ram_val = "6.4 Gi"
-        if not df_quota.empty:
-            cpu_row = df_quota[df_quota["key_name"].str.contains("CPU", case=False, na=False)]
-            ram_row = df_quota[df_quota["key_name"].str.contains("RAM", case=False, na=False)]
-            if not cpu_row.empty:
-                cpu_val = f"{float(cpu_row.iloc[0]['value']):.2f} Cores"
-            if not ram_row.empty:
-                ram_val = f"{float(ram_row.iloc[0]['value']):.1f} Gi"
-                
-        with st.container(border=True):
-            col_c1, col_c2, col_c3, col_c4 = st.columns(4)
-            col_c1.metric("AKS Cluster Status", "Active", delta="Uptime: 99.96%")
-            col_c2.metric("CPU Allocation (Spark/Kafka)", cpu_val)
-            col_c3.metric("RAM Footprint (Spark/Kafka)", ram_val)
-            col_c4.metric("Active Kafka Consumer Lag", "0 msgs", delta="Topic: learning-events")
-
-        # Time-series line chart tracking streaming traffic over a 24-hour window
-        st.markdown("##### 📈 Ingestion Traffic Trend (Kafka throughput, messages/sec)")
-        with st.container(border=True):
-            df_traffic = df_sys[df_sys["metric_type"] == "api_traffic"].copy()
-            if not df_traffic.empty:
-                df_traffic["value"] = df_traffic["value"].astype(float)
-                st.line_chart(df_traffic.set_index("key_name")[["value"]], color="#2ed573", use_container_width=True)
-            else:
-                st.info("No traffic metrics recorded.")
-
-        st.markdown("##### 🔍 Live Cluster Logs & Telemetry (Grafana)")
-        with st.container(border=True):
-            st.components.v1.iframe("http://20.195.5.3", height=600)
-
-    # ─── TAB 2: DATA ENGINEERING VIEW ───
-    with tab_dataeng:
-        st.markdown("### 📋 Data Quality & Pipeline Health")
-        
-        # Calculate Data Freshness and Schema Conformance
-        try:
-            df_freshness = df_sys[(df_sys["metric_type"] == "mlops_metric") & (df_sys["key_name"] == "data_freshness")]
-            if not df_freshness.empty:
-                freshness_ts = float(df_freshness.iloc[0]["value"])
-                minutes_ago = max(0, int((datetime.now().timestamp() - freshness_ts) / 60))
-                freshness_delta = f"{minutes_ago}m ago"
-            else:
-                freshness_delta = "0m ago"
-        except Exception:
-            freshness_delta = "0m ago"
-
-        try:
-            df_conformance = df_sys[(df_sys["metric_type"] == "mlops_metric") & (df_sys["key_name"] == "schema_conformance")]
-            if not df_conformance.empty:
-                schema_conformance_val = float(df_conformance.iloc[0]["value"]) * 100
-            else:
-                schema_conformance_val = 100.00
-        except Exception:
-            schema_conformance_val = 100.00
-
-        with st.container(border=True):
-            col_d1, col_d2, col_d3 = st.columns(3)
-            col_d1.metric("Schema Conformance Rate", f"{schema_conformance_val:.2f}%", delta="Clean events validation")
-            col_d2.metric("Total Gold Committed Volume", f"{168,780:,} rows")
-            col_d3.metric("Data Freshness (Last Ingestion)", freshness_delta)
-
-        col_de1, col_de2 = st.columns(2)
-        with col_de1:
-            st.markdown("##### ⏱️ Medallion Pipeline Job Durations (Seconds)")
-            with st.container(border=True):
-                df_durations = df_sys[df_sys["metric_type"] == "job_duration"].copy()
-                if not df_durations.empty:
-                    df_durations["value"] = df_durations["value"].astype(float)
-                    st.bar_chart(df_durations.set_index("key_name")[["value"]], color="#4D96FF", use_container_width=True)
+                success, details = send_kafka_event(selected_student, selected_site, activity_label)
+                if success:
+                    st.session_state.interactions_log.append(f"🟢 [{t_now}] Click tracked successfully: site={selected_site} ({activity_label})")
                 else:
-                    st.info("No job durations recorded.")
-                    
-        with col_de2:
-            st.markdown("##### 🚨 Data Quality Guardrails Logs")
-            with st.container(border=True):
-                df_drift = pd.DataFrame([
-                    {"Thời gian quét": "Hôm nay 03:00", "Thành phần": "oulad_studentvle", "Kiểm tra": "Tỷ lệ rỗng (Null Rate)", "Chỉ số trạng thái": "0.00% (Khớp)", "Đánh giá": "✅ Đạt chuẩn"},
-                    {"Thời gian quét": "Hôm nay 03:00", "Thành phần": "oulad_studentinfo", "Kiểm tra": "Tính toàn vẹn Schema", "Chỉ số trạng thái": "12/12 Cột đúng", "Đánh giá": "✅ Đạt chuẩn"},
-                    {"Thời gian quét": "Hôm nay 03:00", "Thành phần": "Gold Embeddings", "Kiểm tra": "Trôi lệch phân phối (Data Drift)", "Chỉ số trạng thái": "PSI = 0.042 (< 0.1)", "Đánh giá": "✅ An toàn"},
-                    {"Thời gian quét": "Hôm nay 02:45", "Thành phần": "Serving API", "Kiểm tra": "Tỉ lệ lỗi HTTP 5xx", "Chỉ số trạng thái": "0.01% (Thấp)", "Đánh giá": "✅ An toàn"}
-                ])
-                st.dataframe(df_drift, use_container_width=True)
+                    st.session_state.interactions_log.append(f"⚠️ [{t_now}] Gateway Click Error: {details}")
+                st.rerun()
 
-    # ─── TAB 3: MLOPS & MODEL GOVERNANCE VIEW ───
-    with tab_mlops:
-        st.markdown("### 🧠 MLOps & Model Governance")
+        # Mock Assignment Submission
+        st.markdown("##### 📝 Mock Assessment Grade Submission")
+        with st.form("mock_grade_form"):
+            assignment_options = ["TMA C1", "TMA C2", "TMA C3", "TMA C4", "TMA C5", "TMA C6"]
+            selected_assignment = st.selectbox("Select Assignment ID", assignment_options)
+            mock_score = st.slider("Mock Assignment Score (%)", 0, 100, 75)
+            
+            grade_submit = st.form_submit_button("📝 Submit Assignment Grade")
+            if grade_submit:
+                t_now = datetime.now().strftime('%H:%M:%S')
+                clean_assignment_id = selected_assignment.split(" ")[1] # C1, C2, etc.
+                success, details = send_assessment_submission(selected_student, clean_assignment_id, mock_score)
+                if success:
+                    st.session_state.interactions_log.append(f"🟢 [{t_now}] Score {mock_score}% recorded for assignment {clean_assignment_id}: {details}")
+                else:
+                    st.session_state.interactions_log.append(f"⚠️ [{t_now}] Gateway Grade Error: {details}")
+                st.rerun()
 
-        lightgbm_auc = get_metric_value(df_sys, "lightgbm_pr_auc", 0.6406)
-        lightgbm_cycle = get_metric_value(df_sys, "lightgbm_training_cycle_seconds", 134)
-        pybkt_auc = get_metric_value(df_sys, "pybkt_auc", 0.7619)
-        pybkt_cycle = get_metric_value(df_sys, "pybkt_training_cycle_seconds", 65)
-        lightgcn_recall = get_metric_value(df_sys, "lightgcn_recall_at_10", 0.3302)
-        lightgcn_cycle = get_metric_value(df_sys, "lightgcn_training_cycle_seconds", 319)
-
-        current_metrics = {
-            "lightgbm_auc": lightgbm_auc,
-            "pybkt_auc": pybkt_auc,
-            "lightgcn_recall": lightgcn_recall,
-        }
-
-        breach_messages = []
-        if current_metrics["lightgbm_auc"] < SLA_THRESHOLDS["lightgbm_auc"]:
-            breach_messages.append(
-                f"LightGBM PR-AUC {current_metrics['lightgbm_auc']:.3f} < ngưỡng SLA {SLA_THRESHOLDS['lightgbm_auc']:.2f}"
-            )
-        if current_metrics["pybkt_auc"] < SLA_THRESHOLDS["pybkt_auc"]:
-            breach_messages.append(
-                f"pyBKT ROC-AUC {current_metrics['pybkt_auc']:.3f} < ngưỡng SLA {SLA_THRESHOLDS['pybkt_auc']:.2f}"
-            )
-        if current_metrics["lightgcn_recall"] < SLA_THRESHOLDS["lightgcn_recall"]:
-            breach_messages.append(
-                f"LightGCN Recall@10 {current_metrics['lightgcn_recall']:.3f} < ngưỡng SLA {SLA_THRESHOLDS['lightgcn_recall']:.2f}"
-            )
-
-        with st.container(border=True):
-            if breach_messages:
-                st.error("🚨 CẢNH BÁO MLOPS SLA BREACH:\n" + "\n".join([f"- {msg}" for msg in breach_messages]))
-                
-                # Action button to trigger Airflow Retraining workflow
-                if st.button("🔄 Kích hoạt Airflow Retraining Workflow (Trigger Retrain)"):
-                    st.success("🚀 Đã kích hoạt Airflow DAG 'oulad_model_retraining_dag' thành công!")
+        if st.button("🔄 Reset Simulator & Gateway Demo State"):
+            t_now = datetime.now().strftime('%H:%M:%S')
+            success, details = reset_gateway_demo_state()
+            if success:
+                st.session_state.interactions_log.append(f"🔄 [{t_now}] {details}")
+                # Reset local embeddings
+                user_row = df_user_emb[df_user_emb['student_id_hash'] == selected_student]
+                if not user_row.empty:
+                    st.session_state.custom_u_emb = np.array(user_row.iloc[0]['user_embedding'])
             else:
-                st.success("✅ Tất cả các mô hình AI đang hoạt động trong ngưỡng hiệu năng SLA quy định.")
-
-        with st.container(border=True):
-            m_col1, m_col2, m_col3 = st.columns(3)
-            m_col1.metric("LightGBM Dropout PR-AUC", f"{current_metrics['lightgbm_auc']:.3f}", delta="SLA Target: 0.82", delta_color="inverse" if current_metrics["lightgbm_auc"] < SLA_THRESHOLDS["lightgbm_auc"] else "normal")
-            m_col2.metric("pyBKT Mastery ROC-AUC", f"{current_metrics['pybkt_auc']:.3f}", delta="SLA Target: 0.70", delta_color="inverse" if current_metrics["pybkt_auc"] < SLA_THRESHOLDS["pybkt_auc"] else "normal")
-            m_col3.metric("LightGCN Recall@10", f"{current_metrics['lightgcn_recall']:.3f}", delta="SLA Target: 0.10", delta_color="inverse" if current_metrics["lightgcn_recall"] < SLA_THRESHOLDS["lightgcn_recall"] else "normal")
-
-        st.markdown("##### ⏱️ Model Training Speed & Cycle Time (Seconds)")
-        with st.container(border=True):
-            df_train_times = pd.DataFrame([
-                {"Model": "LightGBM (Risk)", "Training Time (s)": float(lightgbm_cycle)},
-                {"Model": "pyBKT (Mastery)", "Training Time (s)": float(pybkt_cycle)},
-                {"Model": "LightGCN (RecSys)", "Training Time (s)": float(lightgcn_cycle)}
-            ])
-            st.bar_chart(df_train_times.set_index("Model")[["Training Time (s)"]], color="#FF6B6B", use_container_width=True)
-
-
+                st.session_state.interactions_log.append(f"⚠️ [{t_now}] Reset Error: {details}")
+            st.rerun()
+            
+    with col_play_right:
+        st.markdown("##### 🖥️ Real-time NRT Pipeline Execution Log Console")
+        if st.session_state.interactions_log:
+            log_html = "<br>".join(st.session_state.interactions_log[::-1])
+            st.markdown(
+                f'<div class="console-log">{log_html}</div>',
+                unsafe_allow_html=True
+            )
+        else:
+            st.markdown(
+                '<div class="console-log" style="color: #ff4757;">[No events transmitted in this session yet]</div>',
+                unsafe_allow_html=True
+            )
