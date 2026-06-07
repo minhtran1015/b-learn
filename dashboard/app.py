@@ -9,7 +9,7 @@ import io
 import requests
 import jwt
 
-# ─── PREMIUM MODERN DESIGN THEME (GLASSMORPHISM & CUSTOM TYPOGRAPHY) ───
+# ─── PAGE CONFIGURATION ───
 st.set_page_config(
     page_title="B-LEARN: EdTech Analytics & Personalization",
     page_icon="🎓",
@@ -17,99 +17,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Inject Custom Google Font & Glassmorphism styles matching style.css exactly
-st.markdown(
-    """
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
-    
-    /* Global font override */
-    html, body, [class*="css"] {
-        font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        color: #f8fafc !important;
-    }
-    
-    /* Background style override for streamlit elements */
-    .stApp {
-        background-color: #0f172a;
-    }
-    
-    /* Glassmorphic card styling matching style.css */
-    .glass-card {
-        background: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 12px !important;
-        padding: 1.5rem !important;
-        margin-bottom: 1.5rem !important;
-    }
-    
-    /* Specific Status Indicators */
-    .status-badge-safe {
-        background: rgba(16, 185, 129, 0.2);
-        color: #10b981 !important;
-        padding: 0.4rem 0.8rem;
-        border-radius: 20px;
-        font-weight: 600;
-        display: inline-block;
-    }
-    .status-badge-risk {
-        background: rgba(239, 68, 68, 0.2);
-        color: #ef4444 !important;
-        padding: 0.4rem 0.8rem;
-        border-radius: 20px;
-        font-weight: 600;
-        display: inline-block;
-    }
-    
-    /* Console-style logs */
-    .console-log {
-        background-color: #0f172a;
-        color: #10b981;
-        font-family: 'Courier New', Courier, monospace;
-        padding: 1rem;
-        border-radius: 8px;
-        font-size: 0.85rem;
-        border-left: 4px solid #10b981;
-        margin-top: 1rem;
-        max-height: 300px;
-        overflow-y: auto;
-    }
-    
-    /* Sidebar styling overrides */
-    section[data-testid="stSidebar"] {
-        background-color: #1e293b !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
-    }
-    
-    /* Field labels */
-    .field-label {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: #94a3b8;
-        margin-bottom: 0.5rem;
-    }
-    
-    /* Sidebar footer */
-    .sidebar-footer {
-        margin-top: 2rem;
-        font-size: 0.85rem;
-        color: #94a3b8;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    
-    .status-indicator.online {
-        width: 8px;
-        height: 8px;
-        background-color: #10b981;
-        border-radius: 50%;
-        display: inline-block;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+# Load custom styling rules from style.css (copied pattern from example)
+style_path = 'dashboard/style.css'
+if not os.path.exists(style_path):
+    style_path = '/app/dashboard/style.css'
+if os.path.exists(style_path):
+    with open(style_path) as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
 # ─── SERVING LAYER CONNECTION ───
 storage_account = os.getenv("AZURE_STORAGE_ACCOUNT", "stblearnminhdata2026")
@@ -320,19 +234,11 @@ def get_activity_icon(activity_type):
     }
     return icons.get(activity_type, "📄")
 
-# ─── SIDEBAR: GLOBAL FILTERS (Wireframe Theme) ───
-st.sidebar.markdown(
-    """
-    <div style="margin-bottom: 2rem;">
-        <h2 style="color: #3b82f6; font-size: 1.5rem; font-weight: bold; margin: 0;">🎓 B-LEARN</h2>
-        <span style="font-size: 0.8rem; color: #94a3b8;">EdTech Analytics Platform</span>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+# ─── SIDEBAR: PARAMETERS (Pattern matching example) ───
+st.sidebar.header("🎓 B-Learn `version 2`")
 
 # Load data with local caching
-with st.spinner("⏳ Loading serving data..."):
+with st.spinner("⏳ Loading dataset..."):
     try:
         df_risk = load_serving_data("risk_predictions.parquet")
         df_bkt = load_serving_data("bkt_mastery.parquet")
@@ -352,7 +258,7 @@ with st.spinner("⏳ Loading serving data..."):
                 "activity_type": np.random.choice(["oucontent", "forumng", "url", "resource", "subpage", "quiz"], size=len(df_item_emb["id_site"].unique()))
             })
     except Exception as e:
-        st.error(f"Error loading serving layer: {e}")
+        st.error(f"Error loading serving data: {e}")
         st.stop()
 
 # Ensure standard columns are available
@@ -360,25 +266,16 @@ if 'id_student' not in df_risk.columns:
     import hashlib
     df_risk['id_student'] = df_risk['student_id_hash'].apply(lambda h: str(int(hashlib.md5(h.encode('utf-8')).hexdigest()[:6], 16) % 900000 + 100000))
 
-# Chọn Khóa Học
-st.sidebar.markdown('<div class="field-label">Chọn Khóa Học</div>', unsafe_allow_html=True)
+# Course Filter Parameter
 unique_modules = sorted(df_risk['code_module'].unique().tolist())
-course_options = [f"Machine Learning (OULAD {m})" for m in unique_modules]
-# Add a generic fallback option if needed
-if "Machine Learning (OULAD AAA)" not in course_options:
-    course_options = ["Machine Learning (OULAD AAA)"] + course_options
-selected_course_option = st.sidebar.selectbox("Select Course", course_options, label_visibility="collapsed")
-if "(OULAD " in selected_course_option:
-    selected_module = selected_course_option.split(" (OULAD ")[1].replace(")", "")
-else:
-    selected_module = "AAA"
+course_options = [f"OULAD {m}" for m in unique_modules]
+selected_course_option = st.sidebar.selectbox("Select Course Module", course_options)
+selected_module = selected_course_option.split(" ")[1]
 
-# Filter datasets based on module
+# Filter datasets based on module selection
 df_filtered_risk = df_risk[df_risk['code_module'] == selected_module].copy()
-if df_filtered_risk.empty:
-    df_filtered_risk = df_risk.copy()
 
-# Student Selector
+# Student Selector Parameter
 curated_student_list = generate_curated_student_list(df_filtered_risk)
 if not curated_student_list:
     curated_student_list = ["demo_student_hash_placeholder"]
@@ -392,23 +289,56 @@ for idx, raw_hash in enumerate(curated_student_list):
     else:
         hash_to_friendly[raw_hash] = f"👤 Student #{(idx+1)} ({raw_hash[:8]}...)"
 
-st.sidebar.markdown('<div class="field-label">Tra Cứu Học Viên (Student Hash)</div>', unsafe_allow_html=True)
-search_mode = st.sidebar.radio("Chế độ tìm kiếm", ["Chọn từ danh sách", "Nhập mã hash thủ công"], label_visibility="collapsed")
+selected_student = st.sidebar.selectbox(
+    "Select Student Hash",
+    curated_student_list,
+    format_func=lambda x: hash_to_friendly.get(x, x)
+)
 
-if search_mode == "Chọn từ danh sách":
-    selected_student = st.sidebar.selectbox(
-        "Chọn học viên",
-        curated_student_list,
-        format_func=lambda x: hash_to_friendly.get(x, x),
-        label_visibility="collapsed"
-    )
+# Line Chart Parameter: Select BKT chapters to show
+bkt_options = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6']
+plot_chapters = st.sidebar.multiselect('Select BKT Chapters', bkt_options, bkt_options[:3])
+
+# Timeline height parameter
+plot_height = st.sidebar.slider('Specify timeline height', 150, 400, 200)
+
+st.sidebar.markdown(
+    """
+    ---
+    Created with ❤️ by **B-Learn Team**.
+    """
+)
+
+# Fetch student gateway profile
+live_data = fetch_student_profile_from_gateway(selected_student)
+
+# Local fallback
+student_risk_rows = df_risk[df_risk['student_id_hash'] == selected_student]
+if student_risk_rows.empty:
+    fallback_risk = {"student_id_hash": selected_student, "dropout_probability": 0.0, "predicted_class": "Success", "id_student": "Unknown"}
 else:
-    selected_student = st.sidebar.text_input(
-        "Nhập mã hash",
-        value="79d86f4d0c556c37c879fb9ba278f9996d5f1f50468d8e26e13a19ba6b09c219",
-        placeholder="Nhập mã hash...",
-        label_visibility="collapsed"
-    )
+    fallback_risk = student_risk_rows.iloc[0]
+    
+if live_data:
+    prob = live_data.get("dropout_probability", fallback_risk.get("dropout_probability", 0.0))
+    pred_class = fallback_risk.get("predicted_class", "Success")
+    bkt_mastery_dict = live_data.get("bkt_mastery", {})
+else:
+    prob = fallback_risk.get("dropout_probability", 0.0)
+    pred_class = fallback_risk.get("predicted_class", "Success")
+    
+    # Extract BKT masteries from dataframe
+    bkt_mastery_dict = {}
+    student_bkt_df = df_bkt[df_bkt['user_id'] == selected_student]
+    for _, row in student_bkt_df.iterrows():
+        skill = row['skill_name']
+        for ch in bkt_options:
+            if ch in skill:
+                bkt_mastery_dict[ch] = float(row['correct_predictions'])
+
+# Calculate selected student avg BKT mastery
+bkt_avg = np.mean(list(bkt_mastery_dict.values())) * 100 if bkt_mastery_dict else 65.0
+cohort_risk_avg = df_filtered_risk['dropout_probability'].mean() * 100
 
 # Initialize session state for mock interactions log
 if 'interactions_log' not in st.session_state:
@@ -422,250 +352,137 @@ if 'current_student' not in st.session_state or st.session_state.current_student
     else:
         st.session_state.custom_u_emb = None
 
-# Gateway status check for footer
-gateway_status = "online"
-try:
-    resp = requests.get(f"{GATEWAY_URL}/health", timeout=1.0)
-    if resp.status_code != 200:
-        gateway_status = "offline"
-except Exception:
-    gateway_status = "offline"
-    
-status_color = "#10b981" if gateway_status == "online" else "#ef4444"
-status_text = "Gateway Connected" if gateway_status == "online" else "Gateway Offline"
-
-st.sidebar.markdown(
-    f"""
-    <div class="sidebar-footer">
-        <span class="status-indicator online" style="background-color: {status_color};"></span> {status_text}
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-# ─── MAIN APPLICATION NAVIGATION (Tabs) ───
-tab_cohort, tab_student, tab_playground = st.tabs([
-    "📊 Global Cohort Analytics",
-    "👤 Individual Student Inspection",
-    "🧪 Adaptive LMS Simulation"
-])
 
 # ====================================================================
-# TAB 1: GLOBAL COHORT ANALYTICS
+# ROW A: KEY PERFORMANCE METRICS
 # ====================================================================
-with tab_cohort:
-    st.markdown(
-        """
-        <div style="margin-bottom: 2rem;">
-            <h1 style="font-size: 2rem; margin-bottom: 0.5rem; color: #f8fafc;">📊 Global Cohort Analytics</h1>
-            <p style="color: #94a3b8; font-size: 1rem; margin: 0;">Phân tích tổng quan hiệu năng và phân phối rủi ro của toàn bộ lớp học.</p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown(
-            """
-            <div class="glass-card" style="margin-bottom: 1rem;">
-                <h3 style="font-size: 1.1rem; margin-bottom: 1rem; color: #f8fafc;">Mô hình phân phối rủi ro bỏ học (LightGBM)</h3>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        
-        # Display actual risk density histogram
-        risk_bins = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-        risk_labels = ["0-10%", "10-20%", "20-30%", "30-40%", "40-50%", "50-60%", "60-70%", "70-80%", "80-90%", "90-100%"]
-        df_hist = pd.cut(df_filtered_risk['dropout_probability'], bins=risk_bins, labels=risk_labels, include_lowest=True).value_counts().reset_index()
-        df_hist.columns = ['Risk Range', 'Student Count']
-        df_hist['Risk Range'] = pd.Categorical(df_hist['Risk Range'], categories=risk_labels, ordered=True)
-        df_hist = df_hist.sort_values(by='Risk Range')
-        st.bar_chart(df_hist.set_index('Risk Range')[['Student Count']], color="#3b82f6", use_container_width=True)
+st.markdown('### Learning Key Metrics')
+col1, col2, col3 = st.columns(3)
 
-    with col2:
-        st.markdown(
-            """
-            <div class="glass-card" style="margin-bottom: 1rem;">
-                <h3 style="font-size: 1.1rem; margin-bottom: 1rem; color: #f8fafc;">Bản đồ nhiệt thấu hiểu kỹ năng (BKT Heatmap)</h3>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        
-        # Display BKT Skill Heatmap grouped by student risk bands
-        df_student_risk = df_filtered_risk[['student_id_hash', 'dropout_probability']].copy()
-        def get_risk_band(prob):
-            if prob <= 0.3: return "🟢 Safe (<=30%)"
-            elif prob <= 0.7: return "🟡 Medium (30-70%)"
-            else: return "🔴 High (>70%)"
-        df_student_risk['risk_band'] = df_student_risk['dropout_probability'].apply(get_risk_band)
-        
-        df_module_bkt_all = df_bkt[df_bkt['skill_name'].str.startswith(selected_module)]
-        
-        if not df_module_bkt_all.empty:
-            df_bkt_merged = df_module_bkt_all.merge(df_student_risk, left_on='user_id', right_on='student_id_hash', how='inner')
-            if not df_bkt_merged.empty:
-                df_pivot = df_bkt_merged.groupby(['risk_band', 'skill_name'])['correct_predictions'].mean().unstack().fillna(0.0) * 100
-                df_pivot.index.name = "Cohort Risk Group"
-                st.dataframe(df_pivot, use_container_width=True)
-            else:
-                st.info("No matching BKT mastery data found for this cohort.")
+# Selected Student Risk
+risk_pct = f"{prob * 100:.2f}%"
+risk_label = "Student Dropout Risk"
+col1.metric(risk_label, risk_pct, f"Class: {pred_class}")
+
+# Cohort Avg Risk
+col2.metric("Cohort Average Risk", f"{cohort_risk_avg:.2f}%", f"Total: {len(df_filtered_risk)} Students")
+
+# Student BKT Avg Mastery
+col3.metric("Student BKT Avg Mastery", f"{bkt_avg:.1f}%", f"Active Chapters: {len(bkt_mastery_dict)}")
+
+
+# ====================================================================
+# ROW B: HEATMAP & DISTRIBUTION PLOT
+# ====================================================================
+c1, c2 = st.columns((7, 3))
+
+with c1:
+    st.markdown('### BKT skill mastery Heatmap across Cohort Risk Groups')
+    df_student_risk = df_filtered_risk[['student_id_hash', 'dropout_probability']].copy()
+    def get_risk_band(p):
+        if p <= 0.3: return "🟢 Safe"
+        elif p <= 0.7: return "🟡 Medium"
+        else: return "🔴 High"
+    df_student_risk['risk_band'] = df_student_risk['dropout_probability'].apply(get_risk_band)
+    
+    df_module_bkt_all = df_bkt[df_bkt['skill_name'].str.startswith(selected_module)]
+    
+    if not df_module_bkt_all.empty:
+        df_bkt_merged = df_module_bkt_all.merge(df_student_risk, left_on='user_id', right_on='student_id_hash', how='inner')
+        if not df_bkt_merged.empty:
+            df_pivot = df_bkt_merged.groupby(['risk_band', 'skill_name'])['correct_predictions'].mean().unstack().fillna(0.0) * 100
+            df_pivot.index.name = "Cohort Risk Group"
+            st.dataframe(df_pivot, use_container_width=True)
         else:
-            st.info(f"No BKT mastery records found matching module {selected_module}.")
+            st.info("No matching BKT mastery data found for this cohort.")
+    else:
+        st.info(f"No BKT mastery records found matching module {selected_module}.")
+
+with c2:
+    st.markdown('### Dropout Risk Distribution')
+    # Build clean risk distribution
+    risk_bins = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+    risk_labels = ["0-20%", "20-40%", "40-60%", "60-80%", "80-100%"]
+    df_hist = pd.cut(df_filtered_risk['dropout_probability'], bins=risk_bins, labels=risk_labels, include_lowest=True).value_counts().reset_index()
+    df_hist.columns = ['Risk Range', 'Student Count']
+    df_hist['Risk Range'] = pd.Categorical(df_hist['Risk Range'], categories=risk_labels, ordered=True)
+    df_hist = df_hist.sort_values(by='Risk Range')
+    st.bar_chart(df_hist.set_index('Risk Range')[['Student Count']], color="#3b82f6", use_container_width=True)
+
 
 # ====================================================================
-# TAB 2: INDIVIDUAL STUDENT INSPECTION
+# ROW C: CHECKPOINT TIMELINE LINE CHART
 # ====================================================================
-with tab_student:
-    st.markdown(
-        """
-        <div style="margin-bottom: 2rem;">
-            <h1 style="font-size: 2rem; margin-bottom: 0.5rem; color: #f8fafc;">👤 Individual Student Inspection</h1>
-            <p style="color: #94a3b8; font-size: 1rem; margin: 0;">Phân tích chi tiết hành vi và cập nhật mức độ hiểu bài trực tiếp của từng học viên.</p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    
-    # Fetch student gateway profile
-    live_data = fetch_student_profile_from_gateway(selected_student)
-    
-    # Local fallback
-    student_risk_rows = df_risk[df_risk['student_id_hash'] == selected_student]
-    if student_risk_rows.empty:
-        fallback_risk = {"student_id_hash": selected_student, "dropout_probability": 0.0, "predicted_class": "Success", "id_student": "Unknown"}
+st.markdown('### Longitudinal Checkpoint Timelines')
+df_timeline = get_student_timeline_data(selected_student, prob)
+
+# Filter timeline BKT columns according to selected chapters parameter in sidebar
+timeline_cols = ["Xác suất bỏ học (%)"]
+for ch in plot_chapters:
+    timeline_cols.append("Độ thành thục BKT (%)")  # Simple mapping
+
+chart_data = df_timeline.set_index("Mốc thời gian")[["Xác suất bỏ học (%)", "Độ thành thục BKT (%)"]]
+st.line_chart(chart_data, color=["#ef4444", "#10b981"], height=plot_height, use_container_width=True)
+
+
+# ====================================================================
+# ROW D: RECOMMENDATIONS & INTERACTIVE LMS SIMULATOR
+# ====================================================================
+col_d1, col_d2 = st.columns((6, 6))
+
+with col_d1:
+    st.markdown('### Personalized Content Recommendations (LightGCN)')
+    top_5_items = None
+    if live_data and "recommendations" in live_data:
+        recs_df_data = []
+        for item in live_data["recommendations"]:
+            site_id = item["id_site"]
+            act_type = get_vle_activity(site_id, df_lms)
+            icon = get_activity_icon(act_type)
+            recs_df_data.append({
+                "VLE Site ID": str(site_id),
+                "Content Type": f"{icon} {act_type}",
+                "Relevance Score": f"{item['score']:.4f}"
+            })
+        top_5_items = pd.DataFrame(recs_df_data)
     else:
-        fallback_risk = student_risk_rows.iloc[0]
-        
-    if live_data:
-        prob = live_data.get("dropout_probability", fallback_risk.get("dropout_probability", 0.0))
-        pred_class = fallback_risk.get("predicted_class", "Success")
-    else:
-        prob = fallback_risk.get("dropout_probability", 0.0)
-        pred_class = fallback_risk.get("predicted_class", "Success")
-        
-    # Badge element
-    badge_class = "status-badge-risk" if prob > 0.5 else "status-badge-safe"
-    badge_text = f"🔴 HIGH DROPOUT RISK ({prob*100:.2f}%)" if prob > 0.5 else f"🟢 SAFE ({prob*100:.2f}%)"
-    
-    st.markdown(
-        f"""
-        <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
-            <div>
-                <h3 style="margin: 0; color: #3b82f6 !important;">Student ID Profile Inspection</h3>
-                <p style="margin: 0.2rem 0 0 0; color: #94a3b8;">Cloud ID Hash: <code>{selected_student}</code></p>
-                <p style="margin: 0.2rem 0 0 0; color: #94a3b8;">Outcome Prediction: <strong>{pred_class}</strong></p>
-            </div>
-            <div>
-                <span class="{badge_class}" style="font-size: 1.3rem; padding: 0.6rem 1.2rem;">{badge_text}</span>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    
-    col_inspect_left, col_inspect_right = st.columns(2)
-    
-    with col_inspect_left:
-        st.markdown("##### 🧠 Chapter BKT Mastery Levels")
-        with st.container(border=True):
-            bkt_mastery_dict = {}
-            if live_data and "bkt_mastery" in live_data:
-                bkt_mastery_dict = live_data["bkt_mastery"]
-            else:
-                student_bkt_df = df_bkt[df_bkt['user_id'] == selected_student]
-                for _, row in student_bkt_df.iterrows():
-                    skill = row['skill_name']
-                    for ch in ["C1", "C2", "C3", "C4", "C5", "C6"]:
-                        if ch in skill:
-                            bkt_mastery_dict[ch] = float(row['correct_predictions'])
+        if st.session_state.custom_u_emb is not None:
+            u_emb = st.session_state.custom_u_emb
+            i_embs = np.stack(df_item_emb['item_embedding'].values)
+            scores = np.dot(i_embs, u_emb)
+            df_item_emb_scored = df_item_emb.copy()
+            df_item_emb_scored['recommendation_score'] = scores
+            top_5_raw = df_item_emb_scored.sort_values(by='recommendation_score', ascending=False).head(5)
             
-            if bkt_mastery_dict:
-                for ch, val in sorted(bkt_mastery_dict.items()):
-                    st.write(f"**Chapter {ch} Mastery State:** {val*100:.1f}%")
-                    st.progress(float(val))
-            else:
-                st.info("No chapter BKT mastery recorded yet for this student.")
-
-    with col_inspect_right:
-        st.markdown("##### 📈 Weekly Course Engagement Checkpoints")
-        df_timeline = get_student_timeline_data(selected_student, prob)
-        with st.container(border=True):
-            chart_data = df_timeline.set_index("Mốc thời gian")[["Xác suất bỏ học (%)", "Độ thành thục BKT (%)"]]
-            st.line_chart(chart_data, color=["#ef4444", "#10b981"], use_container_width=True)
-
-    # Personalized Recommendations
-    st.markdown("##### 🎯 Personalized Learning Materials Recommendations (LightGCN)")
-    with st.container(border=True):
-        top_5_items = None
-        if live_data and "recommendations" in live_data:
             recs_df_data = []
-            for item in live_data["recommendations"]:
-                site_id = item["id_site"]
+            for idx, row in top_5_raw.iterrows():
+                site_id = row['id_site']
                 act_type = get_vle_activity(site_id, df_lms)
                 icon = get_activity_icon(act_type)
                 recs_df_data.append({
-                    "Material ID (VLE Site ID)": str(site_id),
+                    "VLE Site ID": str(site_id),
                     "Content Type": f"{icon} {act_type}",
-                    "Relevance Score": f"{item['score']:.4f}"
+                    "Relevance Score": f"{row['recommendation_score']:.4f}"
                 })
             top_5_items = pd.DataFrame(recs_df_data)
-        else:
-            if st.session_state.custom_u_emb is not None:
-                u_emb = st.session_state.custom_u_emb
-                i_embs = np.stack(df_item_emb['item_embedding'].values)
-                scores = np.dot(i_embs, u_emb)
-                df_item_emb_scored = df_item_emb.copy()
-                df_item_emb_scored['recommendation_score'] = scores
-                top_5_raw = df_item_emb_scored.sort_values(by='recommendation_score', ascending=False).head(5)
-                
-                recs_df_data = []
-                for idx, row in top_5_raw.iterrows():
-                    site_id = row['id_site']
-                    act_type = get_vle_activity(site_id, df_lms)
-                    icon = get_activity_icon(act_type)
-                    recs_df_data.append({
-                        "Material ID (VLE Site ID)": str(site_id),
-                        "Content Type": f"{icon} {act_type}",
-                        "Relevance Score": f"{row['recommendation_score']:.4f}"
-                    })
-                top_5_items = pd.DataFrame(recs_df_data)
-                
-        if top_5_items is not None and not top_5_items.empty:
-            st.dataframe(top_5_items, use_container_width=True)
-        else:
-            st.warning("No embedding vectors found to generate recommendations.")
-
-# ====================================================================
-# TAB 3: ADAPTIVE LMS SIMULATION
-# ====================================================================
-with tab_playground:
-    st.markdown(
-        """
-        <div style="margin-bottom: 2rem;">
-            <h1 style="font-size: 2rem; margin-bottom: 0.5rem; color: #f8fafc;">🧪 Adaptive LMS Simulation</h1>
-            <p style="color: #94a3b8; font-size: 1rem; margin: 0;">Môi trường giả lập hành vi click stream và nộp bài kiểm tra để cập nhật mô hình thời gian thực.</p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    
-    col_play_left, col_play_right = st.columns([6, 6])
-    
-    with col_play_left:
-        # Mock Click Event
-        st.markdown("##### 📖 Mock Student Clickstream Interaction")
-        with st.form("mock_click_form"):
-            site_options = sorted(df_lms['id_site'].unique().astype(int).tolist())[:20]
-            selected_site = st.selectbox("Select Learning Resource ID", site_options)
-            activity_label = get_vle_activity(selected_site, df_lms)
-            st.write(f"Resource type: **{activity_label}**")
             
-            click_submit = st.form_submit_button("🚀 Submit Clickstream Event")
-            if click_submit:
+    if top_5_items is not None and not top_5_items.empty:
+        st.dataframe(top_5_items, use_container_width=True)
+    else:
+        st.warning("No embedding vectors found to generate recommendations.")
+
+with col_d2:
+    st.markdown('### Adaptive LMS Simulator & Real-time loops')
+    with st.container(border=True):
+        st.caption("Submit clickstream or scores to trigger direct Bayesian BKT updates and LightGBM models.")
+        
+        sim_col1, sim_col2 = st.columns(2)
+        with sim_col1:
+            site_options = sorted(df_lms['id_site'].unique().astype(int).tolist())[:10]
+            selected_site = st.selectbox("Mock Site ID", site_options)
+            activity_label = get_vle_activity(selected_site, df_lms)
+            
+            if st.button("🚀 Send Clickstream"):
                 t_now = datetime.now().strftime('%H:%M:%S')
                 item_row = df_item_emb[df_item_emb['id_site'] == str(selected_site)]
                 if not item_row.empty and st.session_state.custom_u_emb is not None:
@@ -675,51 +492,43 @@ with tab_playground:
                     
                 success, details = send_kafka_event(selected_student, selected_site, activity_label)
                 if success:
-                    st.session_state.interactions_log.append(f"🟢 [{t_now}] Click tracked: site={selected_site} ({activity_label})")
+                    st.session_state.interactions_log.append(f"🟢 [{t_now}] Click: site={selected_site} ({activity_label})")
                 else:
-                    st.session_state.interactions_log.append(f"⚠️ [{t_now}] Gateway Click Error: {details}")
+                    st.session_state.interactions_log.append(f"⚠️ [{t_now}] Gateway Error: {details}")
                 st.rerun()
-
-        # Mock Assignment Submission
-        st.markdown("##### 📝 Mock Assessment Grade Submission")
-        with st.form("mock_grade_form"):
+                
+        with sim_col2:
             assignment_options = ["TMA C1", "TMA C2", "TMA C3", "TMA C4", "TMA C5", "TMA C6"]
-            selected_assignment = st.selectbox("Select Assignment ID", assignment_options)
-            mock_score = st.slider("Mock Assignment Score (%)", 0, 100, 75)
+            selected_assignment = st.selectbox("Assignment Chapter", assignment_options)
+            mock_score = st.slider("Score (%)", 0, 100, 80)
             
-            grade_submit = st.form_submit_button("📝 Submit Assignment Grade")
-            if grade_submit:
+            if st.button("📝 Submit Grade"):
                 t_now = datetime.now().strftime('%H:%M:%S')
                 clean_assignment_id = selected_assignment.split(" ")[1]
                 success, details = send_assessment_submission(selected_student, clean_assignment_id, mock_score)
                 if success:
-                    st.session_state.interactions_log.append(f"🟢 [{t_now}] Score {mock_score}% recorded for assignment {clean_assignment_id}: {details}")
+                    st.session_state.interactions_log.append(f"🟢 [{t_now}] Grade {mock_score}% on {clean_assignment_id}: {details}")
                 else:
-                    st.session_state.interactions_log.append(f"⚠️ [{t_now}] Gateway Grade Error: {details}")
+                    st.session_state.interactions_log.append(f"⚠️ [{t_now}] Gateway Error: {details}")
                 st.rerun()
 
-        if st.button("🔄 Reset Simulator & Gateway Demo State"):
-            t_now = datetime.now().strftime('%H:%M:%S')
-            success, details = reset_gateway_demo_state()
-            if success:
-                st.session_state.interactions_log.append(f"🔄 [{t_now}] {details}")
-                user_row = df_user_emb[df_user_emb['student_id_hash'] == selected_student]
-                if not user_row.empty:
-                    st.session_state.custom_u_emb = np.array(user_row.iloc[0]['user_embedding'])
-            else:
-                st.session_state.interactions_log.append(f"⚠️ [{t_now}] Reset Error: {details}")
-            st.rerun()
-            
-    with col_play_right:
-        st.markdown("##### 🖥️ Real-time NRT Pipeline Execution Log Console")
+        col_reset, col_space = st.columns((4, 8))
+        with col_reset:
+            if st.button("🔄 Reset Demo State", use_container_width=True):
+                t_now = datetime.now().strftime('%H:%M:%S')
+                success, details = reset_gateway_demo_state()
+                if success:
+                    st.session_state.interactions_log.append(f"🔄 [{t_now}] {details}")
+                    user_row = df_user_emb[df_user_emb['student_id_hash'] == selected_student]
+                    if not user_row.empty:
+                        st.session_state.custom_u_emb = np.array(user_row.iloc[0]['user_embedding'])
+                else:
+                    st.session_state.interactions_log.append(f"⚠️ [{t_now}] Reset Error: {details}")
+                st.rerun()
+
+        # Console logs
         if st.session_state.interactions_log:
             log_html = "<br>".join(st.session_state.interactions_log[::-1])
-            st.markdown(
-                f'<div class="console-log">{log_html}</div>',
-                unsafe_allow_html=True
-            )
+            st.markdown(f'<div class="console-log">{log_html}</div>', unsafe_allow_html=True)
         else:
-            st.markdown(
-                '<div class="console-log" style="color: #ef4444;">[No events transmitted in this session yet]</div>',
-                unsafe_allow_html=True
-            )
+            st.markdown('<div class="console-log" style="color: #ef4444;">[No events logged]</div>', unsafe_allow_html=True)

@@ -1,0 +1,65 @@
+/* Sidebar customization */
+[data-testid="stSidebar"] {
+    background-color: #1e293b !important;
+    border-right: 1px solid #334155 !important;
+}
+
+/* Metric Card Styling - Adapted from sb-admin-2 in dashboard-v2 */
+div[data-testid="stMetric"] {
+    background-color: #1e293b !important;
+    border: 1px solid #334155 !important;
+    padding: 1.25rem !important;
+    border-radius: 8px !important;
+    border-left: 0.5rem solid #3b82f6 !important;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Metric Label Style */
+div[data-testid="stMetric"] label {
+    color: #3b82f6 !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    font-size: 0.8rem !important;
+}
+
+/* Metric Value Style */
+div[data-testid="stMetricValue"] {
+    color: #f8fafc !important;
+    font-weight: 700 !important;
+    font-size: 1.8rem !important;
+}
+
+/* Move block container higher */
+.block-container {
+    margin-top: -3.5em !important;
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+}
+
+/* Hide Streamlit default headers & footers */
+#MainMenu {display: none;}
+header {visibility: hidden;}
+footer {display: none;}
+
+/* Custom Glass Cards */
+.glass-card {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    padding: 1.5rem !important;
+    margin-bottom: 1.5rem !important;
+}
+
+/* Console-style logs */
+.console-log {
+    background-color: #0f172a;
+    color: #10b981;
+    font-family: 'Courier New', Courier, monospace;
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    border-left: 4px solid #10b981;
+    margin-top: 1rem;
+    max-height: 250px;
+    overflow-y: auto;
+}
