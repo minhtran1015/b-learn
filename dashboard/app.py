@@ -1168,17 +1168,20 @@ if view_mode == "👤 Single Student Inspection":
         df_student_risk = df_filtered_risk[['student_id_hash', 'dropout_probability']].copy()
         df_student_risk['risk_band'] = df_student_risk['dropout_probability'].apply(get_risk_band)
         
-        df_module_bkt_all = df_bkt[df_bkt['skill_name'].str.startswith(selected_module)]
+        df_module_bkt_all = df_bkt
         
         if not df_module_bkt_all.empty:
             df_bkt_merged = df_module_bkt_all.merge(df_student_risk, left_on='user_id', right_on='student_id_hash', how='inner')
             if not df_bkt_merged.empty:
                 df_pivot = df_bkt_merged.groupby(['risk_band', 'skill_name'])['correct_predictions'].mean().unstack().fillna(0.0)
+                # Sort columns alphabetically for consistent display
+                sorted_cols = sorted(df_pivot.columns.tolist())
+                df_pivot = df_pivot[sorted_cols]
                 render_cohort_heatmap(df_pivot, key_suffix="student_view")
             else:
                 st.info("No matching BKT mastery data found for this cohort.")
         else:
-            st.info(f"No BKT mastery records found matching module {selected_module}.")
+            st.info("No BKT mastery records found.")
 
     with c2:
         st.markdown('### Cohort Context & Comparison')
