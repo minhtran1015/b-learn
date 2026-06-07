@@ -990,16 +990,8 @@ if view_mode == "👤 Single Student Inspection":
     st.sidebar.markdown("---")
     st.sidebar.subheader("Student Context Filters")
     
-    # Course Filter Parameter
-    unique_modules = sorted(df_risk['code_module'].unique().tolist())
-    course_options = [f"OULAD {m}" for m in unique_modules]
-    selected_course_option = st.sidebar.selectbox("Select Course Module", course_options)
-    selected_module = selected_course_option.split(" ")[1]
-    
-    # Filter datasets based on module selection
-    df_filtered_risk = df_risk[df_risk['code_module'] == selected_module].copy()
-
-    # Student Selector Parameter
+    # Student Selector Parameter (no module-level filter for single student view)
+    df_filtered_risk = df_risk.copy()
     curated_student_list = generate_curated_student_list(df_filtered_risk)
     if not curated_student_list:
         curated_student_list = ["demo_student_hash_placeholder"]
@@ -1009,7 +1001,8 @@ if view_mode == "👤 Single Student Inspection":
         row_data = df_filtered_risk[df_filtered_risk['student_id_hash'] == raw_hash]
         if not row_data.empty:
             real_id = row_data.iloc[0]['id_student']
-            hash_to_friendly[raw_hash] = f"👤 MSSV: {real_id} (#{(idx+1)})"
+            real_mod = row_data.iloc[0]['code_module']
+            hash_to_friendly[raw_hash] = f"👤 MSSV: {real_id} ({real_mod}) (#{(idx+1)})"
         else:
             hash_to_friendly[raw_hash] = f"👤 Student #{(idx+1)} ({raw_hash[:8]}...)"
 
@@ -1018,6 +1011,13 @@ if view_mode == "👤 Single Student Inspection":
         curated_student_list,
         format_func=lambda x: hash_to_friendly.get(x, x)
     )
+
+    # Automatically set selected_module from the student's actual module
+    student_row_data = df_filtered_risk[df_filtered_risk['student_id_hash'] == selected_student]
+    if not student_row_data.empty:
+        selected_module = student_row_data.iloc[0]['code_module']
+    else:
+        selected_module = "AAA"
 
     # Line Chart Parameter: Select BKT chapters to show
     plot_chapters = st.sidebar.multiselect('Select BKT Chapters', bkt_options, bkt_options[:3])
