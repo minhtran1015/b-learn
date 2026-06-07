@@ -93,10 +93,12 @@ def render_cohort_heatmap(df_pivot, key_suffix=""):
         textfont={"size": 11, "family": "Outfit", "color": "#0F172A"},
         showscale=True,
         colorbar=dict(
-            title="Mastery %",
-            titleside="top",
-            tickfont=dict(color="#64748B"),
-            titlefont=dict(color="#64748B")
+            title=dict(
+                text="Mastery %",
+                side="top",
+                font=dict(color="#64748B")
+            ),
+            tickfont=dict(color="#64748B")
         )
     ))
     
@@ -222,9 +224,11 @@ def render_student_cohort_scatter(student_hash, df_risk_merged, student_clicks, 
             colorscale=[[0, '#10B981'], [0.5, '#F59E0B'], [1, '#EF4444']],
             showscale=True,
             colorbar=dict(
-                title="Risk %",
-                tickfont=dict(color="#64748B"),
-                titlefont=dict(color="#64748B")
+                title=dict(
+                    text="Risk %",
+                    font=dict(color="#64748B")
+                ),
+                tickfont=dict(color="#64748B")
             ),
             opacity=0.6
         ),
@@ -329,15 +333,19 @@ def render_student_timeline_plotly(df_timeline, key_suffix=""):
             tickfont=dict(color="#64748B")
         ),
         yaxis=dict(
-            title="Dropout Risk (%)",
-            titlefont=dict(color="#EF4444"),
+            title=dict(
+                text="Dropout Risk (%)",
+                font=dict(color="#EF4444")
+            ),
             tickfont=dict(color="#EF4444"),
             gridcolor="rgba(0, 0, 0, 0.05)",
             range=[0, 105]
         ),
         yaxis2=dict(
-            title="BKT Mastery (%)",
-            titlefont=dict(color="#10B981"),
+            title=dict(
+                text="BKT Mastery (%)",
+                font=dict(color="#10B981")
+            ),
             tickfont=dict(color="#10B981"),
             overlaying="y",
             side="right",
