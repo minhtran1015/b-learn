@@ -1,4 +1,4 @@
-import { Bell, LockKeyhole, Moon, Save, ShieldCheck } from 'lucide-react';
+import { Bell, LockKeyhole, Moon, Save, ShieldCheck, RotateCcw } from 'lucide-react';
 import PageHeader from '../components/PageHeader.jsx';
 
 const settings = [
@@ -9,6 +9,39 @@ const settings = [
 ];
 
 export default function SettingsPage() {
+  const handleResetDemo = async () => {
+    if (window.confirm("Bạn có chắc chắn muốn reset toàn bộ trạng thái demo trên cả client và Serving Gateway?")) {
+      try {
+        const rawBaseUrl = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:8000';
+        const API_BASE_URL = rawBaseUrl.replace(/\/$/, '');
+        const token = localStorage.getItem('blearn.gatewayToken');
+        if (token) {
+          await fetch(`${API_BASE_URL}/reset-assessment-shifts`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Gateway reset failed:", err);
+      }
+      localStorage.removeItem('blearn.activeCourseId');
+      localStorage.removeItem('blearn.gatewayToken');
+      localStorage.removeItem('blearn.studentHash');
+      localStorage.removeItem('blearn.recommendationMaterials');
+      sessionStorage.clear();
+      
+      window.dispatchEvent(new CustomEvent('blearn-toast', {
+        detail: { message: 'Đã reset toàn bộ trạng thái demo thành công!', type: 'success' }
+      }));
+      
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 1000);
+    }
+  };
+
   return (
     <div className="page-stack">
       <PageHeader
@@ -32,6 +65,17 @@ export default function SettingsPage() {
             </label>
           </article>
         ))}
+
+        <article className="setting-card" style={{ border: '1px dashed var(--danger)', background: 'rgba(239, 68, 68, 0.03)' }}>
+          <RotateCcw size={24} style={{ color: 'var(--danger)' }} />
+          <div>
+            <h3 style={{ color: 'var(--danger)' }}>Quản trị Trình diễn (Demo Admin)</h3>
+            <p>Xóa sạch toàn bộ lịch sử tương tác, đưa vector đặc trưng và nguy cơ bỏ học về trạng thái ban đầu.</p>
+          </div>
+          <button className="button outline danger" onClick={handleResetDemo}>
+            <RotateCcw size={16} /> Reset Demo
+          </button>
+        </article>
       </section>
     </div>
   );

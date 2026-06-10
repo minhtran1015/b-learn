@@ -148,6 +148,10 @@ def build_spark(
         )
         sql_extensions.append("org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions")
 
+        use_nessie = os.getenv("USE_NESSIE", "false").lower() == "true"
+        nessie_uri = os.getenv("NESSIE_URI", "http://localhost:19120/api/v1")
+        nessie_ref = os.getenv("NESSIE_REF", "main")
+
         for catalog_name, container_name in catalog_mapping.items():
             warehouse_path = (
                 f"abfss://{container_name}@{storage_account_name}.dfs.core.windows.net/iceberg_warehouse"
@@ -155,10 +159,18 @@ def build_spark(
             builder = (
                 builder
                 .config(f"spark.sql.catalog.{catalog_name}", "org.apache.iceberg.spark.SparkCatalog")
-                .config(f"spark.sql.catalog.{catalog_name}.type", "hadoop")
                 .config(f"spark.sql.catalog.{catalog_name}.warehouse", warehouse_path)
                 .config(f"spark.sql.catalog.{catalog_name}.write.target-file-size-bytes", "134217728")
             )
+            if use_nessie:
+                builder = (
+                    builder
+                    .config(f"spark.sql.catalog.{catalog_name}.catalog-impl", "org.apache.iceberg.nessie.NessieCatalog")
+                    .config(f"spark.sql.catalog.{catalog_name}.uri", nessie_uri)
+                    .config(f"spark.sql.catalog.{catalog_name}.ref", nessie_ref)
+                )
+            else:
+                builder = builder.config(f"spark.sql.catalog.{catalog_name}.type", "hadoop")
 
     # Configure Apache Comet if the JAR is present
     comet_jar = "/app/jars/comet-spark-spark3.5_2.12-0.16.0.jar"

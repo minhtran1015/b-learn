@@ -256,43 +256,91 @@ docker push acrblearnminh2026.azurecr.io/oulad-medallion:latest
 
 ---
 
-## 🛠️ Thiết Lập Môi Trường
+## 🛠️ Thiết Lập Môi Trường & Chạy Dịch Vụ
 
-### Yêu Cầu Phần Mềm
+### 🔑 Yêu Cầu Credentials & Biến Môi Trường
 
-- Python 3.12+
-- Java 17+ (bắt buộc cho PySpark)
-- Docker (để build/push image)
-- Azure CLI (`az`)
-- kubectl (để quản lý AKS)
-- Helm 3 (để cài/nâng cấp Airflow)
-- Terraform ≥ 1.5
-
-### Biến Môi Trường
+Để chạy các dịch vụ và kết nối hạ tầng Azure Cloud hoặc Kafka/Redis, bạn cần cấu hình các biến môi trường sau:
 
 ```bash
-# Bắt buộc
+# ☁️ Azure Storage Credentials (Cần thiết để đọc ghi các bảng Iceberg/Parquet trên ADLS Gen2)
 export AZURE_STORAGE_ACCOUNT=stblearnminhdata2026
-export AZURE_STORAGE_KEY="<your-azure-storage-key>"
+export AZURE_STORAGE_KEY="<your-azure-storage-key>" # Lấy từ Azure portal (Access keys)
 
-# Tùy chọn (có giá trị mặc định)
+# 🔐 JWT Authentication (Dùng cho API Gateway phục vụ bảo mật)
+export JWT_SECRET_KEY="b-learn-super-secret-key-1015" # Key dùng để ký token
+export CORS_ALLOW_ORIGINS="*" # Cho phép truy cập CORS từ frontend
+
+# 📡 Real-time Event Streaming (Kafka & Redis)
+export KAFKA_BOOTSTRAP_SERVERS="kafka-service.blearn-medallion.svc.cluster.local:9092" # Hoặc localhost:9092 khi chạy local
+export KAFKA_TOPIC="learning-events"
+export CLICK_FALLBACK_LOG_PATH="/tmp/fallback_clicks.log" # Đường dẫn ghi log dự phòng khi Kafka down
+
+# ⚙️ Tùy chọn Spark & NRT
 export SPARK_DRIVER_MEMORY=8g     # Mặc định: 8g (local), 3g-5g (AKS)
 export NRT_WINDOW_MINUTES=15      # Cửa sổ thời gian NRT (phút)
 ```
 
-### Cài Đặt Local (macOS)
+> [!NOTE]
+> Nếu bạn không cung cấp `AZURE_STORAGE_KEY`, các dịch vụ API Gateway và Streamlit sẽ tự động fallback đọc dữ liệu Parquet từ các Public URL của Azure Storage hoặc từ các file lưu trữ cục bộ sẵn trong thư mục dự án.
+
+---
+
+### 💻 Hướng Dẫn Chạy Các Dịch Vụ Dưới Local
+
+#### 1. FastAPI Serving Gateway (Backend API)
+Serving Gateway quản lý xác thực JWT, nhận clickstream, thực hiện Bayesian BKT và live inference LightGBM thời gian thực.
+
+```bash
+# Đảm bảo virtual environment đã được kích hoạt và cài dependencies
+source .venv/bin/activate
+pip install -r data_pipeline/requirements.txt
+
+# Khởi chạy Serving Gateway
+uvicorn backend-api.serving_gateway:app --host 0.0.0.0 --port 8000 --reload
+```
+API sẽ hoạt động tại `http://localhost:8000`. Bạn có thể truy cập `/docs` để xem tài liệu Swagger API chi tiết.
+
+#### 2. React Frontend Demo
+Giao diện trực quan tích hợp giả lập LMS và luồng adaptive learning.
+
+```bash
+cd frontend-demo
+
+# Cấu hình biến môi trường kết nối API Gateway (Tạo file .env)
+echo "VITE_GATEWAY_URL=http://localhost:8000" > .env
+
+# Cài đặt thư viện và khởi chạy
+npm install
+npm run dev
+```
+Giao diện demo sẽ chạy tại `http://localhost:5173`.
+
+#### 3. Streamlit Dashboard (Cohort Analytics UI)
+Dashboard thống kê tổng quan toàn khóa học và chi tiết hồ sơ cá nhân.
+
+```bash
+# Chạy Dashboard từ thư mục root của dự án
+streamlit run dashboard/app.py
+```
+Streamlit UI sẽ chạy tại `http://localhost:8501`.
+
+---
+
+### 🍎 Cài Đặt Môi Trường Phát Triển Cục Bộ (macOS)
 
 Xem hướng dẫn chi tiết tại [`docs/guide-macos.md`](docs/guide-macos.md).
 
 ```bash
-# Tạo virtual environment
+# Cài đặt Java 17 (Bắt buộc cho PySpark)
+brew install openjdk@17
+
+# Tạo virtual environment và cài đặt các thư viện cần thiết
 python3 -m venv .venv
 source .venv/bin/activate
-
-# Cài dependencies
 pip install -r data_pipeline/requirements.txt
 
-# Cấu hình AKS credentials
+# Cấu hình AKS credentials (nếu cần tương tác cụm Kubernetes)
 az aks get-credentials --resource-group RG-BLEarn-Compute --name aks-blearn-dev
 ```
 

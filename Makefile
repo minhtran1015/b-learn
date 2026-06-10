@@ -229,6 +229,10 @@ react-local-build:
 k8s-deploy-api:
 	kubectl apply -f infra/manifests/api-serving.yaml
 
+# Triển khai các dịch vụ quản trị (Redis, MLflow, Nessie) lên AKS
+deploy-ops:
+	kubectl apply -f infra/manifests/management-services.yaml
+
 # Theo dõi IP LoadBalancer của API Serving
 k8s-api-status:
 	kubectl get svc blearn-api-service -n blearn-medallion
@@ -433,7 +437,19 @@ cluster-start:
 # ====================================================================
 # 🎯 LIVE DEMO & TESTING WORKFLOW UTILITIES
 # ====================================================================
-.PHONY: demo-prep demo-connect demo-smoke-test demo-reset
+.PHONY: demo-prep demo-connect demo-smoke-test demo-reset demo-reset-deep demo-wait-ready demo-status
+
+# Đợi đầy đủ pod demo cốt lõi và pod quản trị chuyển sang Ready
+demo-wait-ready:
+	@echo "⏳ Đang chờ các pod demo sẵn sàng..."
+	@kubectl wait --for=condition=ready pod -l app=api-gateway -n blearn-medallion --timeout=300s
+	@kubectl wait --for=condition=ready pod -l app=frontend-demo -n blearn-medallion --timeout=300s
+	@kubectl wait --for=condition=ready pod -l app=kafka -n blearn-medallion --timeout=300s
+	@kubectl wait --for=condition=ready pod -l app=spark-streaming -n blearn-medallion --timeout=300s
+	@kubectl wait --for=condition=ready pod -l app=redis -n blearn-medallion --timeout=300s
+	@kubectl wait --for=condition=ready pod -l app=mlflow -n blearn-medallion --timeout=300s
+	@kubectl wait --for=condition=ready pod -l app=nessie -n blearn-medallion --timeout=300s
+	@echo "✅ Các pod demo đã sẵn sàng."
 
 # 1. Chuẩn bị môi trường, kiểm tra tính sẵn sàng của cụm hạ tầng
 demo-prep:
@@ -443,17 +459,24 @@ demo-prep:
 	kubectl scale deployment blearn-frontend-demo -n blearn-medallion --replicas=1
 	kubectl scale statefulset kafka-stream -n blearn-medallion --replicas=1
 	kubectl scale deployment spark-streaming-job -n blearn-medallion --replicas=1
+	@$(MAKE) demo-wait-ready
 	@echo "✅ Các cấu phần cốt lõi đã được đặt tỷ lệ replica = 1."
 
-# 2. Mở cổng kết nối nhanh API Gateway và Frontend nội bộ về máy Mac
+# 2. Mở cổng kết nối nhanh API Gateway, Frontend và các dịch vụ quản trị về máy Mac
 demo-connect:
 	@echo "🔌 Đang kết nối và chuyển tiếp cổng về máy Mac..."
 	@echo "   • API Gateway: http://localhost:8000"
 	@echo "   • Frontend Demo: http://localhost:8080"
+	@echo "   • Redis: localhost:6379"
+	@echo "   • MLflow Server: http://localhost:5005"
+	@echo "   • Project Nessie: http://localhost:19120"
 	-pkill -f "port-forward" || true
+	@$(MAKE) demo-wait-ready
 	@nohup kubectl port-forward deployment/blearn-api-gateway 8000:8000 -n blearn-medallion >/dev/null 2>&1 &
 	@nohup kubectl port-forward deployment/blearn-frontend-demo 8080:80 -n blearn-medallion >/dev/null 2>&1 &
-	@sleep 2
+	@nohup kubectl port-forward service/redis-service 6379:6379 -n blearn-medallion >/dev/null 2>&1 &
+	@nohup kubectl port-forward service/mlflow-service 5005:5000 -n blearn-medallion >/dev/null 2>&1 &
+	@nohup kubectl port-forward service/nessie-service 19120:19120 -n blearn-medallion >/dev/null 2>&1 &
 	@echo "✅ Tunnels established in background."
 
 # 3. Lắng nghe tức thì phản hồi nộp bài tập từ phía sinh viên
@@ -463,15 +486,53 @@ demo-smoke-test:
 
 # 4. Reset trạng thái rủi ro bỏ học (độ dịch chuyển) về mặc định ban đầu để bắt đầu demo mới
 demo-reset:
-	@echo "🔄 Đang gửi tín hiệu reset trạng thái về API Gateway..."
-	@python3 -c "import urllib.request, json, sys; \
-	try: \
-	    req1 = urllib.request.Request('http://localhost:8000/login', data=json.dumps({'username': 'demo-admin', 'role': 'admin'}).encode(), headers={'Content-Type':'application/json'}, method='POST'); \
-	    res1 = urllib.request.urlopen(req1); \
-	    token = json.loads(res1.read().decode())['access_token']; \
-	    req2 = urllib.request.Request('http://localhost:8000/reset-assessment-shifts', headers={'Authorization': f'Bearer {token}'}, method='POST'); \
-	    res2 = urllib.request.urlopen(req2); \
-	    print('✅ ' + json.loads(res2.read().decode())['message']); \
-	except Exception as e: \
-	    print('❌ Lỗi reset:', e); \
-	    sys.exit(1);"
+	@echo "=== ĐANG RESET NHANH TRẠNG THÁI DEMO QUA GATEWAY ==="
+	@token=$$(curl -s -X POST http://localhost:8000/login -H "Content-Type: application/json" -d '{"username": "demo-admin", "role": "admin"}' | python3 -c "import sys, json; print(json.load(sys.stdin).get('access_token',''))"); \
+	if [ -n "$$token" ]; then \
+	    res=$$(curl -s -X POST http://localhost:8000/reset-assessment-shifts -H "Authorization: Bearer $$token"); \
+	    echo "✅ API Gateway reset: $$res"; \
+	else \
+	    echo "⚠️ Không lấy được Token đăng nhập của Admin."; \
+	    exit 1; \
+	fi
+	@echo "=== DEMO ĐÃ ĐƯỢC RESET VỀ BASELINE NHANH ==="
+
+demo-reset-deep:
+	@echo "=== ĐANG KHỞI TẠO LẠI TRẠNG THÁI HỆ THỐNG DEMO (DEEP CLEAN) ==="
+	# 1. Hạ số lượng bản sao pod streaming về 0 để ngắt luồng ghi dữ liệu
+	-kubectl scale deployment/spark-streaming-job --replicas=0 -n blearn-medallion
+	
+	# 2. Thực thi script python dọn sạch bảng Iceberg
+	-kubectl exec -n blearn-medallion deployment/blearn-streamlit-ui -- python3 -c "from data_pipeline.ingestion.ingest import build_spark; spark = build_spark('Reset', 'abfss://gold@$(AZURE_STORAGE_ACCOUNT).dfs.core.windows.net/iceberg_warehouse/gold/', iceberg_catalogs={'silver_catalog': 'silver', 'gold_catalog': 'gold'}); spark.sql('TRUNCATE TABLE silver_catalog.silver_db.oulad_studentassessment'); spark.sql('TRUNCATE TABLE gold_catalog.gold_db.oulad_at_risk_predictions'); spark.stop()"
+	
+	# 3. Xóa thư mục checkpoint cũ trên Azure Storage
+	-az storage fs directory delete --account-name $(AZURE_STORAGE_ACCOUNT) --file-system bronze --name checkpoints --yes 2>/dev/null || true
+	-az storage fs directory delete --account-name $(AZURE_STORAGE_ACCOUNT) --file-system silver --name checkpoints --yes 2>/dev/null || true
+	-az storage fs directory delete --account-name $(AZURE_STORAGE_ACCOUNT) --file-system gold --name checkpoints --yes 2>/dev/null || true
+	-az storage fs directory delete --account-name $(AZURE_STORAGE_ACCOUNT) --file-system gold --name iceberg_warehouse/checkpoints --yes 2>/dev/null || true
+	
+	# 4. Scale pod streaming lên lại mốc 1 để sẵn sàng hấp thụ dòng dữ liệu mới
+	-kubectl scale deployment/spark-streaming-job --replicas=1 -n blearn-medallion
+	
+	# 5. Gọi API Gateway reset in-memory shifts
+	@token=$$(curl -s -X POST http://localhost:8000/login -H "Content-Type: application/json" -d '{"username": "demo-admin", "role": "admin"}' | python3 -c "import sys, json; print(json.load(sys.stdin).get('access_token',''))"); \
+	if [ -n "$$token" ]; then \
+	    res=$$(curl -s -X POST http://localhost:8000/reset-assessment-shifts -H "Authorization: Bearer $$token"); \
+	    echo "✅ API Gateway reset: $$res"; \
+	else \
+	    echo "⚠️ Không lấy được Token đăng nhập của Admin."; \
+	fi
+	@echo "=== HỆ THỐNG ĐÃ RESET THÀNH CÔNG VỀ TRẠNG THÁI SẠCH ==="
+
+# 5. In ra bảng tổng hợp tình trạng hoạt động (CPU, RAM, Uptime) của toàn bộ các pod thành phần
+demo-status:
+	@echo "===================================================================="
+	@echo "📊 BLEarn Kubernetes Cluster Pod Status & Health Check"
+	@echo "===================================================================="
+	@kubectl get pods -n blearn-medallion
+	@echo ""
+	@echo "===================================================================="
+	@echo "📈 Resource Utilization (CPU & Memory)"
+	@echo "===================================================================="
+	@kubectl top pods -n blearn-medallion
+

@@ -68,12 +68,16 @@ Kiểm tra truy cập:
 
 ## 🔄 Cách Reset Trạng Thái Để Trình Diễn Lại (Demo Loop Reset)
 
-Để thực hiện lại demo từ đầu cho các nhóm chấm thi khác nhau mà không phải khởi động lại cluster hay viết lại parquet:
-Chạy lệnh reset nhanh:
+Để thực hiện lại demo từ đầu cho các nhóm chấm thi khác nhau mà không phải khởi động lại cluster, hãy dùng reset nhanh:
 ```bash
 make demo-reset
 ```
-*Lệnh này sẽ gọi API Gateway giải phóng toàn bộ in-memory shifts tích lũy và nạp lại baseline predictions từ đĩa. Tỷ lệ đỗ của học viên trên giao diện UI sẽ lập tức trả về mặc định `85%`.*
+*Lệnh này gọi API Gateway để giải phóng toàn bộ in-memory shifts và nạp lại baseline predictions từ đĩa. Tỷ lệ đỗ của học viên trên giao diện UI sẽ lập tức trả về mặc định `85%`.*
+
+Nếu cần dọn sâu checkpoint và stream state trước một buổi demo lớn hoặc sau khi gặp lỗi khôi phục, dùng:
+```bash
+make demo-reset-deep
+```
 
 ---
 

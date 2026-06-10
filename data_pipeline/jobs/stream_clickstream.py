@@ -223,8 +223,13 @@ def main():
             F.col("effective_student_id").alias("id_student"),
             F.coalesce(F.col("date"), F.lit(18)).cast("int").alias("date_submitted"),
             F.lit(0).cast("int").alias("is_banked"),
-            F.col("score").cast("double").alias("score")
+            F.col("score").cast("double").alias("score"),
+            F.coalesce(F.col("code_module"), F.lit("AAA")).alias("code_module")
         )
+        .withColumn("_ingest_at", F.current_timestamp())
+        .withColumn("_ingest_date", F.current_date())
+        .withColumn("_source_file", F.lit("kafka-stream"))
+        .withColumn("_source_dataset", F.lit("oulad"))
         .withColumn("_silver_at", F.current_timestamp())
         .withColumn("_silver_source_table", F.lit("oulad_studentassessment"))
     )

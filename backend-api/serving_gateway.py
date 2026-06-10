@@ -338,6 +338,89 @@ def load_lgbm_model():
     return None
 
 
+lgbm_explainer = None
+
+def get_shap_explanation(feats: dict) -> list:
+    global lgbm_explainer
+    model_pipeline = load_lgbm_model()
+    if model_pipeline is None:
+        return []
+    
+    try:
+        preprocessor = model_pipeline.named_steps["preprocessor"]
+        model = model_pipeline.named_steps["model"]
+        
+        if lgbm_explainer is None:
+            import shap
+            lgbm_explainer = shap.TreeExplainer(model)
+            
+        df_input = pd.DataFrame([feats])
+        X_proc = preprocessor.transform(df_input)
+        
+        # Calculate SHAP values
+        shap_vals = lgbm_explainer.shap_values(X_proc)
+        
+        # Identify feature impact on class 0 (Fail / dropout)
+        if isinstance(shap_vals, list):
+            fail_shap = shap_vals[0][0]
+        elif isinstance(shap_vals, np.ndarray):
+            if len(shap_vals.shape) == 3:
+                fail_shap = shap_vals[0, :, 0]
+            else:
+                fail_shap = shap_vals[0]
+        else:
+            fail_shap = shap_vals[0]
+            
+        numeric_feats = [col for col in GOLD_FEATURE_COLUMNS if col not in CATEGORICAL_FEATURES]
+        feature_names = numeric_feats + CATEGORICAL_FEATURES
+        shap_dict = dict(zip(feature_names, fail_shap))
+        
+        # Sort by value descending (positive contribution to failure class)
+        sorted_shap = sorted(shap_dict.items(), key=lambda x: x[1], reverse=True)
+        
+        feature_descriptions = {
+            "total_clicks": "Tương tác học tập thấp (tổng số click chuột)",
+            "active_days": "Số ngày tham gia học tập trực tuyến quá ít",
+            "avg_daily_clicks": "Số lượt tương tác trung bình mỗi ngày thấp",
+            "max_clicks_day": "Không có phiên học tập tương tác cao đột phá",
+            "engagement_span": "Thời gian gắn bó/duy trì học tập ngắn",
+            "recent_weekly_rate": "Tần suất học tập trong tuần gần đây giảm sút",
+            "recency_days": "Đã lâu không truy cập hệ thống học tập",
+            "engagement_momentum": "Động lực học tập/tương tác sụt giảm",
+            "avg_score": "Điểm số trung bình các bài kiểm tra thấp",
+            "min_score": "Điểm kiểm tra thấp nhất ở mức báo động",
+            "submission_count": "Số lượng bài tập đã nộp chưa đạt yêu cầu",
+            "late_submissions": "Tỉ lệ nộp bài muộn cao hoặc trễ hạn",
+            "weighted_avg": "Điểm số trọng số học phần thấp",
+            "num_of_prev_attempts": "Đã từng trượt hoặc học lại học phần này trước đó",
+            "studied_credits": "Đang đăng ký học quá nhiều tín chỉ cùng lúc (gây quá tải)",
+            "highest_education": "Trình độ học vấn đầu vào thấp",
+            "imd_band": "Hoàn cảnh điều kiện kinh tế khó khăn",
+            "age_band": "Độ tuổi học viên ảnh hưởng đến tiến độ học",
+            "disability": "Học viên gặp hạn chế về mặt sức khỏe/khuyết tật",
+            "region": "Vùng địa lý khó khăn tiếp cận hạ tầng học tập",
+            "gender": "Các yếu tố nhân khẩu học giới tính ảnh hưởng",
+            "code_module": "Mã học phần đặc thù có tỉ lệ trượt cao",
+            "code_presentation": "Học kỳ học tập có độ khó cao"
+        }
+        
+        top_3 = []
+        for feat, val in sorted_shap:
+            if len(top_3) >= 3:
+                break
+            desc = feature_descriptions.get(feat, f"Đặc trưng {feat}")
+            top_3.append({
+                "feature": feat,
+                "impact": float(val),
+                "description": desc
+            })
+            
+        return top_3
+    except Exception as e:
+        print(f"Error calculating SHAP: {e}")
+        return []
+
+
 def _run_live_risk_inference(student_hash: str, feats: dict):
     global df_risk, _student_risk_dict
     model = load_lgbm_model()
@@ -840,11 +923,15 @@ def get_recommendations(student_id_hash: str, current_user: dict = Depends(verif
             "C6": 0.69
         }
     
+    feats = get_student_features(student_id_hash)
+    shap_explanation = get_shap_explanation(feats)
+    
     return {
         "student_id_hash": student_id_hash,
         "dropout_probability": dropout_prob,
         "recommendations": recs,
         "bkt_mastery": bkt_mastery,
+        "shap_explanation": shap_explanation,
         "served_by": "FastAPI Gateway",
         "client_role": current_user.get("role"),
         "timestamp": datetime.datetime.now().isoformat()

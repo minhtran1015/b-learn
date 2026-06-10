@@ -27,6 +27,9 @@ make demo-connect
 Ket qua mong doi:
 - Port-forward API Gateway: `localhost:8000`.
 - Port-forward Frontend Demo: `localhost:8080`.
+- Port-forward Redis: `localhost:6379`.
+- Port-forward MLflow: `localhost:5005`.
+- Port-forward Nessie: `localhost:19120`.
 
 ## 1.2 Ngu dong sau demo (Hibernate sequence)
 
@@ -182,6 +185,8 @@ Khuyen nghi:
 
 - Neu restart deployment hoac rollout, phai chay lai `make demo-connect` vi port-forward cu se tro vao Pod UID cu.
 - Neu chi can xem ingestion/streaming, co the dung `make kafka-consume-stream` ma khong can mo frontend.
+- Neu can reset baseline nhanh cho demo, dung `make demo-reset`.
+- Neu can dọn sâu checkpoint va state streaming, dung `make demo-reset-deep`.
 
 ## 8. Troubleshooting Playbook Mo Rong
 

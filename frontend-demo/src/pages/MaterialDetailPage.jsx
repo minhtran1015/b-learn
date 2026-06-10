@@ -25,7 +25,7 @@ export default function MaterialDetailPage() {
       return customCourseMaterials;
     }
     const cached = readCachedMaterials();
-    return cached.length > 0 ? cached : materials;
+    return cached.length > 0 ? cached : [];
   }, [isCustomCourse]);
 
   const material = activeMaterials.find((item) => item.id === materialId) ?? activeMaterials[0];

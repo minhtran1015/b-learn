@@ -36,6 +36,8 @@ spec:
             secretKeyRef:
               name: oulad-runtime
               key: AZURE_STORAGE_KEY
+        - name: GATEWAY_URL
+          value: "http://blearn-api-service-gateway"
 ---
 apiVersion: v1
 kind: Service

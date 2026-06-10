@@ -337,6 +337,24 @@ def _train_lgbm(features: pd.DataFrame) -> tuple[Pipeline, dict[str, float], Lab
             ),
         ]
     )
+    # ─── MLflow Logging Initialization ───
+    try:
+        import mlflow
+        import mlflow.sklearn
+        mlflow.set_experiment("b-learn-oulad-risk")
+        mlflow.start_run()
+        mlflow.log_params({
+            "learning_rate": 0.02,
+            "num_leaves": 31,
+            "max_depth": 6,
+            "min_child_samples": 50,
+            "subsample": 0.8,
+            "colsample_bytree": 0.8,
+            "best_n_estimators": best_n_estimators
+        })
+    except Exception as mlflow_init_err:
+        print(f"Warning: MLflow tracking initialization skipped: {mlflow_init_err}")
+
     final_pipeline.fit(X_train, y_train, model__categorical_feature=cat_indices)
     train_seconds = time.perf_counter() - train_started_at
 
@@ -354,8 +372,50 @@ def _train_lgbm(features: pd.DataFrame) -> tuple[Pipeline, dict[str, float], Lab
             for class_idx in range(proba.shape[1])
         ]) >= 0.55),
     }
+
+    # ─── MLflow Metrics & Model Artifact Logging ───
+    try:
+        if mlflow.active_run():
+            mlflow.log_metrics({
+                "test_pr_auc": metrics["test_pr_auc"],
+                "train_seconds": metrics["train_seconds"]
+            })
+            mlflow.sklearn.log_model(final_pipeline, "model")
+            mlflow.end_run()
+            print("Logged training parameters, metrics, and final model to MLflow successfully.")
+    except Exception as mlflow_log_err:
+        print(f"Warning: Could not log metrics/artifacts to MLflow: {mlflow_log_err}")
+
     print(classification_report(y_test, preds, target_names=label_encoder.classes_))
     print(f"LightGBM PR-AUC={metrics['test_pr_auc']:.4f}")
+
+    # Model Explainability (SHAP) global analysis
+    try:
+        import shap
+        print("Calculating SHAP values for global explainability...")
+        preprocessor = final_pipeline.named_steps["preprocessor"]
+        model = final_pipeline.named_steps["model"]
+        X_test_proc = preprocessor.transform(X_test)
+        explainer = shap.TreeExplainer(model)
+        sample_indices = np.random.choice(X_test_proc.shape[0], min(200, X_test_proc.shape[0]), replace=False)
+        shap_vals = explainer.shap_values(X_test_proc[sample_indices])
+        
+        if isinstance(shap_vals, list):
+            mean_shap = np.mean(np.abs(shap_vals[0]), axis=0)
+        elif isinstance(shap_vals, np.ndarray) and len(shap_vals.shape) == 3:
+            mean_shap = np.mean(np.abs(shap_vals[:, :, 0]), axis=0)
+        else:
+            mean_shap = np.mean(np.abs(shap_vals), axis=0)
+            
+        numeric_feats = [col for col in GOLD_FEATURE_COLUMNS if col not in CATEGORICAL_FEATURES]
+        feature_names = numeric_feats + CATEGORICAL_FEATURES
+        global_importance = sorted(dict(zip(feature_names, mean_shap)).items(), key=lambda x: x[1], reverse=True)
+        print("\n--- SHAP Global Feature Importance (Class: Fail) ---")
+        for rank, (feat, val) in enumerate(global_importance[:10], 1):
+            print(f"{rank}. {feat}: {val:.4f}")
+    except Exception as shap_err:
+        print(f"Warning: Could not compute SHAP global importance: {shap_err}")
+
     return final_pipeline, metrics, label_encoder, test_df, y_test, preds
 
 

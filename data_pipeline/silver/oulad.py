@@ -120,6 +120,49 @@ def _clean_table(table_name: str, df: DataFrame) -> DataFrame:
     return df.dropDuplicates()
 
 
+
+def _audit_data_quality(table_name: str, df: DataFrame) -> None:
+    """Audit the incoming PySpark DataFrame using Great Expectations."""
+    try:
+        import great_expectations as ge
+        import pandas as pd
+        print(f"🕵️ Running Great Expectations Data Quality audit on table {table_name}...")
+        
+        # Sample 1000 rows to execute validation efficiently
+        pdf = df.limit(1000).toPandas()
+        if table_name == "oulad_studentinfo":
+            pdf["studied_credits"] = pd.to_numeric(pdf["studied_credits"], errors="coerce")
+            pdf["num_of_prev_attempts"] = pd.to_numeric(pdf["num_of_prev_attempts"], errors="coerce")
+        elif table_name == "oulad_studentassessment":
+            pdf["score"] = pd.to_numeric(pdf["score"], errors="coerce")
+            
+        ge_df = ge.dataset.PandasDataset(pdf)
+        
+        validations = []
+        if table_name == "oulad_studentvle":
+            # Expect student id to be present and non-null
+            validations.append(ge_df.expect_column_values_to_not_be_null("id_student"))
+            validations.append(ge_df.expect_column_values_to_not_be_null("id_site"))
+        elif table_name == "oulad_studentinfo":
+            # Expect credits to be positive and prev attempts >= 0
+            validations.append(ge_df.expect_column_values_to_be_between("studied_credits", min_value=0.0))
+            validations.append(ge_df.expect_column_values_to_be_between("num_of_prev_attempts", min_value=0.0))
+        elif table_name == "oulad_studentassessment":
+            # Expect scores to be between 0 and 100
+            validations.append(ge_df.expect_column_values_to_be_between("score", min_value=0.0, max_value=100.0))
+        
+        # Log results
+        failed_expectations = [v for v in validations if not v["success"]]
+        if failed_expectations:
+            print(f"⚠️ Warning: Data quality issues found in {table_name}:")
+            for fe in failed_expectations:
+                print(f"  - Failed expectation: {fe['expectation_config']['expectation_type']} on column {fe['expectation_config']['kwargs'].get('column')}")
+        else:
+            print(f"✅ Data quality audit passed for {table_name}.")
+    except Exception as e:
+        print(f"⚠️ Great Expectations audit skipped for {table_name} due to: {e}")
+
+
 def materialize_silver(
     spark,
     input_catalog: str,
@@ -131,6 +174,7 @@ def materialize_silver(
     for table_name in SOURCE_TABLES:
         bronze_table = f"{input_catalog}.{input_namespace}.{table_name}"
         df = spark.table(bronze_table)
+        _audit_data_quality(table_name, df)
         cleaned = _add_silver_metadata(_clean_table(table_name, df), table_name)
         write_table(
             cleaned,

@@ -1,5 +1,7 @@
 FROM acrblearnminh2026.azurecr.io/b-learn-base:1.0.0
 
+RUN pip install --no-cache-dir shap scikit-learn==1.3.2 numpy==1.26.4
+
 # Establish app directory
 WORKDIR /app
 

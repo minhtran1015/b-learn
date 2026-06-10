@@ -102,13 +102,18 @@ Danh dau Dat/Khong dat cho tung muc:
 
 ## 6. Luu y de demo lap lai nhieu lan
 
-- Neu can reset trang thai rui ro de chay lai cho nhom cham khac, su dung:
+- Neu can reset trang thai rui ro de chay lai cho nhom cham khac, su dung lenh nhanh:
 
 ```bash
 make demo-reset
 ```
 
 - Lenh tren xoa cac thay doi tam trong bo nho (`_assessment_shifts`) va nap lai baseline du lieu rui ro.
+- Neu can dọn checkpoint va stream state sau khi debug, su dung:
+
+```bash
+make demo-reset-deep
+```
 
 ## 7. Ban Do Chuoi Demo Tu Codebase That
 

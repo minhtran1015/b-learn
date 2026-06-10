@@ -102,14 +102,19 @@ def render_cohort_heatmap(df_pivot, key_suffix=""):
         )
     ))
     
+    n_rows = len(df_pivot)
+    n_cols = len(x_labels)
+    dynamic_height = max(220, 80 + n_rows * 70)
+    x_tick_angle = -35 if n_cols > 6 else 0
+    
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(color="#0F172A", family="Outfit"),
-        xaxis=dict(tickfont=dict(color="#64748B")),
+        xaxis=dict(tickfont=dict(color="#64748B"), tickangle=x_tick_angle),
         yaxis=dict(tickfont=dict(color="#64748B")),
-        margin=dict(l=20, r=20, t=10, b=20),
-        height=280
+        margin=dict(l=20, r=20, t=10, b=60 if n_cols > 6 else 20),
+        height=dynamic_height
     )
     
     st.plotly_chart(fig, use_container_width=True, key=f"cohort_mastery_heatmap_{key_suffix}")
@@ -717,12 +722,33 @@ def render_universal_activity_donut(df_lms, key_suffix=""):
         }
         df_counts['Activity Type'] = df_counts['Activity Type'].apply(lambda x: friendly_names.get(x, x.title()))
         
+        # Group by 'Activity Type' in case friendly name mapping created duplicates
+        df_counts = df_counts.groupby('Activity Type')['Count'].sum().reset_index()
+        
+        # Group small slices (< 2% of total) into 'Others'
+        total = df_counts['Count'].sum()
+        df_counts['Percentage'] = df_counts['Count'] / total
+        
+        threshold = 0.02
+        main_df = df_counts[df_counts['Percentage'] >= threshold].copy()
+        other_df = df_counts[df_counts['Percentage'] < threshold]
+        
+        if not other_df.empty:
+            others_row = pd.DataFrame([{
+                'Activity Type': 'Others',
+                'Count': other_df['Count'].sum(),
+                'Percentage': other_df['Percentage'].sum()
+            }])
+            df_counts = pd.concat([main_df, others_row], ignore_index=True)
+        else:
+            df_counts = main_df
+            
         fig = px.pie(
             df_counts,
             values='Count',
             names='Activity Type',
             hole=0.4,
-            color_discrete_sequence=["#3B82F6", "#60A5FA", "#8B5CF6", "#10B981", "#F59E0B", "#EF4444"]
+            color_discrete_sequence=["#3B82F6", "#60A5FA", "#8B5CF6", "#10B981", "#F59E0B", "#EF4444", "#94A3B8"]
         )
         fig.update_layout(
             paper_bgcolor="rgba(0,0,0,0)",
@@ -874,8 +900,8 @@ def load_serving_data(file_name):
 
 @st.cache_data(ttl=60)
 def generate_curated_student_list(_df_risk):
-    top_at_risk = _df_risk.sort_values(by='dropout_probability', ascending=False).head(25)
-    top_safe = _df_risk.sort_values(by='dropout_probability', ascending=True).head(25)
+    top_at_risk = _df_risk.sort_values(by='dropout_probability', ascending=False).head(100)
+    top_safe = _df_risk.sort_values(by='dropout_probability', ascending=True).head(100)
     curated_df = pd.concat([top_at_risk, top_safe]).drop_duplicates(subset=['student_id_hash'])
     return curated_df['student_id_hash'].tolist()
 
@@ -921,7 +947,7 @@ def get_student_timeline_data(student_id, base_prob):
     return df_timeline
 
 # ─── SIDEBAR: NAVIGATION & SELECTION ───
-st.sidebar.header("🎓 B-Learn `version 2`")
+st.sidebar.header("🎓 B-Learn")
 
 # Load datasets
 with st.spinner("⏳ Loading dataset..."):
@@ -1007,7 +1033,7 @@ if view_mode == "👤 Single Student Inspection":
             hash_to_friendly[raw_hash] = f"👤 Student #{(idx+1)} ({raw_hash[:8]}...)"
 
     selected_student = st.sidebar.selectbox(
-        "Select Student Hash",
+        "Select Student",
         curated_student_list,
         format_func=lambda x: hash_to_friendly.get(x, x)
     )
@@ -1071,10 +1097,19 @@ def get_risk_band(p):
     elif p <= 0.7: return "🟡 Medium"
     else: return "🔴 High"
 
-# ====================================================================
-# VIEW 1: SINGLE STUDENT INSPECTION
-# ====================================================================
-if view_mode == "👤 Single Student Inspection":
+# Try to get st.fragment (available in Streamlit 1.37.0+)
+try:
+    fragment_dec = st.fragment
+except AttributeError:
+    try:
+        fragment_dec = st.experimental_fragment
+    except AttributeError:
+        # Fallback to no-op decorator if neither exists
+        def fragment_dec(*args, **kwargs):
+            return lambda f: f
+
+@fragment_dec(run_every=3)
+def render_student_inspection_fragment(selected_student, selected_module):
     # Fetch student gateway profile
     live_data = fetch_student_profile_from_gateway(selected_student)
 
@@ -1156,32 +1191,58 @@ if view_mode == "👤 Single Student Inspection":
     else:
         status_label = "🔴 Alert"
     col1.metric(risk_label, risk_pct, f"Status: {status_label} ({pred_class})")
-
     col2.metric("Cohort Average Risk", f"{cohort_risk_avg:.2f}%", f"Total: {len(df_filtered_risk)} Students")
     col3.metric("Student BKT Avg Mastery", f"{bkt_avg:.1f}%", f"Active Chapters: {len(bkt_mastery_dict)}")
+
+    # Model Explainability (SHAP) - Display qualitative reasons
+    if live_data and "shap_explanation" in live_data and live_data["shap_explanation"]:
+        st.markdown("""
+        <div style="background-color: #F8FAFC; padding: 15px; border-radius: 8px; border-left: 5px solid #E2E8F0; margin-bottom: 20px;">
+            <h5 style="margin-top: 0; color: #1E293B; font-family: 'Outfit', sans-serif;">🔍 Top Risk Factors & Model Explainability (SHAP)</h5>
+            <p style="font-size: 14px; color: #475569; margin-bottom: 10px; font-family: 'Outfit', sans-serif;">
+                Top 3 characteristics contributing to the student's risk profile (automatically analyzed by LightGBM using SHAP values):
+            </p>
+            <ul style="margin-bottom: 0; font-size: 13.5px; color: #1E293B; line-height: 1.6; font-family: 'Outfit', sans-serif; padding-left: 20px;">
+        """, unsafe_allow_html=True)
+        for item in live_data["shap_explanation"]:
+            desc = item["description"]
+            impact = item["impact"]
+            st.markdown(f"<li style='margin-bottom: 5px;'><b>{desc}</b> (Impact score: <code style='color: #DC2626; font-weight: bold;'>+{impact:.3f}</code>)</li>", unsafe_allow_html=True)
+        st.markdown("</ul></div>", unsafe_allow_html=True)
 
     # ROW B: HEATMAP & PEER SCATTER PLOT
     c1, c2 = st.columns((6, 4))
 
     with c1:
-        st.markdown('### BKT skill mastery Heatmap across Cohort Risk Groups')
+        st.markdown('### BKT Skill Mastery — Student vs Cohort Risk Groups')
         df_student_risk = df_filtered_risk[['student_id_hash', 'dropout_probability']].copy()
         df_student_risk['risk_band'] = df_student_risk['dropout_probability'].apply(get_risk_band)
-        
-        df_module_bkt_all = df_bkt
-        
-        if not df_module_bkt_all.empty:
-            df_bkt_merged = df_module_bkt_all.merge(df_student_risk, left_on='user_id', right_on='student_id_hash', how='inner')
-            if not df_bkt_merged.empty:
-                df_pivot = df_bkt_merged.groupby(['risk_band', 'skill_name'])['correct_predictions'].mean().unstack().fillna(0.0)
-                # Sort columns alphabetically for consistent display
-                sorted_cols = sorted(df_pivot.columns.tolist())
-                df_pivot = df_pivot[sorted_cols]
+
+        if not df_bkt.empty:
+            all_skills_global = sorted(df_bkt['skill_name'].unique().tolist())
+            df_this_student_bkt = df_bkt[df_bkt['user_id'] == selected_student].copy()
+            df_this_student_bkt['risk_band'] = '⭐ This Student'
+
+            if not df_this_student_bkt.empty:
+                if 'order_id' in df_this_student_bkt.columns:
+                    student_latest = (
+                        df_this_student_bkt.sort_values('order_id')
+                        .groupby('skill_name')['correct_predictions'].last()
+                        .reset_index()
+                    )
+                else:
+                    student_latest = (
+                        df_this_student_bkt.groupby('skill_name')['correct_predictions'].mean()
+                        .reset_index()
+                    )
+                student_latest['risk_band'] = '⭐ This Student'
+                df_pivot = student_latest.groupby(['risk_band', 'skill_name'])['correct_predictions'].mean().unstack()
+                df_pivot = df_pivot.reindex(columns=all_skills_global, fill_value=0.0).fillna(0.0)
                 render_cohort_heatmap(df_pivot, key_suffix="student_view")
             else:
-                st.info("No matching BKT mastery data found for this cohort.")
+                st.warning("⚠️ No BKT mastery data found for this student (student has 0 assignment submissions).")
         else:
-            st.info("No BKT mastery records found.")
+            st.info("No BKT mastery records found. df_bkt is empty — cache may be corrupt.")
 
     with c2:
         st.markdown('### Cohort Context & Comparison')
@@ -1341,6 +1402,10 @@ if view_mode == "👤 Single Student Inspection":
                 st.markdown(f'<div class="console-log">{log_html}</div>', unsafe_allow_html=True)
             else:
                 st.markdown('<div class="console-log" style="color: #ef4444;">[No events logged]</div>', unsafe_allow_html=True)
+
+# EXECUTE VIEW 1
+if view_mode == "👤 Single Student Inspection":
+    render_student_inspection_fragment(selected_student, selected_module)
 
 # ====================================================================
 # VIEW 2: UNIVERSAL ANALYTICS STATISTICS

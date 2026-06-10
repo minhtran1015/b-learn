@@ -54,9 +54,9 @@ export default function MaterialsPage() {
           setMaterials(Array.isArray(payload?.recommendations) ? payload.recommendations : []);
         }
       } catch (loadError) {
-        console.log('materials fallback:', loadError);
+        console.log('materials load error:', loadError);
         if (isMounted) {
-          setMaterials(localMaterials);
+          setMaterials([]);
         }
       } finally {
         if (isMounted) {

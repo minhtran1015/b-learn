@@ -104,6 +104,11 @@ export async function trackStudentClick(studentId, siteId) {
     return false;
   }
 
+  // 1. Dispatch "Queueing to Kafka" status event
+  window.dispatchEvent(new CustomEvent('blearn-toast', {
+    detail: { message: `Đang gửi log tương tác với học liệu (site=${numericSiteId}) qua Kafka...`, type: 'info' }
+  }));
+
   try {
     const token = getToken();
     if (!token) {
@@ -134,9 +139,18 @@ export async function trackStudentClick(studentId, siteId) {
       throw new Error(`track-click failed (${response.status}): ${detail || 'Unknown error'}`);
     }
 
+    // 2. Dispatch "Success" event
+    window.dispatchEvent(new CustomEvent('blearn-toast', {
+      detail: { message: `Ghi nhận tương tác thành công (site=${numericSiteId})`, type: 'success' }
+    }));
+
     return true;
   } catch (error) {
     console.log('track-click fallback:', error);
+    // 3. Dispatch "Fallback/Error" event
+    window.dispatchEvent(new CustomEvent('blearn-toast', {
+      detail: { message: `Lỗi Kafka fallback: Ghi log local (site=${numericSiteId})`, type: 'error' }
+    }));
     return false;
   }
 }

@@ -38,3 +38,6 @@ small-data/**/*.csv
 small-data/**/*.json
 **/_SUCCESS
 infra/tfplan
+mlflow.db
+mlflow.db-journal
+

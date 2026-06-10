@@ -5,7 +5,7 @@ Mục tiêu: Tự động hóa toàn bộ chuỗi quy trình: Khởi tạo cụm
 Hãy thực thi lệnh đánh thức cụm máy chủ compute đám mây và đợi cụm chuyển trạng thái Sẵn sàng:
 
 Bash
-az aks start --name blearn-cluster --resource-group group-blearn-minh
+az aks start --name aks-blearn-dev --resource-group RG-BLEarn-Compute
 Kiểm tra trạng thái của toàn bộ các Container Pod trong không gian tên hệ thống:
 
 Bash
@@ -14,6 +14,7 @@ Thiết lập hệ thống kết nối ngầm (Port-Forwarding) kết nối nộ
 
 Bash
 >    make demo-connect
+>    # Port local bao gồm API 8000, Frontend 8080, Redis 6379, MLflow 5005, Nessie 19120
 >    ```
 > 
 > #### ⚡ BƯỚC 2: CHẠY KIỂM THỬ TẬP 1 (INGESTION THROUGHPUT \& RESILIENCY)
