@@ -36,6 +36,8 @@ spec:
             secretKeyRef:
               name: oulad-runtime
               key: AZURE_STORAGE_KEY
+        - name: REDIS_HOST
+          value: "redis-service.blearn-medallion.svc.cluster.local"
 ---
 apiVersion: v1
 kind: Service

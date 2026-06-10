@@ -149,7 +149,7 @@ _item_ids_list = []       # list of item ids corresponding to rows in _item_emb_
 _student_risk_dict = {}   # student_id_hash -> dropout_probability
 _lms_by_site_cache = {}   # id_site -> dict
 
-shared_cache = SharedCache()
+shared_cache = SharedCache(host=os.getenv("REDIS_HOST", "localhost"))
 
 GOLD_FEATURE_COLUMNS = [
     "code_module",
