@@ -71,6 +71,12 @@ Arrange three windows on your monitor:
 3. **Window 3 (Lecturer View)**: Open the Lecturer Dashboard. You can access it:
    - **Directly on the Cloud**: Navigate to `http://135.171.193.190` (using the public LoadBalancer IP deployed on AKS).
    - **Via Local Tunnel**: Navigate to `http://localhost:8501` (if port-forwarded).
+4. **Window 4 (System & Infra Metrics - Grafana & Prometheus)**:
+   - **Grafana (Cloud Dashboard)**: Open `http://20.195.5.3` (public LoadBalancer IP) and log in with credentials:
+     - **Username**: `admin`
+     - **Password**: `admin`
+   - **Grafana (Local Tunnel)**: Run `kubectl port-forward service/kube-prometheus-stack-grafana 3000:80 -n blearn-medallion` and visit `http://localhost:3000`.
+   - **Prometheus Console (Local Tunnel)**: Run `kubectl port-forward service/kube-prometheus-stack-prometheus 9090:9090 -n blearn-medallion` and visit `http://localhost:9090` to query raw metrics.
 
 ---
 
