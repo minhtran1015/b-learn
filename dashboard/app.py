@@ -1143,7 +1143,7 @@ except AttributeError:
         def fragment_dec(*args, **kwargs):
             return lambda f: f
 
-@fragment_dec(run_every=3)
+@fragment_dec()
 def render_student_inspection_fragment(selected_student, selected_module):
     # Fetch student gateway profile
     live_data = fetch_student_profile_from_gateway(selected_student)
