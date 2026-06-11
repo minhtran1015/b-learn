@@ -908,6 +908,27 @@ def generate_curated_student_list(_df_risk):
     return curated_df['student_id_hash'].tolist()
 
 @st.cache_data(ttl=60)
+def build_student_friendly_map(_df_risk):
+    cols = [c for c in ['student_id_hash', 'id_student', 'code_module'] if c in _df_risk.columns]
+    df_unique = _df_risk[cols].drop_duplicates(subset=['student_id_hash']).copy()
+    df_unique['student_id_hash'] = df_unique['student_id_hash'].astype(str)
+
+    friendly_map = {}
+    for idx, row in enumerate(df_unique.itertuples(index=False), start=1):
+        raw_hash = str(getattr(row, 'student_id_hash'))
+        real_id = getattr(row, 'id_student', None)
+        real_mod = getattr(row, 'code_module', None)
+
+        if pd.notna(real_id) and real_mod is not None:
+            friendly_map[raw_hash] = f"👤 MSSV: {real_id} ({real_mod}) (#{idx})"
+        elif pd.notna(real_id):
+            friendly_map[raw_hash] = f"👤 MSSV: {real_id} (#{idx})"
+        else:
+            friendly_map[raw_hash] = f"👤 Student #{idx} ({raw_hash[:8]}...)"
+
+    return friendly_map
+
+@st.cache_data(ttl=60)
 def get_student_timeline_data(student_id, base_prob):
     try:
         seed_val = int(student_id[:6], 16) % 1000
@@ -1030,16 +1051,7 @@ if view_mode == "👤 Single Student Inspection":
     if not curated_student_list:
         curated_student_list = ["demo_student_hash_placeholder"]
 
-    hash_to_friendly = {}
-    all_student_hashes = df_filtered_risk['student_id_hash'].astype(str).drop_duplicates().tolist()
-    for idx, raw_hash in enumerate(all_student_hashes):
-        row_data = df_filtered_risk[df_filtered_risk['student_id_hash'] == raw_hash]
-        if not row_data.empty:
-            real_id = row_data.iloc[0]['id_student']
-            real_mod = row_data.iloc[0]['code_module']
-            hash_to_friendly[raw_hash] = f"👤 MSSV: {real_id} ({real_mod}) (#{(idx+1)})"
-        else:
-            hash_to_friendly[raw_hash] = f"👤 Student #{(idx+1)} ({raw_hash[:8]}...)"
+    hash_to_friendly = build_student_friendly_map(df_filtered_risk)
 
     mssv_query = st.sidebar.text_input(
         "Search by MSSV",
