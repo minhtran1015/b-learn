@@ -779,13 +779,14 @@ def get_auth_token():
     }
     return jwt.encode(payload, JWT_SECRET_KEY, algorithm="HS256")
 
+@st.cache_data(ttl=15, show_spinner=False)
 def fetch_student_profile_from_gateway(student_id_hash: str) -> dict:
     """Fetch live recommendations, BKT mastery, and dropout probability from FastAPI gateway."""
     try:
         token = get_auth_token()
         headers = {"Authorization": f"Bearer {token}"}
         url = f"{GATEWAY_URL}/recommendations/{student_id_hash}"
-        response = requests.get(url, headers=headers, timeout=2.0)
+        response = requests.get(url, headers=headers, timeout=1.5)
         if response.status_code == 200:
             return response.json()
     except Exception as e:
@@ -1157,32 +1158,24 @@ except AttributeError:
 
 @fragment_dec()
 def render_student_inspection_fragment(selected_student, selected_module):
-    # Fetch student gateway profile
-    live_data = fetch_student_profile_from_gateway(selected_student)
-
-    # Local fallback
+    live_data = None
     student_risk_rows = df_risk[df_risk['student_id_hash'] == selected_student]
     if student_risk_rows.empty:
         fallback_risk = {"student_id_hash": selected_student, "dropout_probability": 0.0, "predicted_class": "Success", "id_student": "Unknown"}
     else:
         fallback_risk = student_risk_rows.iloc[0]
-        
-    if live_data:
-        prob = live_data.get("dropout_probability", fallback_risk.get("dropout_probability", 0.0))
-        pred_class = fallback_risk.get("predicted_class", "Success")
-        bkt_mastery_dict = live_data.get("bkt_mastery", {})
-    else:
-        prob = fallback_risk.get("dropout_probability", 0.0)
-        pred_class = fallback_risk.get("predicted_class", "Success")
-        
-        # Extract BKT masteries from dataframe
-        bkt_mastery_dict = {}
-        student_bkt_df = df_bkt[df_bkt['user_id'] == selected_student]
-        for _, row in student_bkt_df.iterrows():
-            skill = row['skill_name']
-            for ch in bkt_options:
-                if ch in skill:
-                    bkt_mastery_dict[ch] = float(row['correct_predictions'])
+
+    prob = fallback_risk.get("dropout_probability", 0.0)
+    pred_class = fallback_risk.get("predicted_class", "Success")
+
+    # Extract BKT masteries from dataframe as the immediate fallback path.
+    bkt_mastery_dict = {}
+    student_bkt_df = df_bkt[df_bkt['user_id'] == selected_student]
+    for _, row in student_bkt_df.iterrows():
+        skill = row['skill_name']
+        for ch in bkt_options:
+            if ch in skill:
+                bkt_mastery_dict[ch] = float(row['correct_predictions'])
 
     # Calculate student metrics
     bkt_avg = np.mean(list(bkt_mastery_dict.values())) * 100 if bkt_mastery_dict else 65.0
@@ -1240,6 +1233,16 @@ def render_student_inspection_fragment(selected_student, selected_module):
     col1.metric(risk_label, risk_pct, f"Status: {status_label} ({pred_class})")
     col2.metric("Cohort Average Risk", f"{cohort_risk_avg:.2f}%", f"Total: {len(df_filtered_risk)} Students")
     col3.metric("Student BKT Avg Mastery", f"{bkt_avg:.1f}%", f"Active Chapters: {len(bkt_mastery_dict)}")
+
+    # Try live profile after the page has already painted local fallback content.
+    with st.spinner("Loading live student profile..."):
+        live_data = fetch_student_profile_from_gateway(selected_student)
+    if live_data:
+        prob = live_data.get("dropout_probability", prob)
+        pred_class = live_data.get("predicted_class", pred_class)
+        bkt_mastery_dict = live_data.get("bkt_mastery", bkt_mastery_dict) or bkt_mastery_dict
+        if bkt_mastery_dict:
+            bkt_avg = np.mean(list(bkt_mastery_dict.values())) * 100
 
     # Model Explainability (SHAP) - Display qualitative reasons
     if live_data and "shap_explanation" in live_data and live_data["shap_explanation"]:
