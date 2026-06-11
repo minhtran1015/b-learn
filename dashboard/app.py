@@ -11,6 +11,10 @@ import jwt
 import plotly.express as px
 import plotly.graph_objects as go
 
+CHART_HEIGHT = 320
+DEFAULT_STUDENT_HASH = "79d86f4d0c556c37c879fb9ba278f9996d5f1f50468d8e26e13a19ba6b09c219"
+DEFAULT_STUDENT_ID = "28400"
+
 # ─── PAGE CONFIGURATION ───
 st.set_page_config(
     page_title="B-LEARN: EdTech Analytics & Personalization",
@@ -102,9 +106,7 @@ def render_cohort_heatmap(df_pivot, key_suffix=""):
         )
     ))
     
-    n_rows = len(df_pivot)
     n_cols = len(x_labels)
-    dynamic_height = max(220, 80 + n_rows * 70)
     x_tick_angle = -35 if n_cols > 6 else 0
     
     fig.update_layout(
@@ -114,7 +116,7 @@ def render_cohort_heatmap(df_pivot, key_suffix=""):
         xaxis=dict(tickfont=dict(color="#64748B"), tickangle=x_tick_angle),
         yaxis=dict(tickfont=dict(color="#64748B")),
         margin=dict(l=20, r=20, t=10, b=60 if n_cols > 6 else 20),
-        height=dynamic_height
+        height=CHART_HEIGHT
     )
     
     st.plotly_chart(fig, use_container_width=True, key=f"cohort_mastery_heatmap_{key_suffix}")
@@ -158,7 +160,7 @@ def render_student_radar(bkt_mastery_dict, key_suffix=""):
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         margin=dict(l=40, r=40, t=25, b=25),
-        height=280,
+        height=CHART_HEIGHT,
         showlegend=False
     )
     
@@ -187,7 +189,7 @@ def render_engagement_comparison(student_clicks, cohort_avg_clicks, key_suffix="
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
         margin=dict(l=30, r=30, t=40, b=20),
-        height=180
+        height=CHART_HEIGHT
     )
     st.plotly_chart(fig, use_container_width=True, key=f"student_engagement_gauge_{key_suffix}")
 
@@ -207,7 +209,7 @@ def render_module_risk_violin(df_risk, key_suffix=""):
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(color="#0F172A", family="Outfit"),
         margin=dict(l=20, r=20, t=20, b=20),
-        height=280,
+        height=CHART_HEIGHT,
         showlegend=False
     )
     st.plotly_chart(fig, use_container_width=True, key=f"universal_violin_risk_{key_suffix}")
@@ -272,7 +274,7 @@ def render_student_cohort_scatter(student_hash, df_risk_merged, student_clicks, 
             range=[0, 105]
         ),
         margin=dict(l=40, r=20, t=10, b=40),
-        height=280,
+        height=CHART_HEIGHT,
         legend=dict(
             orientation="h",
             yanchor="bottom",
@@ -346,7 +348,7 @@ def render_student_density_heatmap_scatter(student_hash, df_risk_merged, student
             range=[0, 105]
         ),
         margin=dict(l=40, r=20, t=10, b=40),
-        height=280,
+        height=CHART_HEIGHT,
         legend=dict(
             orientation="h",
             yanchor="bottom",
@@ -417,7 +419,7 @@ def render_risk_distribution_histogram(student_prob, df_risk_cohort, key_suffix=
             tickfont=dict(color="#64748B")
         ),
         margin=dict(l=40, r=20, t=10, b=40),
-        height=280,
+        height=CHART_HEIGHT,
         showlegend=False
     )
     
@@ -461,7 +463,7 @@ def render_universal_density_heatmap(df_risk_merged, key_suffix=""):
             range=[0, 105]
         ),
         margin=dict(l=40, r=20, t=10, b=40),
-        height=280
+        height=CHART_HEIGHT
     )
     st.plotly_chart(fig, use_container_width=True, key=f"universal_density_heatmap_{key_suffix}")
 
@@ -539,7 +541,7 @@ def render_student_timeline_plotly(df_timeline, key_suffix=""):
             range=[0, 105]
         ),
         margin=dict(l=40, r=40, t=10, b=30),
-        height=280,
+        height=CHART_HEIGHT,
         legend=dict(
             orientation="h",
             yanchor="bottom",
@@ -568,7 +570,7 @@ def render_universal_scatter(df_risk_merged, key_suffix=""):
         xaxis=dict(gridcolor="rgba(0, 0, 0, 0.05)", title="Total Clicks"),
         yaxis=dict(gridcolor="rgba(0, 0, 0, 0.05)", range=[0, 105], title="Average Score (%)"),
         margin=dict(l=40, r=20, t=10, b=40),
-        height=280
+        height=CHART_HEIGHT
     )
     st.plotly_chart(fig, use_container_width=True, key=f"universal_risk_scatter_{key_suffix}")
 
@@ -595,7 +597,7 @@ def render_demographic_risk_bars(df_risk_merged, demographic_col, key_suffix="")
         yaxis=dict(gridcolor="rgba(0, 0, 0, 0.05)", title=""),
         coloraxis_showscale=False,
         margin=dict(l=40, r=20, t=10, b=40),
-        height=280
+        height=CHART_HEIGHT
     )
     st.plotly_chart(fig, use_container_width=True, key=f"demographic_risk_bars_{demographic_col}_{key_suffix}")
 
@@ -637,7 +639,7 @@ def render_feature_correlation_heatmap(df_risk_merged, key_suffix=""):
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(color="#0F172A", family="Outfit"),
         margin=dict(l=20, r=20, t=20, b=20),
-        height=320
+        height=CHART_HEIGHT
     )
     st.plotly_chart(fig, use_container_width=True, key=f"feature_correlation_heatmap_{key_suffix}")
 
@@ -693,7 +695,7 @@ def render_student_grades_comparison(student_hash, baseline_avg_score, key_suffi
         xaxis=dict(title="Knowledge Components (Chapters)", tickfont=dict(color="#64748B")),
         yaxis=dict(title="Assignment Grade (%)", tickfont=dict(color="#64748B"), range=[0, 105]),
         margin=dict(l=40, r=20, t=10, b=30),
-        height=280,
+        height=CHART_HEIGHT,
         legend=dict(
             orientation="h",
             yanchor="bottom",
@@ -755,7 +757,7 @@ def render_universal_activity_donut(df_lms, key_suffix=""):
             plot_bgcolor="rgba(0,0,0,0)",
             font=dict(color="#0F172A", family="Outfit"),
             margin=dict(l=20, r=20, t=20, b=20),
-            height=280,
+            height=CHART_HEIGHT,
             legend=dict(
                 orientation="h",
                 yanchor="bottom",
@@ -982,6 +984,7 @@ with st.spinner("⏳ Loading dataset..."):
 if 'id_student' not in df_risk.columns:
     import hashlib
     df_risk['id_student'] = df_risk['student_id_hash'].apply(lambda h: str(int(hashlib.md5(h.encode('utf-8')).hexdigest()[:6], 16) % 900000 + 100000))
+df_risk.loc[df_risk['student_id_hash'] == DEFAULT_STUDENT_HASH, 'id_student'] = DEFAULT_STUDENT_ID
 
 # Merge risk predictions and features for detailed visualizations
 if not df_feats.empty:
@@ -1019,11 +1022,17 @@ if view_mode == "👤 Single Student Inspection":
     # Student Selector Parameter (no module-level filter for single student view)
     df_filtered_risk = df_risk.copy()
     curated_student_list = generate_curated_student_list(df_filtered_risk)
+    if DEFAULT_STUDENT_HASH in set(df_filtered_risk['student_id_hash'].astype(str)):
+        curated_student_list = [DEFAULT_STUDENT_HASH] + [
+            student_hash for student_hash in curated_student_list
+            if student_hash != DEFAULT_STUDENT_HASH
+        ]
     if not curated_student_list:
         curated_student_list = ["demo_student_hash_placeholder"]
 
     hash_to_friendly = {}
-    for idx, raw_hash in enumerate(curated_student_list):
+    all_student_hashes = df_filtered_risk['student_id_hash'].astype(str).drop_duplicates().tolist()
+    for idx, raw_hash in enumerate(all_student_hashes):
         row_data = df_filtered_risk[df_filtered_risk['student_id_hash'] == raw_hash]
         if not row_data.empty:
             real_id = row_data.iloc[0]['id_student']
@@ -1032,9 +1041,33 @@ if view_mode == "👤 Single Student Inspection":
         else:
             hash_to_friendly[raw_hash] = f"👤 Student #{(idx+1)} ({raw_hash[:8]}...)"
 
+    mssv_query = st.sidebar.text_input(
+        "Search by MSSV",
+        value="",
+        placeholder=f"e.g. {DEFAULT_STUDENT_ID}"
+    ).strip()
+
+    selected_student_list = curated_student_list
+    selected_index = 0
+    if mssv_query:
+        id_series = df_filtered_risk['id_student'].astype(str)
+        matched_hashes = df_filtered_risk[
+            id_series.str.contains(mssv_query, case=False, na=False)
+        ]['student_id_hash'].astype(str).drop_duplicates().tolist()
+        if matched_hashes:
+            selected_student_list = matched_hashes
+            exact_matches = df_filtered_risk[
+                id_series.str.lower() == mssv_query.lower()
+            ]['student_id_hash'].astype(str).drop_duplicates().tolist()
+            if exact_matches and exact_matches[0] in selected_student_list:
+                selected_index = selected_student_list.index(exact_matches[0])
+        else:
+            st.sidebar.warning(f"No student found for MSSV: {mssv_query}")
+
     selected_student = st.sidebar.selectbox(
         "Select Student",
-        curated_student_list,
+        selected_student_list,
+        index=selected_index,
         format_func=lambda x: hash_to_friendly.get(x, x)
     )
 
@@ -1048,8 +1081,8 @@ if view_mode == "👤 Single Student Inspection":
     # Line Chart Parameter: Select BKT chapters to show
     plot_chapters = st.sidebar.multiselect('Select BKT Chapters', bkt_options, bkt_options[:3])
 
-    # Timeline height parameter
-    plot_height = st.sidebar.slider('Specify timeline height', 150, 400, 200)
+    # Shared chart height parameter
+    plot_height = st.sidebar.slider('Chart height', 240, 480, CHART_HEIGHT)
 
 else:
     st.sidebar.markdown("---")
@@ -1060,8 +1093,10 @@ else:
     course_options = ["All Modules"] + [f"OULAD {m}" for m in unique_modules]
     selected_course_option = st.sidebar.selectbox("Select Course Scope", course_options)
     
-    # Line chart height parameter
-    plot_height = st.sidebar.slider('Specify chart height', 150, 400, 250)
+    # Shared chart height parameter
+    plot_height = st.sidebar.slider('Chart height', 240, 480, CHART_HEIGHT)
+
+CHART_HEIGHT = plot_height
 
 st.sidebar.markdown(
     """
@@ -1211,7 +1246,7 @@ def render_student_inspection_fragment(selected_student, selected_module):
         st.markdown("</ul></div>", unsafe_allow_html=True)
 
     # ROW B: HEATMAP & PEER SCATTER PLOT
-    c1, c2 = st.columns((6, 4))
+    c1, c2 = st.columns(2)
 
     with c1:
         st.markdown('### BKT Skill Mastery — Student vs Cohort Risk Groups')
@@ -1256,7 +1291,7 @@ def render_student_inspection_fragment(selected_student, selected_module):
 
     # ROW C: CHECKPOINT TIMELINE & ENGAGEMENT GAUGE
     st.markdown('### Student Diagnostics & Timeline')
-    col_c1, col_c2 = st.columns((6, 4))
+    col_c1, col_c2 = st.columns(2)
     
     with col_c1:
         st.markdown("##### 📈 Longitudinal Checkpoint Timelines")
@@ -1269,7 +1304,7 @@ def render_student_inspection_fragment(selected_student, selected_module):
 
     # ROW D: MASTER & ASSESSMENT GRADES DIAGNOSTICS
     st.markdown('### Mastery Radar & Assessment Grades Diagnostics')
-    col_d1, col_d2 = st.columns((5, 5))
+    col_d1, col_d2 = st.columns(2)
     
     with col_d1:
         st.markdown("##### 🧠 Bayesian Knowledge Tracing Mastery Profile")
@@ -1435,7 +1470,7 @@ else:
     col_u3.metric("Cohort Average Mastery", f"{avg_univ_mastery:.1f}%")
 
     # ROW B: COMPREHENSIVE BKT HEATMAP & PEER SCATTER PLOT
-    col_b1, col_b2 = st.columns((6, 4))
+    col_b1, col_b2 = st.columns(2)
     
     with col_b1:
         st.markdown('### BKT skill mastery Heatmap across all Modules')
@@ -1458,7 +1493,7 @@ else:
 
     # ROW C: COMPREHENSIVE COHORT TIMELINE & VIOLIN DISTRIBUTION
     st.markdown('### Cohort Longitudinal Timeline & Variance')
-    col_c1, col_c2 = st.columns((6, 4))
+    col_c1, col_c2 = st.columns(2)
     
     with col_c1:
         st.markdown('##### Cohort Longitudinal Timeline (Average Performance)')
@@ -1488,7 +1523,7 @@ else:
 
     # ROW E: VLE ACTIVITY & AT-RISK STUDENTS LIST
     st.markdown('### VLE Activity Distribution & High-Risk Cohort')
-    col_e1, col_e2 = st.columns((6, 4))
+    col_e1, col_e2 = st.columns(2)
     
     with col_e1:
         st.markdown('##### 🍩 VLE Activity Engagement Breakdown')
