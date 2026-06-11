@@ -930,6 +930,36 @@ def build_student_friendly_map(_df_risk):
     return friendly_map
 
 @st.cache_data(ttl=60)
+def build_student_bkt_mastery_dict(_df_bkt, student_id_hash):
+    if _df_bkt is None or _df_bkt.empty or "user_id" not in _df_bkt.columns:
+        return {}
+
+    student_bkt_df = _df_bkt[_df_bkt["user_id"].astype(str) == str(student_id_hash)].copy()
+    if student_bkt_df.empty:
+        return {}
+
+    if "order_id" in student_bkt_df.columns:
+        student_latest = (
+            student_bkt_df.sort_values("order_id")
+            .groupby("skill_name")["correct_predictions"]
+            .last()
+            .reset_index()
+        )
+    else:
+        student_latest = (
+            student_bkt_df.groupby("skill_name")["correct_predictions"]
+            .mean()
+            .reset_index()
+        )
+
+    mastery_dict = {}
+    for _, row in student_latest.iterrows():
+        skill_name = str(row["skill_name"]).strip()
+        if skill_name:
+            mastery_dict[skill_name] = float(row["correct_predictions"])
+    return mastery_dict
+
+@st.cache_data(ttl=60)
 def get_student_timeline_data(student_id, base_prob):
     try:
         seed_val = int(student_id[:6], 16) % 1000
@@ -1168,14 +1198,8 @@ def render_student_inspection_fragment(selected_student, selected_module):
     prob = fallback_risk.get("dropout_probability", 0.0)
     pred_class = fallback_risk.get("predicted_class", "Success")
 
-    # Extract BKT masteries from dataframe as the immediate fallback path.
-    bkt_mastery_dict = {}
-    student_bkt_df = df_bkt[df_bkt['user_id'] == selected_student]
-    for _, row in student_bkt_df.iterrows():
-        skill = row['skill_name']
-        for ch in bkt_options:
-            if ch in skill:
-                bkt_mastery_dict[ch] = float(row['correct_predictions'])
+    # Extract BKT masteries from dataframe using the actual skill labels stored in data.
+    bkt_mastery_dict = build_student_bkt_mastery_dict(df_bkt, selected_student)
 
     # Calculate student metrics
     bkt_avg = np.mean(list(bkt_mastery_dict.values())) * 100 if bkt_mastery_dict else 65.0
