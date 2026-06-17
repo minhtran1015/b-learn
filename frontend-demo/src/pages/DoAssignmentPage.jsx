@@ -6,6 +6,7 @@ import { ensureGatewaySession, gatewayUrl } from '../api/gateway.js';
 import { customCourseAssignments } from '../data/mockData.js';
 import { PASSING_SCORE, writeCompetencyProgress } from '../utils/progress.js';
 import questionBank from '../data/Question_Bank.json';
+import testBank from '../data/Test_Bank.json';
 
 // ─── Constant: ID khóa học tùy chỉnh ────────────────────────────────────────
 const CUSTOM_COURSE_ID = 'big-data-course';
@@ -122,13 +123,23 @@ export default function DoAssignmentPage() {
     if (!customAssignmentMeta) return [];
 
     const chId = customAssignmentMeta.chapterId || 'C1';
-    const chQuestions = questionBank.filter(q => q.ChapterID === chId);
+    const questionById = new Map(questionBank.map((question) => [question.QuestionID, question]));
+    const chapterTests = testBank.find((chapter) => chapter.ChapterID === chId)?.Test || [];
+    const selectedTest = chapterTests[0];
+    const testQuestions = Array.isArray(selectedTest?.Questions)
+      ? selectedTest.Questions.map((questionId) => questionById.get(questionId)).filter(Boolean)
+      : [];
+    const chQuestions = testQuestions.length > 0
+      ? testQuestions
+      : questionBank.filter(q => q.ChapterID === chId);
 
-    return chQuestions.slice(0, 20).map((q, idx) => {
+    return chQuestions.map((q, idx) => {
       const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
       const ansIdx = letters.indexOf(q.answerID);
       return {
         id: idx + 1,
+        questionId: q.QuestionID,
+        testId: selectedTest?.TestID || '',
         question: `Câu ${idx + 1}: ${q.Content}`,
         answers: q.Options.map(o => o.text),
         correctAnswerIdx: ansIdx >= 0 ? ansIdx : 0

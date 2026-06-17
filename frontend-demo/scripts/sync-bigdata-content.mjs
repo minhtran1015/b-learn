@@ -8,6 +8,8 @@ const repoRoot = path.resolve(__dirname, '..', '..');
 const lectureBankPath = path.join(repoRoot, 'frontend-demo', 'src', 'data', 'Lecture_Bank.json');
 const sourceRoot = path.join(repoRoot, 'small-data');
 const outputPath = path.join(repoRoot, 'frontend-demo', 'src', 'data', 'bigDataLessonContent.js');
+const testBankSourcePath = path.join(sourceRoot, 'Test_Bank.json');
+const testBankOutputPath = path.join(repoRoot, 'frontend-demo', 'src', 'data', 'Test_Bank.json');
 
 const lectureBank = JSON.parse(await readFile(lectureBankPath, 'utf8'));
 
@@ -45,3 +47,6 @@ for (const chapter of lectureBank.Chapters || []) {
 const serialized = JSON.stringify(contentMap, null, 2);
 const output = `export const bigDataLessonContentByLecId = ${serialized};\n`;
 await writeFile(outputPath, output, 'utf8');
+
+const testBank = await readFile(testBankSourcePath, 'utf8');
+await writeFile(testBankOutputPath, testBank, 'utf8');

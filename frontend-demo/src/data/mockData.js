@@ -140,8 +140,8 @@ export const customCourseAssignments = lectureBank.Chapters.map((chapter, index)
     status: index === 0 ? 'active' : 'todo',
     chapter: `Chương ${chapter.Order}: ${chapter.Name}`,
     chapterId: chapter.ChapterID,
-    questionCount: 20,
-    _bank_source: 'Question_Bank',
+    questionCount: 25,
+    _bank_source: 'Test_Bank',
   };
 });
 

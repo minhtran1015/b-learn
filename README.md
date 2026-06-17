@@ -812,8 +812,14 @@ small-data/
 │   ├── 02_Big_Data_Ecosystems/
 │   └── ...
 ├── Lecture_Bank.json
-└── Question_Bank.json
+├── Question_Bank.json
+└── Test_Bank.json
 ```
+
+Trong bộ dữ liệu demo Big Data:
+- `Lecture_Bank.json` định nghĩa chương, bài học và đường dẫn nội dung markdown trong `small-data/Data/`.
+- `Question_Bank.json` là ngân hàng câu hỏi gốc, chứa nội dung câu hỏi, đáp án và đáp án đúng.
+- `Test_Bank.json` định nghĩa cấu trúc đề kiểm tra theo từng chương. Mỗi đề tham chiếu danh sách `QuestionID` trong `Question_Bank.json`, giúp frontend hiển thị đúng bộ câu hỏi của từng bài test thay vì tự cắt câu hỏi trực tiếp từ ngân hàng câu hỏi.
 
 ### 2. Dữ liệu đầy đủ (large-data/)
 Sử dụng cho chạy pipeline đầy đủ:
@@ -830,7 +836,8 @@ large-data/
 │   ├── 01_Foundations_of_Big_Data/
 │   └── ...
 ├── Lecture_Bank.json
-└── Question_Bank.json
+├── Question_Bank.json
+└── Test_Bank.json
 ```
 
 ---
