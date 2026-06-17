@@ -295,6 +295,36 @@ Sau khi chuẩn bị Secret (`oulad-runtime`) và đẩy Docker image lên ACR, 
    kubectl apply -f infra/manifests/grafana-dashboard-blearn-operations.yaml
    ```
 
+### Hướng Dẫn Truy Cập Dịch Vụ Trên AKS (Streamlit, Grafana, LMS Demo)
+
+Sau khi triển khai thành công, các dịch vụ có thể được truy cập như sau:
+
+#### 1. Streamlit Cohort Analytics Dashboard
+* **Truy cập trực tiếp (Public LoadBalancer IP):** `http://135.171.193.190:80`
+* **Truy cập thông qua Port-Forward:**
+  ```bash
+  kubectl port-forward svc/blearn-streamlit-service 8501:80 -n blearn-medallion
+  ```
+  Truy cập tại: `http://localhost:8501`
+
+#### 2. Grafana Operations Dashboard
+* **Truy cập trực tiếp (Public LoadBalancer IP):** `http://20.195.5.3:80`
+* **Truy cập thông qua Port-Forward:**
+  ```bash
+  kubectl port-forward svc/kube-prometheus-stack-grafana 3000:80 -n blearn-medallion
+  ```
+  Truy cập tại: `http://localhost:3000`
+* **Thông tin đăng nhập mặc định (Admin):**
+  * **Username:** `admin`
+  * **Password:** `admin` (Cấu hình tại `infra/prometheus-values.yaml`)
+
+#### 3. React Frontend (LMS Simulator Demo)
+* **Truy cập thông qua Port-Forward:**
+  ```bash
+  kubectl port-forward svc/blearn-frontend-service 8080:80 -n blearn-medallion
+  ```
+  Truy cập tại: `http://localhost:8080`
+
 ---
 
 ## Cấu Hình Môi Trường và Chạy Dịch Vụ
@@ -341,7 +371,7 @@ uvicorn backend-api.serving_gateway:app --host 0.0.0.0 --port 8000 --reload
 ```
 API hoạt động tại `http://localhost:8000`. Xem tài liệu Swagger API tại `/docs`.
 
-#### 2. React Frontend Demo
+#### 2. React Frontend Demo (LMS Simulator)
 Giao diện giả lập LMS và luồng adaptive learning.
 
 ```bash
@@ -352,7 +382,17 @@ npm run dev
 ```
 Giao diện chạy tại `http://localhost:5173`.
 
-#### 3. Streamlit Dashboard (Cohort Analytics UI)
+#### 3. React Frontend Dashboard (Operations Overview)
+Giao diện dashboard phân tích dữ liệu cohort và chi tiết học viên bằng React + Recharts.
+
+```bash
+cd frontend-dashboard
+npm install
+npm run dev
+```
+Giao diện chạy tại `http://localhost:5173` (hoặc cổng tiếp theo nếu trùng).
+
+#### 4. Streamlit Dashboard (Cohort Analytics UI)
 Dashboard thống kê tổng quan khóa học và chi tiết học viên.
 
 ```bash
@@ -847,6 +887,7 @@ large-data/
 | Thành phần | Địa chỉ / Tên |
 |-----------|---------------|
 | Streamlit Dashboard | http://135.171.193.190 |
+| Grafana Dashboard | http://20.195.5.3 |
 | Azure Storage Account | `stblearnminhdata2026` |
 | Azure Container Registry | `acrblearnminh2026.azurecr.io` |
 | AKS Cluster | `aks-blearn-dev` (Southeast Asia) |
