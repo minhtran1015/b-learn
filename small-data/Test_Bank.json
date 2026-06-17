@@ -1,0 +1,308 @@
+[
+    {
+        "ChapterID": "C1",
+        "weight": 0.2,
+        "Test": [
+            {
+                "TestID": "T1_C1",
+                "Name": "Test for Chapter 1",
+                "Description": "This test covers the content of Chapter 1: Foundations of Big Data.",
+                "weight": "0.2",
+                "Questions": [
+                        "Q1", "Q2", "Q5", "Q7", "Q8", "Q10", "Q11", "Q13", "Q15", "Q16", "Q19", "Q21", "Q22", "Q24", "Q25", "Q27", "Q28", "Q31", "Q32", "Q33", "Q35", "Q36", "Q38", "Q39", "Q40"
+                ]
+            },
+            {
+                "TestID": "T2_C1",
+                "Name": "Test for Chapter 1",
+                "Description": "This test covers the content of Chapter 1: Foundations of Big Data.",
+                "weight": "0.2",
+                "Questions": [
+                        "Q1", "Q3", "Q4", "Q6", "Q8", "Q9", "Q11", "Q12", "Q14", "Q16", "Q17", "Q18", "Q20", "Q22", "Q23", "Q25", "Q26", "Q28", "Q29", "Q30", "Q32", "Q34", "Q36", "Q37", "Q39"
+                ]   
+            },
+            {
+                "TestID": "T3_C1",
+                "Name": "Test for Chapter 1",
+                "Description": "This test covers the content of Chapter 1: Foundations of Big Data.",
+                "weight": "0.2",
+                "Questions": [
+                        "Q3", "Q4", "Q7", "Q8", "Q11", "Q12", "Q15", "Q16", "Q19", "Q20", "Q23", "Q24", "Q27", "Q28", "Q31", "Q32", "Q35", "Q36", "Q37", "Q38", "Q2", "Q14", "Q22", "Q30", "Q40"
+                ]
+            },
+            {
+                "TestID": "T4_C1",
+                "Name": "Test for Chapter 1",
+                "Description": "This test covers the content of Chapter 1: Foundations of Big Data.",
+                "weight": "0.2",
+                "Questions": [
+                        "Q1", "Q2", "Q4", "Q5", "Q6", "Q8", "Q9", "Q10", "Q12", "Q13", "Q14", "Q16", "Q17", "Q18", "Q20", "Q22", "Q24", "Q26", "Q28", "Q30", "Q32", "Q34", "Q36", "Q38", "Q40"
+                ]
+            },
+            {
+                "TestID": "T5_C1",
+                "Name": "Test for Chapter 1",
+                "Description": "This test covers the content of Chapter 1: Foundations of Big Data.",
+                "weight": "0.2",
+                "Questions": [
+                        "Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7", "Q8", "Q9", "Q10", "Q11", "Q13", "Q15", "Q17", "Q19", "Q21", "Q23", "Q25", "Q27", "Q29", "Q31", "Q33", "Q35", "Q37", "Q39"
+                ]
+            }
+        ]
+   },
+   {
+    "ChapterID": "C2",
+    "weight": 0.15,
+    "Test": [
+        {
+            "TestID": "T1_C2",
+            "Name": "Test for Chapter 2",
+            "Description": "This test covers the content of Chapter 2: Big Data Ecosystems.",
+            "weight": "0.15",
+            "Questions": [
+                    "Q41", "Q42", "Q43", "Q45", "Q46", "Q48", "Q49", "Q50", "Q52", "Q53", "Q55", "Q56", "Q57", "Q59", "Q60", "Q61", "Q63", "Q64", "Q66", "Q67", "Q68", "Q69", "Q70", "Q44", "Q58"
+            ]
+        },
+        {
+            "TestID": "T2_C2",
+            "Name": "Test for Chapter 2",
+            "Description": "This test covers the content of Chapter 2: Big Data Ecosystems.",
+            "weight": "0.15",
+            "Questions": [
+                    "Q41", "Q43", "Q44", "Q46", "Q47", "Q48", "Q50", "Q51", "Q53", "Q54", "Q55", "Q57", "Q58", "Q60", "Q61", "Q62", "Q64", "Q65", "Q66", "Q68", "Q69", "Q70", "Q45", "Q52", "Q59"
+            ]   
+        },
+        {
+            "TestID": "T3_C2",
+            "Name": "Test for Chapter 2",
+            "Description": "This test covers the content of Chapter 2: Big Data Ecosystems.",
+            "weight": "0.15",
+            "Questions": [
+                    "Q42", "Q44", "Q45", "Q47", "Q49", "Q50", "Q51", "Q52", "Q54", "Q56", "Q57", "Q58", "Q59", "Q61", "Q62", "Q63", "Q65", "Q67", "Q68", "Q69", "Q70", "Q41", "Q46", "Q53", "Q60"
+            ]
+        },
+        {
+            "TestID": "T4_C2",
+            "Name": "Test for Chapter 2",
+            "Description": "This test covers the content of Chapter 2: Big Data Ecosystems.",
+            "weight": "0.15",
+            "Questions": [
+                    "Q41", "Q42", "Q45", "Q46", "Q48", "Q49", "Q51", "Q52", "Q54", "Q55", "Q56", "Q58", "Q59", "Q60", "Q62", "Q63", "Q64", "Q66", "Q67", "Q68", "Q70", "Q43", "Q47", "Q53", "Q65"
+            ]
+        },
+        {
+            "TestID": "T5_C2",
+            "Name": "Test for Chapter 2",
+            "Description": "This test covers the content of Chapter 2: Big Data Ecosystems.",
+            "weight": "0.15",
+            "Questions": [
+                    "Q43", "Q44", "Q46", "Q47", "Q48", "Q50", "Q51", "Q53", "Q54", "Q55", "Q57", "Q58", "Q60", "Q61", "Q63", "Q64", "Q65", "Q66", "Q67", "Q69", "Q70", "Q42", "Q49", "Q56", "Q62"
+            ]
+        }
+    ]
+   },
+   {
+    "ChapterID": "C3",
+    "weight": 0.15,
+    "Test": [
+        {
+            "TestID": "T1_C3",
+            "Name": "Test for Chapter 3",
+            "Description": "This test covers the content of Chapter 3: Big Data Storage.",
+            "weight": "0.15",
+            "Questions": [
+                    "Q71", "Q72", "Q74", "Q75", "Q77", "Q78", "Q80", "Q81", "Q83", "Q84", "Q86", "Q87", "Q89", "Q90", "Q92", "Q93", "Q95", "Q96", "Q98", "Q99", "Q101", "Q102", "Q104", "Q106", "Q108"
+            ]
+        },
+        {
+            "TestID": "T2_C3",
+            "Name": "Test for Chapter 3",
+            "Description": "This test covers the content of Chapter 3: Big Data Storage.",
+            "weight": "0.15",
+            "Questions": [
+                    "Q72", "Q73", "Q75", "Q76", "Q78", "Q79", "Q81", "Q82", "Q84", "Q85", "Q87", "Q88", "Q90", "Q91", "Q93", "Q94", "Q96", "Q97", "Q99", "Q100", "Q102", "Q103", "Q105", "Q107", "Q109"
+            ]   
+        },
+        {
+            "TestID": "T3_C3",
+            "Name": "Test for Chapter 3",
+            "Description": "This test covers the content of Chapter 3: Big Data Storage.",
+            "weight": "0.15",
+            "Questions": [
+                    "Q71", "Q73", "Q74", "Q76", "Q77", "Q79", "Q80", "Q82", "Q83", "Q85", "Q86", "Q88", "Q89", "Q91", "Q92", "Q94", "Q95", "Q97", "Q98", "Q100", "Q101", "Q103", "Q104", "Q108", "Q110"
+            ]
+        },
+        {
+            "TestID": "T4_C3",
+            "Name": "Test for Chapter 3",
+            "Description": "This test covers the content of Chapter 3: Big Data Storage.",
+            "weight": "0.15",
+            "Questions": [
+                    "Q72", "Q74", "Q75", "Q77", "Q78", "Q80", "Q81", "Q83", "Q84", "Q86", "Q87", "Q89", "Q90", "Q92", "Q93", "Q95", "Q96", "Q98", "Q99", "Q101", "Q102", "Q105", "Q106", "Q109", "Q110"
+            ]
+        },
+        {
+            "TestID": "T5_C3",
+            "Name": "Test for Chapter 3",
+            "Description": "This test covers the content of Chapter 3: Big Data Storage.",
+            "weight": "0.15",
+            "Questions": [
+                    "Q71", "Q73", "Q76", "Q79", "Q82", "Q85", "Q88", "Q91", "Q94", "Q97", "Q100", "Q103", "Q104", "Q105", "Q106", "Q107", "Q108", "Q109", "Q110", "Q72", "Q75", "Q78", "Q81", "Q84", "Q87"
+            ]
+        }
+    ]
+   },
+   {
+    "ChapterID": "C4",
+    "weight": 0.15,
+    "Test": [
+        {
+            "TestID": "T1_C4",
+            "Name": "Test for Chapter 4",
+            "Description": "This test covers the content of Chapter 4: Big Data Paradigms.",
+            "weight": "0.15",
+            "Questions": [
+                    "Q111", "Q113", "Q115", "Q117", "Q119", "Q121", "Q123", "Q125", "Q127", "Q129", "Q131", "Q133", "Q135", "Q137", "Q139", "Q141", "Q143", "Q145", "Q147", "Q149", "Q151", "Q153", "Q155", "Q157", "Q159"
+            ]
+        },
+        {
+            "TestID": "T2_C4",
+            "Name": "Test for Chapter 4",
+            "Description": "This test covers the content of Chapter 4: Big Data Paradigms.",
+            "weight": "0.15",
+            "Questions": [
+                    "Q112", "Q114", "Q116", "Q118", "Q120", "Q122", "Q124", "Q126", "Q128", "Q130", "Q132", "Q134", "Q136", "Q138", "Q140", "Q142", "Q144", "Q146", "Q148", "Q150", "Q152", "Q154", "Q156", "Q158", "Q160"
+            ]   
+        },
+        {
+            "TestID": "T3_C4",
+            "Name": 	"Test for Chapter 4",
+           	"Description": 	"This test covers the content of Chapter 4: Big Data Paradigms.",
+           	"weight": 	"0.15",
+           	"Questions": [
+                   	"Q111", "Q112", "Q115", "Q116", "Q119", "Q120", "Q123", "Q124", "Q127", "Q128", "Q131", "Q132", "Q135", "Q136", "Q139", "Q140", "Q143", "Q144", "Q147", "Q148", "Q151", "Q152", "Q155", "Q156", "Q161"
+            ]
+        },
+        {
+            "TestID": "T4_C4",
+            "Name": "Test for Chapter 4",
+            "Description": "This test covers the content of Chapter 4: Big Data Paradigms.",
+            "weight": "0.15",
+            "Questions": [
+                    "Q113", "Q114", "Q117", "Q118", "Q121", "Q122", "Q125", "Q126", "Q129", "Q130", "Q133", "Q134", "Q137", "Q138", "Q141", "Q142", "Q145", "Q146", "Q149", "Q150", "Q153", "Q154", "Q157", "Q158", "Q162"
+            ]
+        },
+        {
+            "TestID": "T5_C4",
+            "Name": 	"Test for Chapter 4",
+           	"Description": 	"This test covers the content of Chapter 4: Big Data Paradigms.",
+           	"weight": 	"0.15",
+           	"Questions": [
+                   	"Q163", "Q164", "Q165", "Q166", "Q167", "Q168", "Q169", "Q170", "Q171", "Q172", "Q173", "Q174", "Q175", "Q111", "Q118", "Q125", "Q132", "Q139", "Q146", "Q153", "Q160", "Q112", "Q119", "Q126", "Q133"
+            ]
+         }
+        ]   
+    },
+    {
+        "ChapterID": "C5",
+        "weight": 0.2,
+        "Test": [
+            {
+                "TestID": "T1_C5",
+                "Name": "Test for Chapter 5",
+                "Description": "This test covers the content of Chapter 5: Spark.",
+                "weight": "0.2",
+                "Questions": [
+                        "Q176", "Q178", "Q180", "Q182", "Q184", "Q186", "Q188", "Q190", "Q192", "Q194", "Q196", "Q198", "Q200", "Q202", "Q204", "Q206", "Q208", "Q210", "Q212", "Q214", "Q216", "Q218", "Q220", "Q222", "Q224"
+                ]
+            },
+            {
+                "TestID": "T2_C5",
+                "Name": "Test for Chapter 5",
+                "Description": "This test covers the content of Chapter 5: Spark.",
+                "weight": "0.2",
+                "Questions": [
+                        "Q177", "Q179", "Q181", "Q183", "Q185", "Q187", "Q189", "Q191", "Q193", "Q195", "Q197", "Q199", "Q201", "Q203", "Q205", "Q207", "Q209", "Q211", "Q213", "Q215", "Q217", "Q219", "Q221", "Q223", "Q225"
+                ]   
+            },
+            {
+                "TestID": "T3_C5",
+                "Name": 	"Test for Chapter 5",
+                "Description": 	"This test covers the content of Chapter 5: Spark.",
+                "weight": 	"0.2",
+                "Questions": [
+                        "Q176", "Q177", "Q180", "Q181", "Q184", "Q185", "Q188", "Q189", "Q192", "Q193", "Q196", "Q197", "Q200", "Q201", "Q204", "Q205", "Q208", "Q209", "Q212", "Q213", "Q216", "Q217", "Q220", "Q221", "Q226"
+                ]
+            },
+            {
+                "TestID": "T4_C5",
+                "Name": "Test for Chapter 5",
+                "Description": "This test covers the content of Chapter 5: Spark.",
+                "weight": "0.2",
+                "Questions": [
+                        "Q178", "Q179", "Q182", "Q183", "Q186", "Q187", "Q190", "Q191", "Q194", "Q195", "Q198", "Q199", "Q202", "Q203", "Q206", "Q207", "Q210", "Q211", "Q214", "Q215", "Q218", "Q219", "Q222", "Q223", "Q227"
+                ]
+            },
+            {
+                "TestID": "T5_C5",
+                "Name": 	"Test for Chapter 5",
+                "Description": 	"This test covers the content of Chapter 5: Spark.",
+                "weight": 	"0.2",
+                "Questions": [
+                        "Q224", "Q225", "Q226", "Q227", "Q176", "Q181", "Q186", "Q191", "Q196", "Q201", "Q206", "Q211", "Q216", "Q221", "Q177", "Q182", "Q187", "Q192", "Q197", "Q202", "Q207", "Q212", "Q217", "Q222", "Q223"
+                ]
+            }
+            ]  
+    },
+    {
+        "ChapterID": "C6",
+        "weight": 0.15,
+        "Test": [
+            {
+                "TestID": "T1_C6",
+                "Name": "Test for Chapter 6",
+                "Description": "This test covers the content of Chapter 6: Spark DataFrame.",
+                "weight": "0.2",
+                "Questions": [
+                        "Q228", "Q230", "Q232", "Q234", "Q236", "Q238", "Q240", "Q242", "Q244", "Q246", "Q248", "Q250", "Q252", "Q254", "Q256", "Q258", "Q260", "Q262", "Q264", "Q266", "Q268", "Q270", "Q272", "Q274", "Q276"
+                ]
+            },
+            {
+                "TestID": "T2_C6",
+                "Name": "Test for Chapter 6",
+                "Description": "This test covers the content of Chapter 6: Spark DataFrame.",
+                "weight": "0.2",
+                "Questions": [
+                        "Q229", "Q231", "Q233", "Q235", "Q237", "Q239", "Q241", "Q243", "Q245", "Q247", "Q249", "Q251", "Q253", "Q255", "Q257", "Q259", "Q261", "Q263", "Q265", "Q267", "Q269", "Q271", "Q273", "Q275", "Q277"
+                ]   
+            },
+            {
+                "TestID": "T3_C6",
+                "Name": 	"Test for Chapter 6",
+                "Description": 	"This test covers the content of Chapter 6: Spark DataFrame.",
+                "weight": 	"0.2",
+                "Questions": [
+                        "Q228", "Q229", "Q232", "Q233", "Q236", "Q237", "Q240", "Q241", "Q244", "Q245", "Q248", "Q249", "Q252", "Q253", "Q256", "Q257", "Q260", "Q261", "Q264", "Q265", "Q268", "Q269", "Q272", "Q273", "Q278"
+                ]
+            },
+            {
+                "TestID": "T4_C6",
+                "Name": "Test for Chapter 6",
+                "Description": "This test covers the content of Chapter 6: Spark DataFrame.",
+                "weight": "0.2",
+                "Questions": [
+                        "Q230", "Q231", "Q234", "Q235", "Q238", "Q239", "Q242", "Q243", "Q246", "Q247", "Q250", "Q251", "Q254", "Q255", "Q258", "Q259", "Q262", "Q263", "Q266", "Q267", "Q270", "Q271", "Q274", "Q275", "Q279"
+                ]
+            },
+            {
+                "TestID": "T5_C6",
+                "Name": 	"Test for Chapter 6",
+                "Description": 	"This test covers the content of Chapter 6: Spark DataFrame.",
+                "weight": 	"0.2",
+                "Questions": [
+                        "Q280", "Q281", "Q282", "Q283", "Q284", "Q285", "Q286", "Q287", "Q288", "Q289", "Q290", "Q291", "Q292", "Q293", "Q294", "Q295", "Q296", "Q228", "Q233", "Q238", "Q243", "Q248", "Q253", "Q258", "Q263"
+                ]
+            }
+            ]  
+    }
+]

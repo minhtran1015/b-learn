@@ -38,6 +38,7 @@ small-data/**/*.csv
 small-data/**/*.json
 !small-data/Lecture_Bank.json
 !small-data/Question_Bank.json
+!small-data/Test_Bank.json
 **/_SUCCESS
 infra/tfplan
 mlflow.db
