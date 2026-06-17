@@ -20,7 +20,8 @@ Thumbs.db
 /Ednet_2
 /OULAD
 /SED
-/large-data
+/large-data/*
+!/large-data/Question_Bank.json
 /.venv
 *.pyc
 *.jar
@@ -36,6 +37,7 @@ full_data_manifest.json
 /infra/staging/
 small-data/**/*.csv
 small-data/**/*.json
+!small-data/Lecture_Bank.json
 **/_SUCCESS
 infra/tfplan
 mlflow.db
