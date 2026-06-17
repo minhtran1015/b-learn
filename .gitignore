@@ -58,3 +58,4 @@ streamlit_example/
 # Allow READMEs
 !benchmarks/README.md
 !frontend-demo/GUIDE.md
+!small-data/Data/**/*.md
