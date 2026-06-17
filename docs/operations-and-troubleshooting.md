@@ -65,6 +65,37 @@ make kafka-topics-list
 make kafka-consume-stream
 ```
 
+## 2.1 Kiem tra local demo truoc khi vao phong bao ve
+
+Neu demo chay tren may dev ca frontend va backend gateway, dung cap cong sau:
+
+- Frontend local dev: `http://localhost:5173`
+- API Gateway local: `http://127.0.0.1:8000`
+
+Thu tu khoi dong de tranh cache cu:
+
+```bash
+source .venv/bin/activate
+python backend-api/serving_gateway.py
+npm --prefix frontend-demo run dev
+```
+
+Kiem tra nhanh backend da san sang:
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+Kiem tra payload live cho mot hoc vien:
+
+```bash
+curl -H "Authorization: Bearer <token>" \
+  http://127.0.0.1:8000/recommendations/<student_hash>
+```
+
+Neu response tra ve `data_source.mode = live_event_log` thi du lieu dang lay tu stream live.
+Neu tra ve `seeded_cache` thi moi dang dung du lieu nap san/du phong.
+
 ## 3. Troubleshooting Playbook
 
 ## Su co 1: `lost connection to pod` hoac `sandbox not found`
@@ -126,12 +157,31 @@ Y nghia van hanh:
 Khuyen nghi:
 - Van can theo doi metric data freshness va so luong ban ghi de dam bao chat luong du lieu dau ra.
 
+## Su co 4: `401 Unauthorized` hoac `JWT Token da het han hoac khong hop le`
+
+Trieu chung:
+- Trang analytics hien `Failed to fetch recommendations (401)`.
+- Backend tra ve thong diep `JWT Token đã hết hạn hoặc không hợp lệ`.
+
+Nguyen nhan goc:
+- Trinh duyet dang giu access token cu trong `localStorage` hoac cookie.
+- Token ban dau da het han sau khi restart backend/frontend.
+
+Cach xu ly nhanh:
+1. Dang xuat va dang nhap lai tren frontend.
+2. Neu van con loi, xoa `localStorage` cua origin `http://localhost:5173`.
+3. Khoi dong lai backend gateway roi load lai trang analytics.
+4. Kiem tra lai `http://127.0.0.1:8000/docs` va endpoint `recommendations` bang token moi.
+
 ## 4. Checklist truoc khi vao phong bao ve
 
 - [ ] Da chay xong `make aks-start`.
 - [ ] Da chay xong `make streaming-resume`.
-- [ ] Da chay xong `make demo-connect` va truy cap duoc cong 8000/8080.
+- [ ] Da chay xong `make demo-connect` va truy cap duoc cong 8000/8080 hoac frontend local `5173` khi demo tren may dev.
+- [ ] Frontend da mo dung nguon `http://localhost:5173` neu chay local dev.
+- [ ] Backend gateway tra `200 OK` tai `http://127.0.0.1:8000/health`.
 - [ ] Terminal theo doi Kafka dang mo (`make kafka-consume-stream`).
+- [ ] Analytics dashboard hien `data_source.mode = live_event_log` khi co stream live.
 - [ ] Dashboard giang vien hien thi Grafana va bang SLA Drift.
 
 ## 5. Checklist ket thuc phien demo

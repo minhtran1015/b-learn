@@ -24,7 +24,7 @@ export default function App() {
       <Route path="register" element={<AuthPage mode="register" />} />
       <Route element={<AppLayout />}>
         <Route index element={<Navigate to="/courses" replace />} />
-        <Route path="analytics" element={<Navigate to="/courses/machine-learning/analytics" replace />} />
+        <Route path="analytics" element={<Navigate to="/courses/big-data-course/analytics" replace />} />
         <Route path="calendar" element={<CalendarPage />} />
         <Route path="messages" element={<MessagesPage />} />
         <Route path="help" element={<HelpPage />} />

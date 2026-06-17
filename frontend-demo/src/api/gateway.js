@@ -2,8 +2,39 @@ const TOKEN_KEY = 'blearn.gatewayToken';
 const STUDENT_HASH_KEY = 'blearn.studentHash';
 const MATERIALS_CACHE_KEY = 'blearn.recommendationMaterials';
 
-const rawBaseUrl = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:8000';
-const API_BASE_URL = rawBaseUrl.replace(/\/$/, '');
+function normalizeBaseUrl(value) {
+  return value.trim().replace(/\/$/, '');
+}
+
+export function resolveGatewayBaseUrl() {
+  const configured = import.meta.env.VITE_GATEWAY_URL?.trim();
+  if (configured) {
+    return normalizeBaseUrl(configured);
+  }
+
+  if (typeof window !== 'undefined' && window.__BLEARN_GATEWAY_URL__) {
+    return normalizeBaseUrl(window.__BLEARN_GATEWAY_URL__);
+  }
+
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    const { protocol, hostname } = window.location;
+    const localHosts = new Set(['localhost', '127.0.0.1', '::1']);
+    const configuredPort = import.meta.env.VITE_GATEWAY_PORT?.trim() || (window.__BLEARN_GATEWAY_PORT__ ? String(window.__BLEARN_GATEWAY_PORT__) : '8000');
+    const port = localHosts.has(hostname) ? configuredPort : (window.__BLEARN_GATEWAY_PORT__ ? String(window.__BLEARN_GATEWAY_PORT__) : '8000');
+    const targetHost = localHosts.has(hostname) ? '127.0.0.1' : hostname;
+    return `${protocol}//${targetHost}:${port}`;
+  }
+
+  return 'http://localhost:8000';
+}
+
+export function gatewayUrl(path = '') {
+  const baseUrl = resolveGatewayBaseUrl();
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${baseUrl}${normalizedPath}`;
+}
+
+const API_BASE_URL = resolveGatewayBaseUrl();
 const OVERRIDE_STUDENT_HASH = import.meta.env.VITE_STUDENT_ID_HASH || '';
 
 function getToken() {
@@ -90,12 +121,37 @@ export async function loginGateway({ username, role = 'student' }) {
 
 export async function ensureGatewaySession(user) {
   const username = user?.email || user?.id || 'student@blearn.demo';
-  const token = getToken() || (await loginGateway({ username, role: 'student' }));
+  const token = await loginGateway({ username, role: 'student' });
   const studentHash = await resolveStudentHash(user);
   return { token, studentHash };
 }
 
-export async function trackStudentClick(studentId, siteId) {
+async function fetchWithGatewayRetry(url, options, { username, role = 'student' } = {}) {
+  const token = getToken() || (await loginGateway({ username, role }));
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...(options?.headers || {}),
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (response.status !== 401) {
+    return response;
+  }
+
+  clearGatewaySession();
+  const refreshedToken = await loginGateway({ username, role });
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...(options?.headers || {}),
+      Authorization: `Bearer ${refreshedToken}`,
+    },
+  });
+}
+
+export async function trackStudentClick(studentId, siteId, metadata = {}) {
   const studentHash = studentId || readStudentHash();
   const numericSiteId = Number(siteId);
 
@@ -104,75 +160,61 @@ export async function trackStudentClick(studentId, siteId) {
     return false;
   }
 
-  // 1. Dispatch "Queueing to Kafka" status event
   window.dispatchEvent(new CustomEvent('blearn-toast', {
-    detail: { message: `Đang gửi log tương tác với học liệu (site=${numericSiteId}) qua Kafka...`, type: 'info' }
+    detail: { message: 'Đang ghi nhận hoạt động học tập...', type: 'info' }
   }));
 
   try {
-    const token = getToken();
-    if (!token) {
-      throw new Error('missing JWT token');
-    }
-
-    const response = await fetch(`${API_BASE_URL}/track-click`, {
+    const response = await fetchWithGatewayRetry(`${API_BASE_URL}/track-click`, {
       method: 'POST',
       keepalive: true,
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         student_id_hash: studentHash,
         id_site: numericSiteId,
+        material_title: metadata.title || metadata.material_title || '',
+        material_type: metadata.type || metadata.material_type || '',
+        material_chapter: metadata.chapter || metadata.material_chapter || '',
+        material_duration: metadata.duration || metadata.material_duration || '',
+        duration_seconds: Number(metadata.duration_seconds || metadata.durationSeconds || 0),
+        event_type: metadata.event_type || metadata.eventType || 'click',
         page_path: window.location.pathname,
         source: 'frontend-demo',
       }),
-    });
+    }, { username: 'student@blearn.demo', role: 'student' });
 
     if (!response.ok) {
-      if (response.status === 401) {
-        clearGatewaySession();
-        window.location.reload();
-      }
       const detail = await response.text();
       throw new Error(`track-click failed (${response.status}): ${detail || 'Unknown error'}`);
     }
 
-    // 2. Dispatch "Success" event
     window.dispatchEvent(new CustomEvent('blearn-toast', {
-      detail: { message: `Ghi nhận tương tác thành công (site=${numericSiteId})`, type: 'success' }
+      detail: { message: 'Đã ghi nhận hoạt động học tập.', type: 'success' }
     }));
 
     return true;
   } catch (error) {
     console.log('track-click fallback:', error);
-    // 3. Dispatch "Fallback/Error" event
     window.dispatchEvent(new CustomEvent('blearn-toast', {
-      detail: { message: `Lỗi Kafka fallback: Ghi log local (site=${numericSiteId})`, type: 'error' }
+      detail: { message: 'Chưa kết nối được hệ thống ghi nhận, hoạt động đã được lưu tạm.', type: 'error' }
     }));
     return false;
   }
 }
 
 export async function fetchRecommendations(studentHash) {
-  const token = getToken();
-  if (!token) {
-    throw new Error('Chưa có JWT token, vui lòng đăng nhập lại.');
-  }
-
-  const response = await fetch(`${API_BASE_URL}/recommendations/${studentHash}`, {
+  const cacheBuster = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const response = await fetchWithGatewayRetry(`${API_BASE_URL}/recommendations/${studentHash}?_ts=${encodeURIComponent(cacheBuster)}`, {
     method: 'GET',
+    cache: 'no-store',
     headers: {
-      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
     },
-  });
+  }, { username: 'student@blearn.demo', role: 'student' });
 
   if (!response.ok) {
-    if (response.status === 401) {
-      clearGatewaySession();
-      window.location.reload();
-    }
     const detail = await response.text();
     throw new Error(`Lấy recommendations thất bại (${response.status}): ${detail || 'Unknown error'}`);
   }

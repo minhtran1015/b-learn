@@ -10,6 +10,32 @@ npm run dev
 
 Sau đó mở địa chỉ Vite hiển thị trong terminal, thường là `http://localhost:5173`.
 
+## Public qua ngrok
+
+Nếu bạn muốn chia sẻ frontend ra internet, có 2 cách:
+
+Chạy 1 lệnh:
+
+```bash
+cd frontend-demo
+npm run public
+```
+
+Hoặc nếu muốn tách riêng:
+
+```bash
+cd frontend-demo
+npm run dev
+```
+
+và ở terminal khác:
+
+```bash
+npm run tunnel
+```
+
+Ngrok sẽ in ra một URL dạng `https://xxxx.ngrok-free.app`, dùng URL đó để mở frontend từ bên ngoài máy của bạn.
+
 ## Đã làm
 
 - Scaffold app React + Vite trong riêng thư mục `frontend-demo/`.

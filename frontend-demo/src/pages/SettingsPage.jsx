@@ -1,5 +1,6 @@
 import { Bell, LockKeyhole, Moon, Save, ShieldCheck, RotateCcw } from 'lucide-react';
 import PageHeader from '../components/PageHeader.jsx';
+import { gatewayUrl } from '../api/gateway.js';
 
 const settings = [
   { icon: Bell, title: 'Nhắc lịch học và deadline', description: 'Gửi thông báo trước hạn nộp 24 giờ và 2 giờ.' },
@@ -12,11 +13,9 @@ export default function SettingsPage() {
   const handleResetDemo = async () => {
     if (window.confirm("Bạn có chắc chắn muốn reset toàn bộ trạng thái demo trên cả client và Serving Gateway?")) {
       try {
-        const rawBaseUrl = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:8000';
-        const API_BASE_URL = rawBaseUrl.replace(/\/$/, '');
         const token = localStorage.getItem('blearn.gatewayToken');
         if (token) {
-          await fetch(`${API_BASE_URL}/reset-assessment-shifts`, {
+          await fetch(gatewayUrl('/reset-assessment-shifts'), {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`

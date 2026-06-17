@@ -467,6 +467,7 @@ demo-connect:
 	@echo "🔌 Đang kết nối và chuyển tiếp cổng về máy Mac..."
 	@echo "   • API Gateway: http://localhost:8000"
 	@echo "   • Frontend Demo: http://localhost:8080"
+	@echo "   • Kafka Broker: localhost:9092"
 	@echo "   • Redis: localhost:6379"
 	@echo "   • MLflow Server: http://localhost:5005"
 	@echo "   • Project Nessie: http://localhost:19120"
@@ -474,6 +475,7 @@ demo-connect:
 	@$(MAKE) demo-wait-ready
 	@nohup kubectl port-forward deployment/blearn-api-gateway 8000:8000 -n blearn-medallion >/dev/null 2>&1 &
 	@nohup kubectl port-forward deployment/blearn-frontend-demo 8080:80 -n blearn-medallion >/dev/null 2>&1 &
+	@nohup kubectl port-forward service/kafka-service 9092:29092 -n blearn-medallion >/dev/null 2>&1 &
 	@nohup kubectl port-forward service/redis-service 6379:6379 -n blearn-medallion >/dev/null 2>&1 &
 	@nohup kubectl port-forward service/mlflow-service 5005:5000 -n blearn-medallion >/dev/null 2>&1 &
 	@nohup kubectl port-forward service/nessie-service 19120:19120 -n blearn-medallion >/dev/null 2>&1 &
@@ -535,4 +537,3 @@ demo-status:
 	@echo "📈 Resource Utilization (CPU & Memory)"
 	@echo "===================================================================="
 	@kubectl top pods -n blearn-medallion
-

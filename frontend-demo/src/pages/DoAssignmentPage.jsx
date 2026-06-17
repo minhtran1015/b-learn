@@ -1,9 +1,10 @@
 import { ArrowLeft, ArrowRight, Timer } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../auth/AuthContext.jsx';
-import { ensureGatewaySession } from '../api/gateway.js';
+import { ensureGatewaySession, gatewayUrl } from '../api/gateway.js';
 import { customCourseAssignments } from '../data/mockData.js';
+import { PASSING_SCORE, writeCompetencyProgress } from '../utils/progress.js';
 import questionBank from '../data/Question_Bank.json';
 
 // ─── Constant: ID khóa học tùy chỉnh ────────────────────────────────────────
@@ -107,16 +108,15 @@ export default function DoAssignmentPage() {
   const { currentUser } = useAuth();
   const [studentHash, setStudentHash] = useState('');
   const [token, setToken] = useState('');
+  const assignmentStartRef = useRef(Date.now());
 
   const isCustomCourse = courseId === CUSTOM_COURSE_ID;
 
-  // Tìm thông tin assignment trong customCourseAssignments để lấy id_site_mapping
   const customAssignmentMeta = useMemo(() => {
     if (!isCustomCourse) return null;
     return customCourseAssignments.find(a => a.id === assignmentId) ?? customCourseAssignments[0];
   }, [isCustomCourse, assignmentId]);
 
-  // Lấy câu hỏi tương ứng cho chương đó từ Question_Bank.json
   const activeQuestions = useMemo(() => {
     if (!isCustomCourse) return questionsList;
     if (!customAssignmentMeta) return [];
@@ -146,6 +146,7 @@ export default function DoAssignmentPage() {
   useEffect(() => {
     setAnswersState(Array(activeQuestions.length).fill(null));
     setCurrentQuestion(0);
+    assignmentStartRef.current = Date.now();
   }, [activeQuestions]);
 
   // Timer logic with safe cleanup
@@ -178,6 +179,11 @@ export default function DoAssignmentPage() {
   };
 
   const handleSubmit = async () => {
+    if (activeQuestions.length === 0) {
+      alert("Chưa có câu hỏi cho bài tập này. Vui lòng thử lại sau!");
+      return;
+    }
+
     // Check if at least one question is answered
     const answeredCount = answersState.filter((a) => a !== null).length;
     if (answeredCount === 0) {
@@ -195,24 +201,13 @@ export default function DoAssignmentPage() {
         }
       });
       const calculatedScore = Math.round((correctCount / activeQuestions.length) * 100);
+      const durationSeconds = Math.max(1, Math.ceil((Date.now() - assignmentStartRef.current) / 1000));
 
-      // ─── OULAD MAPPING LAYER ─────────────────────────────────────────────
-      // Với khóa tùy chỉnh: dùng id_site_mapping từ customCourseAssignments làm
-      // assignment_id thực sự gửi sang API (OULAD assessment ID).
-      // Với khóa thông thường: dùng assignmentId từ URL params như cũ.
       const effectiveAssignmentId = isCustomCourse && customAssignmentMeta?.id_site_mapping
         ? customAssignmentMeta.id_site_mapping
         : assignmentId;
 
-      console.log(
-        `[OULAD Mapping] Submitting: display_id=${assignmentId} → oulad_id=${effectiveAssignmentId}`,
-        { isCustomCourse, score: calculatedScore }
-      );
-
-      const rawBaseUrl = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:8000';
-      const API_BASE_URL = rawBaseUrl.replace(/\/$/, '');
-
-      const response = await fetch(`${API_BASE_URL}/submit-assessment`, {
+      const response = await fetch(gatewayUrl('/submit-assessment'), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -220,8 +215,13 @@ export default function DoAssignmentPage() {
         },
         body: JSON.stringify({
           student_id_hash: studentHash,
-          assignment_id: effectiveAssignmentId, // OULAD ID thực, không phải display ID
-          score: calculatedScore
+          assignment_id: effectiveAssignmentId,
+          score: calculatedScore,
+          chapter_id: customAssignmentMeta?.chapterId,
+          assignment_title: customAssignmentMeta?.title,
+          duration_seconds: durationSeconds,
+          question_count: activeQuestions.length,
+          correct_count: correctCount
         })
       });
 
@@ -231,15 +231,22 @@ export default function DoAssignmentPage() {
 
       // Lưu trạng thái nộp bài local (dùng display ID để cập nhật UI)
       const submitted = JSON.parse(localStorage.getItem('blearn.submitted_assignments') || '[]');
-      if (!submitted.includes(assignmentId)) {
+      const isPassed = calculatedScore >= PASSING_SCORE;
+      if ((!isCustomCourse || isPassed) && !submitted.includes(assignmentId)) {
         submitted.push(assignmentId);
         localStorage.setItem('blearn.submitted_assignments', JSON.stringify(submitted));
       }
+      writeCompetencyProgress(customAssignmentMeta?.chapterId, {
+        score: calculatedScore,
+        submissions: 1,
+        correct_count: correctCount,
+        question_count: activeQuestions.length,
+      });
 
-      const msgSuffix = isCustomCourse
-        ? `(OULAD ID: ${effectiveAssignmentId})`
+      const passMessage = isCustomCourse && !isPassed
+        ? ` Bạn chưa đạt passing score ${PASSING_SCORE}%, nên tiến độ hoàn thành chưa tăng.`
         : '';
-      alert(`Nộp bài thành công! Điểm của bạn: ${calculatedScore}%. ${msgSuffix} Rủi ro bỏ học đã được cập nhật.`);
+      alert(`Nộp bài thành công! Điểm của bạn: ${calculatedScore}%. ${passMessage} Phân tích học tập đã được cập nhật.`);
       navigate(`/courses/${courseId}/assignments`);
     } catch (err) {
       console.error("Lỗi nộp bài:", err);
@@ -256,8 +263,15 @@ export default function DoAssignmentPage() {
   };
 
   // Safe question boundary guard
-  const activeQuiz = activeQuestions[currentQuestion] || activeQuestions[0];
-  const progressPercent = Math.round((answersState.filter(a => a !== null).length / activeQuestions.length) * 100);
+  const activeQuiz = activeQuestions[currentQuestion] || {
+    id: 'empty',
+    question: 'Chưa có câu hỏi cho bài tập này.',
+    answers: [],
+    correctAnswerIdx: 0,
+  };
+  const progressPercent = activeQuestions.length > 0
+    ? Math.round((answersState.filter(a => a !== null).length / activeQuestions.length) * 100)
+    : 0;
 
   return (
     <div className="exam-layout">

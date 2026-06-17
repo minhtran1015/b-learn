@@ -188,6 +188,41 @@ CATEGORICAL_FEATURES = [
     "disability",
 ]
 
+DEMO_STUDENT_HASH = os.getenv(
+    "BLEARN_DEMO_STUDENT_HASH",
+    "79d86f4d0c556c37c879fb9ba278f9996d5f1f50468d8e26e13a19ba6b09c219",
+)
+
+DEMO_ITEM_SPECS = [
+    (
+        546803,
+        [0.92, 0.12, 0.28],
+        "Giới thiệu về Neural Networks (Học phần #546803)",
+        "Video bài giảng",
+        "Chương 1: Nền tảng Học máy",
+        "Mở khóa",
+        "35 phút",
+    ),
+    (
+        546652,
+        [0.84, 0.21, 0.34],
+        "Tài liệu tóm tắt: Các thuật toán cốt lõi (Học phần #546652)",
+        "PDF",
+        "Chương 2: Thuật toán cốt lõi",
+        "Mở khóa",
+        "18 trang",
+    ),
+    (
+        546732,
+        [0.79, 0.27, 0.41],
+        "Tối ưu hóa Mô hình Học máy Cơ bản (Học phần #546732)",
+        "Tài liệu đọc",
+        "Chương 3: Phân tích Dữ liệu Nâng cao",
+        "Mở khóa",
+        "28 phút",
+    ),
+]
+
 # In-memory store for live features and BKT masteries of students
 _student_live_features = {}  # {student_id_hash: {feature_name: value}}
 _student_bkt_mastery = {}    # {student_id_hash: {chapter_id: p_L}}
@@ -338,6 +373,419 @@ def load_lgbm_model():
     return None
 
 
+def _build_offline_demo_frame(file_name: str) -> pd.DataFrame:
+    """Sinh dữ liệu demo tối thiểu khi Serving artifacts chưa materialize được."""
+    if file_name == "user_embeddings.parquet":
+        return pd.DataFrame([
+            {
+                "student_id_hash": DEMO_STUDENT_HASH,
+                "user_embedding": [0.88, 0.18, 0.31],
+            },
+            {
+                "student_id_hash": "demo_peer_student_hash",
+                "user_embedding": [0.25, 0.64, 0.55],
+            },
+        ])
+
+    if file_name == "item_embeddings.parquet":
+        return pd.DataFrame([
+            {"id_site": item_id, "item_embedding": embedding}
+            for item_id, embedding, *_ in DEMO_ITEM_SPECS
+        ])
+
+    if file_name == "risk_predictions.parquet":
+        return pd.DataFrame([
+            {
+                "student_id_hash": DEMO_STUDENT_HASH,
+                "dropout_probability": 0.18,
+                "id_student": "demo-001",
+                "highest_education": "Đại học",
+            },
+            {
+                "student_id_hash": "demo_peer_student_hash",
+                "dropout_probability": 0.63,
+                "id_student": "demo-002",
+                "highest_education": "Cao đẳng",
+            },
+        ])
+
+    if file_name == "risk_features.parquet":
+        base = {col: 0.0 for col in GOLD_FEATURE_COLUMNS}
+        for cat in CATEGORICAL_FEATURES:
+            base[cat] = "Unknown"
+        base.update({
+            "code_module": "AAA",
+            "code_presentation": "2014J",
+            "gender": "M",
+            "region": "North",
+            "highest_education": "Đại học",
+            "imd_band": "50-60%",
+            "age_band": "0-35",
+            "disability": "N",
+            "total_clicks": 182.0,
+            "active_days": 14.0,
+            "avg_daily_clicks": 13.0,
+            "max_clicks_day": 31.0,
+            "engagement_span": 21.0,
+            "recent_weekly_rate": 9.0,
+            "recency_days": 3.0,
+            "engagement_momentum": 1.4,
+            "avg_score": 78.0,
+            "min_score": 62.0,
+            "submission_count": 4.0,
+            "late_submissions": 0.0,
+            "weighted_avg": 78.0,
+        })
+        peer = base.copy()
+        peer.update({
+            "code_module": "BBB",
+            "code_presentation": "2014B",
+            "gender": "F",
+            "region": "South",
+            "highest_education": "Cao đẳng",
+            "total_clicks": 74.0,
+            "active_days": 6.0,
+            "avg_daily_clicks": 12.0,
+            "max_clicks_day": 18.0,
+            "engagement_span": 10.0,
+            "recent_weekly_rate": 5.0,
+            "recency_days": 11.0,
+            "engagement_momentum": -1.2,
+            "avg_score": 54.0,
+            "min_score": 42.0,
+            "submission_count": 2.0,
+            "late_submissions": 1.0,
+            "weighted_avg": 54.0,
+        })
+        return pd.DataFrame([
+            {"student_id_hash": DEMO_STUDENT_HASH, **base},
+            {"student_id_hash": "demo_peer_student_hash", **peer},
+        ])
+
+    if file_name == "bkt_mastery.parquet":
+        return pd.DataFrame([
+            {"user_id": DEMO_STUDENT_HASH, "skill_name": "AAA_C1", "state_predictions": 0.84},
+            {"user_id": DEMO_STUDENT_HASH, "skill_name": "AAA_C2", "state_predictions": 0.72},
+            {"user_id": DEMO_STUDENT_HASH, "skill_name": "AAA_C3", "state_predictions": 0.88},
+            {"user_id": DEMO_STUDENT_HASH, "skill_name": "AAA_C4", "state_predictions": 0.64},
+            {"user_id": DEMO_STUDENT_HASH, "skill_name": "AAA_C5", "state_predictions": 0.76},
+            {"user_id": DEMO_STUDENT_HASH, "skill_name": "AAA_C6", "state_predictions": 0.69},
+        ])
+
+    if file_name == "lms_simulator.parquet":
+        rows = []
+        for item_id, _, title, item_type, chapter, status, duration in DEMO_ITEM_SPECS:
+            rows.append({
+                "id_site": item_id,
+                "title": title,
+                "type": item_type,
+                "chapter": chapter,
+                "status": status,
+                "duration": duration,
+                "activity_title": title,
+                "activity_name": title,
+                "resource_name": title,
+                "activity_type": item_type,
+                "resource_type": item_type,
+                "week_from": 1,
+                "week_to": 2,
+            })
+        return pd.DataFrame(rows)
+
+    raise FileNotFoundError(f"Không có fallback demo cho {file_name}")
+
+
+def _parse_event_time(value) -> datetime.datetime:
+    if isinstance(value, datetime.datetime):
+        return value if value.tzinfo else value.replace(tzinfo=datetime.timezone.utc)
+    if not value:
+        return datetime.datetime.now(datetime.timezone.utc)
+    try:
+        parsed = datetime.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=datetime.timezone.utc)
+    except Exception:
+        return datetime.datetime.now(datetime.timezone.utc)
+
+
+def _read_live_event_log() -> list[dict]:
+    events = shared_cache.get("event_log", [])
+    return events if isinstance(events, list) else []
+
+
+def _append_live_event(record: dict) -> None:
+    events = _read_live_event_log()
+    events.append(record)
+    shared_cache.set("event_log", events[-250:])
+
+
+def _get_title_overrides() -> dict:
+    overrides = shared_cache.get("title_overrides", {})
+    return overrides if isinstance(overrides, dict) else {}
+
+
+def _store_material_title_override(site_id: int | None, title: str, metadata: dict | None = None) -> None:
+    if site_id is None:
+        return
+    cleaned_title = _coerce_text(title)
+    if not cleaned_title:
+        return
+
+    overrides = _get_title_overrides()
+    material_titles = overrides.get("material_titles", {})
+    if not isinstance(material_titles, dict):
+        material_titles = {}
+
+    material_titles[str(site_id)] = {
+        "title": cleaned_title,
+        "type": _coerce_text((metadata or {}).get("material_type")),
+        "chapter": _coerce_text((metadata or {}).get("material_chapter")),
+        "duration": _coerce_text((metadata or {}).get("material_duration")),
+        "updated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    }
+    overrides["material_titles"] = material_titles
+    shared_cache.set("title_overrides", overrides)
+
+
+def _store_assignment_title_override(assignment_id: str, title: str, metadata: dict | None = None) -> None:
+    cleaned_assignment_id = _coerce_text(assignment_id)
+    cleaned_title = _coerce_text(title)
+    if not cleaned_assignment_id or not cleaned_title:
+        return
+
+    overrides = _get_title_overrides()
+    assignment_titles = overrides.get("assignment_titles", {})
+    if not isinstance(assignment_titles, dict):
+        assignment_titles = {}
+
+    assignment_titles[cleaned_assignment_id] = {
+        "title": cleaned_title,
+        "chapter_id": _coerce_text((metadata or {}).get("chapter_id")),
+        "updated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    }
+    overrides["assignment_titles"] = assignment_titles
+    shared_cache.set("title_overrides", overrides)
+
+
+def _resolve_title_override(site_id: int | None = None, assignment_id: str | None = None) -> str:
+    overrides = _get_title_overrides()
+    if site_id is not None:
+        material_titles = overrides.get("material_titles", {})
+        if isinstance(material_titles, dict):
+            entry = material_titles.get(str(site_id))
+            if isinstance(entry, dict):
+                title = _coerce_text(entry.get("title"))
+                if title:
+                    return title
+            elif isinstance(entry, str):
+                title = _coerce_text(entry)
+                if title:
+                    return title
+
+    if assignment_id is not None:
+        assignment_titles = overrides.get("assignment_titles", {})
+        if isinstance(assignment_titles, dict):
+            entry = assignment_titles.get(str(assignment_id))
+            if isinstance(entry, dict):
+                title = _coerce_text(entry.get("title"))
+                if title:
+                    return title
+            elif isinstance(entry, str):
+                title = _coerce_text(entry)
+                if title:
+                    return title
+
+    return ""
+
+
+def _count_student_events(student_hash: str, event_type: str | None = None) -> int:
+    events = _read_live_event_log()
+    count = 0
+    for ev in events:
+        if ev.get("student_id_hash") != student_hash:
+            continue
+        if event_type and ev.get("event_type") != event_type:
+            continue
+        count += 1
+    return count
+
+
+def _infer_chapter_id(assignment_id: str = "", explicit_chapter_id: str | None = None) -> str:
+    """Resolve the real course chapter instead of relying only on reused OULAD ids."""
+    normalized_chapter = str(explicit_chapter_id or "").strip().upper()
+    if normalized_chapter in {f"C{idx}" for idx in range(1, 7)}:
+        return normalized_chapter
+
+    assignment_text = str(assignment_id or "").strip().lower()
+    for ch in ["C1", "C2", "C3", "C4", "C5", "C6"]:
+        if ch.lower() in assignment_text:
+            return ch
+
+    oulad_default_map = {
+        "546803": "C1",
+        "546652": "C2",
+        "546732": "C3",
+    }
+    return oulad_default_map.get(str(assignment_id).strip(), "C1")
+
+
+def _build_competency_progress(student_hash: str) -> dict:
+    progress = {
+        ch: {
+            "score": 0,
+            "submissions": 0,
+            "correct_count": 0,
+            "question_count": 0,
+            "updated_at": None,
+        }
+        for ch in ["C1", "C2", "C3", "C4", "C5", "C6"]
+    }
+
+    cached_progress = shared_cache.get("assessment_progress", {}).get(student_hash, {})
+    if isinstance(cached_progress, dict):
+        for ch, item in cached_progress.items():
+            if ch in progress and isinstance(item, dict):
+                progress[ch].update(item)
+                if int(progress[ch].get("submissions", 0) or 0) <= 0 and float(progress[ch].get("score", 0) or 0) > 0:
+                    progress[ch]["submissions"] = 1
+
+    for ev in _read_live_event_log():
+        if ev.get("student_id_hash") != student_hash or ev.get("event_type") != "assessment_submission":
+            continue
+        ch = _infer_chapter_id(ev.get("assignment_id", ""), ev.get("chapter_id"))
+        if ch not in progress:
+            continue
+        event_time = _parse_event_time(ev.get("event_time")).isoformat()
+        score = int(round(float(ev.get("score", 0.0))))
+        previous_submissions = int(progress[ch].get("submissions", 0) or 0)
+        if progress[ch]["updated_at"] is None or event_time > str(progress[ch]["updated_at"]):
+            progress[ch] = {
+                "score": max(0, min(100, score)),
+                "submissions": previous_submissions + 1,
+                "correct_count": int(ev.get("correct_count") or 0),
+                "question_count": int(ev.get("question_count") or 0),
+                "updated_at": event_time,
+            }
+
+    return progress
+
+
+def _build_activity_levels(student_hash: str, days: int = 26 * 7) -> list[int]:
+    events = _read_live_event_log()
+    if not events:
+        return []
+    today = datetime.datetime.now(datetime.timezone.utc).date()
+    counts = [0 for _ in range(days)]
+
+    for ev in events:
+        if ev.get("student_id_hash") != student_hash:
+            continue
+        event_time = _parse_event_time(ev.get("event_time"))
+        delta_days = (today - event_time.date()).days
+        if 0 <= delta_days < days:
+            counts[days - 1 - delta_days] += 1
+
+    max_count = max(counts) if counts else 0
+    if max_count <= 0:
+        return []
+
+    levels = []
+    for count in counts:
+        level = int(round((count / max_count) * 4)) + 1
+        levels.append(max(1, min(5, level)))
+    return levels
+
+
+def _activity_label_for_event(event: dict, lms_lookup: dict[int, dict]) -> str:
+    if event.get("event_type") == "assessment_submission":
+        assignment_title = _coerce_text(event.get("assignment_title"))
+        if assignment_title:
+            return f"Nộp bài: {assignment_title}"
+        override_title = _resolve_title_override(assignment_id=event.get("assignment_id"))
+        if override_title:
+            return f"Nộp bài: {override_title}"
+        assignment_id = str(event.get("assignment_id", "")).strip()
+        if assignment_id:
+            return f"Nộp bài {assignment_id}"
+        return "Nộp bài"
+
+    material_title = _coerce_text(event.get("material_title"))
+    if material_title:
+        return f"Xem tài liệu: {material_title}"
+
+    site_id_raw = event.get("id_site")
+    try:
+        site_id = int(site_id_raw)
+    except Exception:
+        site_id = None
+
+    override_title = _resolve_title_override(site_id=site_id)
+    if override_title:
+        return f"Xem tài liệu: {override_title}"
+
+    if site_id is not None and site_id in lms_lookup:
+        record = lms_lookup[site_id]
+        value = _best_record_text(
+            record,
+            ["title", "activity_title", "activity_name", "resource_name", "name", "display_name", "label", "summary", "description"],
+        )
+        if value:
+            return value
+    return f"Xem tài liệu #{site_id_raw}" if site_id_raw is not None else "Xem tài liệu"
+
+
+def _build_recent_sessions(student_hash: str, lms_lookup: dict[int, dict], limit: int = 4) -> list[dict]:
+    events = [
+        ev for ev in _read_live_event_log()
+        if ev.get("student_id_hash") == student_hash and ev.get("event_type") in {"material_view", "assessment_submission"}
+    ]
+    if not events:
+        return []
+
+    recent_events = sorted(events, key=lambda ev: _parse_event_time(ev.get("event_time")), reverse=True)
+    result = []
+    seen_labels = set()
+    for ev in recent_events:
+        label = _activity_label_for_event(ev, lms_lookup)
+        label_key = f"{ev.get('event_type')}::{label}"
+        if label_key in seen_labels:
+            continue
+        seen_labels.add(label_key)
+        if ev.get("event_type") == "assessment_submission":
+            duration_seconds = int(ev.get("duration_seconds") or 0)
+            duration_minutes = max(1, int(np.ceil(duration_seconds / 60.0))) if duration_seconds > 0 else 15
+            result.append({
+                "title": label,
+                "kind": "assessment",
+                "score": int(round(float(ev.get("score", 0.0)))),
+                "time": duration_minutes,
+            })
+            continue
+
+        duration_seconds = int(ev.get("duration_seconds") or 0)
+        if duration_seconds > 0:
+            duration_minutes = max(1, int(np.ceil(duration_seconds / 60.0)))
+        else:
+            clicks = max(1, int(ev.get("sum_click", 1) or 1))
+            duration_minutes = max(1, min(20, int(np.ceil(clicks * 3 / 1.0))))
+        result.append({
+            "title": label,
+            "kind": "material",
+            "score": None,
+            "time": duration_minutes,
+        })
+        if len(result) >= limit:
+            break
+    return result
+
+
+def _recent_learning_events(student_hash: str, limit: int = 20) -> list[dict]:
+    events = [
+        ev for ev in _read_live_event_log()
+        if ev.get("student_id_hash") == student_hash and ev.get("event_type") in {"click", "material_view", "assessment_submission"}
+    ]
+    return sorted(events, key=lambda ev: _parse_event_time(ev.get("event_time")), reverse=True)[:limit]
+
+
 lgbm_explainer = None
 
 def get_shap_explanation(feats: dict) -> list:
@@ -459,6 +907,11 @@ class LoginRequest(BaseModel):
 class ClickTrackRequest(BaseModel):
     student_id_hash: str
     id_site: int
+    material_title: Optional[str] = None
+    material_type: Optional[str] = None
+    material_chapter: Optional[str] = None
+    material_duration: Optional[str] = None
+    duration_seconds: Optional[int] = None
     code_module: str = ""
     code_presentation: str = ""
     sum_click: int = 1
@@ -472,6 +925,11 @@ class AssessmentSubmitRequest(BaseModel):
     student_id_hash: str
     assignment_id: str
     score: float
+    chapter_id: Optional[str] = None
+    assignment_title: Optional[str] = None
+    duration_seconds: Optional[int] = None
+    question_count: Optional[int] = None
+    correct_count: Optional[int] = None
 
 
 def _fallback_click_log_path() -> str:
@@ -482,6 +940,11 @@ def _build_click_event(payload: ClickTrackRequest, current_user: dict) -> dict:
     return {
         "student_id_hash": payload.student_id_hash,
         "id_site": int(payload.id_site),
+        "material_title": payload.material_title,
+        "material_type": payload.material_type,
+        "material_chapter": payload.material_chapter,
+        "material_duration": payload.material_duration,
+        "duration_seconds": int(payload.duration_seconds or 0),
         "code_module": payload.code_module,
         "code_presentation": payload.code_presentation,
         "sum_click": int(payload.sum_click),
@@ -498,7 +961,7 @@ def _get_click_producer() -> KafkaProducer:
     global click_producer
     if click_producer is None:
         bootstrap_servers = os.getenv(
-            "KAFKA_BOOTSTRAP_SERVERS", "kafka-service.blearn-medallion.svc.cluster.local:9092"
+            "KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"
         )
         click_producer = KafkaProducer(
             bootstrap_servers=bootstrap_servers,
@@ -541,54 +1004,64 @@ def _publish_click_event_wrapper(record: dict) -> None:
 def load_parquet_file(file_name: str) -> pd.DataFrame:
     """Tải tệp Parquet từ Local Cache của Pod hoặc ADLS Gen2."""
     local_cache_path = f"/tmp/{file_name}"
-    
-    # Local mock nếu chạy offline
-    if not storage_key:
-        url = f"https://{storage_account}.blob.core.windows.net/serving/ui_data/{file_name}"
-        try:
-            return pd.read_parquet(url)
-        except Exception as e:
-            # Check local file in repository root or search locations
-            # Check if there is a local copy in the workspace
-            repo_cache_path = REPO_ROOT / file_name
-            if repo_cache_path.exists():
-                return pd.read_parquet(repo_cache_path)
-            # Try to check appDataDir or other temp folders if exists
-            raise e
-        
-    if not os.path.exists(local_cache_path):
-        try:
-            container_client = ContainerClient(
-                account_url=f"https://{storage_account}.blob.core.windows.net",
-                container_name="serving",
-                credential=storage_key
-            )
-            prefix = f"ui_data/{file_name}/"
-            blobs = container_client.list_blobs(name_starts_with=prefix)
-            dfs = []
-            
-            for b in blobs:
-                if b.name.endswith('.parquet') and b.size > 0:
-                    stream = io.BytesIO()
-                    container_client.get_blob_client(b.name).download_blob().readinto(stream)
-                    stream.seek(0)
-                    dfs.append(pd.read_parquet(stream))
-                    
-            if dfs:
-                combined_df = pd.concat(dfs, ignore_index=True)
-                combined_df.to_parquet(local_cache_path)
-            else:
-                url = f"https://{storage_account}.blob.core.windows.net/serving/ui_data"
-                df = pd.read_parquet(f"{url}/{file_name}")
-                df.to_parquet(local_cache_path)
-        except Exception:
-            url = f"https://{storage_account}.blob.core.windows.net/serving/ui_data"
-            df = pd.read_parquet(f"{url}/{file_name}")
-            df.to_parquet(local_cache_path)
-            
+    repo_candidates = [
+        REPO_ROOT / file_name,
+        REPO_ROOT / "data" / file_name,
+        REPO_ROOT / "benchmarks" / file_name,
+    ]
+
+    for candidate in repo_candidates:
+        if candidate.exists():
+            try:
+                return pd.read_parquet(candidate)
+            except Exception as e:
+                print(f"Local repo cache read failed for {candidate}: {e}")
+
     if os.path.exists(local_cache_path):
-        return pd.read_parquet(local_cache_path)
-    raise FileNotFoundError(f"Không thể tìm thấy tệp dữ liệu {file_name}")
+        try:
+            return pd.read_parquet(local_cache_path)
+        except Exception as e:
+            print(f"Local tmp cache read failed for {local_cache_path}: {e}")
+
+    url = f"https://{storage_account}.blob.core.windows.net/serving/ui_data/{file_name}"
+
+    try:
+        if not storage_key:
+            return pd.read_parquet(url)
+
+        container_client = ContainerClient(
+            account_url=f"https://{storage_account}.blob.core.windows.net",
+            container_name="serving",
+            credential=storage_key
+        )
+        prefix = f"ui_data/{file_name}/"
+        blobs = container_client.list_blobs(name_starts_with=prefix)
+        dfs = []
+
+        for b in blobs:
+            if b.name.endswith('.parquet') and b.size > 0:
+                stream = io.BytesIO()
+                container_client.get_blob_client(b.name).download_blob().readinto(stream)
+                stream.seek(0)
+                dfs.append(pd.read_parquet(stream))
+
+        if dfs:
+            combined_df = pd.concat(dfs, ignore_index=True)
+            combined_df.to_parquet(local_cache_path)
+        else:
+            df = pd.read_parquet(url)
+            df.to_parquet(local_cache_path)
+    except Exception as exc:
+        print(f"Cảnh báo: không tải được {file_name} từ Azure/cache ({exc}); dùng dữ liệu demo offline.")
+        return _build_offline_demo_frame(file_name)
+
+    if os.path.exists(local_cache_path):
+        try:
+            return pd.read_parquet(local_cache_path)
+        except Exception as exc:
+            print(f"Local cache read after refresh failed for {local_cache_path}: {exc}")
+
+    return _build_offline_demo_frame(file_name)
 
 
 def _coerce_text(value, fallback: str = "") -> str:
@@ -596,6 +1069,22 @@ def _coerce_text(value, fallback: str = "") -> str:
         return fallback
     text = str(value).strip()
     return text if text else fallback
+
+
+def _best_record_text(record: dict, preferred_keys: list[str]) -> str:
+    for key in preferred_keys:
+        value = _coerce_text(record.get(key))
+        if value and value.upper() not in {"AAA", "BBB", "CCC"}:
+            return value
+
+    for key, value in record.items():
+        lowered = str(key).lower()
+        if any(token in lowered for token in ["title", "name", "label", "summary", "description", "content", "resource", "activity"]):
+            text = _coerce_text(value)
+            if text and text.upper() not in {"AAA", "BBB", "CCC"}:
+                return text
+
+    return ""
 
 
 def _normalize_content_type(raw_type: str, idx: int) -> str:
@@ -655,11 +1144,9 @@ def _format_chapter(record: dict) -> str:
 
 def _material_from_lookup(site_id: int, score: float, idx: int, lms_by_site: dict) -> dict:
     record = lms_by_site.get(site_id, {})
-    raw_title = (
-        _coerce_text(record.get("title"))
-        or _coerce_text(record.get("activity_title"))
-        or _coerce_text(record.get("activity_name"))
-        or _coerce_text(record.get("resource_name"))
+    raw_title = _resolve_title_override(site_id=site_id) or _best_record_text(
+        record,
+        ["title", "activity_title", "activity_name", "resource_name", "name", "display_name", "label", "summary", "description"],
     )
     raw_type = (
         _coerce_text(record.get("type"))
@@ -852,6 +1339,8 @@ def track_click(
 ):
     """Nhận clickstream từ frontend và đẩy Kafka ở nền để tránh chặn UI."""
     record = _build_click_event(payload, current_user)
+    _store_material_title_override(int(payload.id_site), payload.material_title or "", payload.model_dump())
+    _append_live_event(record)
     background_tasks.add_task(_publish_click_event_wrapper, record)
     
     # Cập nhật Online Feature Extractor cho LightGBM Live Inference
@@ -893,22 +1382,26 @@ def get_recommendations(student_id_hash: str, current_user: dict = Depends(verif
         raise HTTPException(status_code=404, detail="Không tìm thấy vector nhúng của học viên.")
         
     u_emb = _user_emb_dict[student_id_hash]
-    scores = np.dot(_item_emb_matrix, u_emb)
-    
-    top_k = 5
-    if len(scores) <= top_k:
-        top_indices = np.argsort(scores)[::-1]
-    else:
-        top_indices = np.argpartition(scores, -top_k)[-top_k:]
-        top_indices = top_indices[np.argsort(scores[top_indices])[::-1]]
-        
+    raw_scores = np.dot(_item_emb_matrix, u_emb)
+    user_norm = float(np.linalg.norm(u_emb) or 1.0)
+    item_norms = np.linalg.norm(_item_emb_matrix, axis=1)
+    cosine_scores = raw_scores / (item_norms * user_norm + 1e-9)
+    base_match_percent = np.clip((cosine_scores + 1.0) * 50.0, 0.0, 100.0)
+
     lms_by_site = _lms_by_site_cache
-    recs = []
-    for idx, index_val in enumerate(top_indices):
-        sid = int(_item_ids_list[index_val])
-        score_val = float(scores[index_val])
-        recs.append(_material_from_lookup(sid, score_val, idx, lms_by_site))
-        
+    ranked_recs = []
+    for item_index, item_id in enumerate(_item_ids_list):
+        sid = int(item_id)
+        base_percent = float(base_match_percent[item_index])
+        candidate = _material_from_lookup(sid, base_percent / 100.0, item_index, lms_by_site)
+        candidate["score"] = float(base_percent / 100.0)
+        candidate["rank_score"] = float(base_percent / 100.0)
+        candidate["match_percent"] = int(round(base_percent))
+        ranked_recs.append(candidate)
+
+    ranked_recs.sort(key=lambda item: item.get("rank_score", item.get("score", 0.0)), reverse=True)
+    recs = ranked_recs[:5]
+    
     dropout_prob = get_student_risk(student_id_hash)
     
     # Live BKT mastery lookup
@@ -925,13 +1418,35 @@ def get_recommendations(student_id_hash: str, current_user: dict = Depends(verif
     
     feats = get_student_features(student_id_hash)
     shap_explanation = get_shap_explanation(feats)
+    recent_sessions = _build_recent_sessions(student_id_hash, lms_by_site)
+    activity_levels = _build_activity_levels(student_id_hash)
+    competency_progress = _build_competency_progress(student_id_hash)
+    click_count = _count_student_events(student_id_hash, "click")
+    submission_count = _count_student_events(student_id_hash, "assessment_submission")
+    live_event_count = len(_read_live_event_log())
+    weekly_minutes = int(round(click_count * 2.5 + submission_count * 12.0)) if live_event_count > 0 else 0
     
     return {
         "student_id_hash": student_id_hash,
         "dropout_probability": dropout_prob,
         "recommendations": recs,
         "bkt_mastery": bkt_mastery,
+        "competency_progress": competency_progress,
         "shap_explanation": shap_explanation,
+        "activity_levels": activity_levels,
+        "recent_sessions": recent_sessions,
+        "activity_summary": {
+            "weekly_minutes": weekly_minutes,
+            "click_count": click_count,
+            "submission_count": submission_count,
+        },
+        "data_source": {
+            "mode": "live_event_log" if live_event_count > 0 else "seeded_cache",
+            "event_log_count": live_event_count,
+            "features_cached": bool(shared_cache.get("features", {}).get(student_id_hash)),
+            "bkt_cached": bool(shared_cache.get("bkt", {}).get(student_id_hash)),
+            "risk_cached": bool(shared_cache.get("risk", {}).get(student_id_hash)),
+        },
         "served_by": "FastAPI Gateway",
         "client_role": current_user.get("role"),
         "timestamp": datetime.datetime.now().isoformat()
@@ -951,20 +1466,11 @@ def submit_assessment(
     global df_risk
     
     score_rate = float(payload.score)
+    submit_time = datetime.datetime.now(datetime.timezone.utc).isoformat()
     
     # 1. 🧠 PHASE 1: CẬP NHẬT TRẠNG THÁI KIẾN THỨC BKT QUA CÔNG THỨC BAYES
-    chapter_id = "C1"
-    for ch in ["C1", "C2", "C3", "C4", "C5", "C6"]:
-        if ch.lower() in payload.assignment_id.lower() or payload.assignment_id in ["546803", "546652", "546732"]:
-            if payload.assignment_id == "546803":
-                chapter_id = "C1"
-            elif payload.assignment_id == "546652":
-                chapter_id = "C2"
-            elif payload.assignment_id == "546732":
-                chapter_id = "C3"
-            else:
-                chapter_id = ch
-            break
+    chapter_id = _infer_chapter_id(payload.assignment_id, payload.chapter_id)
+    _store_assignment_title_override(payload.assignment_id, payload.assignment_title or "", payload.model_dump())
             
     # BKT coefficients
     P_L0 = 0.40
@@ -994,6 +1500,27 @@ def submit_assessment(
     all_bkt = shared_cache.get("bkt", {})
     all_bkt[payload.student_id_hash] = masteries
     shared_cache.set("bkt", all_bkt)
+
+    question_count = int(payload.question_count or 20)
+    submitted_correct_count = int(
+        payload.correct_count
+        if payload.correct_count is not None
+        else round(question_count * (score_rate / 100.0))
+    )
+    progress_item = {
+        "score": int(round(max(0.0, min(100.0, score_rate)))),
+        "submissions": 1,
+        "correct_count": max(0, min(question_count, submitted_correct_count)),
+        "question_count": question_count,
+        "updated_at": submit_time,
+    }
+    all_progress = shared_cache.get("assessment_progress", {})
+    student_progress = all_progress.get(payload.student_id_hash, {})
+    if chapter_id in student_progress:
+        progress_item["submissions"] = int(student_progress[chapter_id].get("submissions", 0) or 0) + 1
+    student_progress[chapter_id] = progress_item
+    all_progress[payload.student_id_hash] = student_progress
+    shared_cache.set("assessment_progress", all_progress)
     
     print(f"[BKT Bayes Update] Student {payload.student_id_hash} skill {chapter_id} mastery updated to {p_L:.4f}")
     
@@ -1046,14 +1573,20 @@ def submit_assessment(
     record = {
         "student_id_hash": payload.student_id_hash,
         "assignment_id": payload.assignment_id,
+        "chapter_id": chapter_id,
+        "assignment_title": payload.assignment_title,
+        "duration_seconds": int(payload.duration_seconds or 0),
         "score": score_rate,
+        "question_count": question_count,
+        "correct_count": progress_item["correct_count"],
         "event_type": "assessment_submission",
-        "event_time": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "event_time": submit_time,
         "code_module": "AAA",
         "code_presentation": "2014J",
         "client_user": current_user.get("username"),
         "client_role": current_user.get("role"),
     }
+    _append_live_event(record)
     background_tasks.add_task(_publish_click_event_wrapper, record)
     
     # Lấy dropout prob hiện tại của student để trả về
@@ -1063,6 +1596,10 @@ def submit_assessment(
         "status": "success",
         "message": message_alert,
         "student_id_hash": payload.student_id_hash,
+        "chapter_id": chapter_id,
+        "score": progress_item["score"],
+        "correct_count": progress_item["correct_count"],
+        "question_count": progress_item["question_count"],
         "new_dropout_probability": new_prob
     }
 

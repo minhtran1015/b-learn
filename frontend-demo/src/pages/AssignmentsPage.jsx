@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import PageHeader from '../components/PageHeader.jsx';
 import { assignments as localAssignments, customCourseAssignments } from '../data/mockData.js';
 import { useState, useEffect } from 'react';
+import { PASSING_SCORE, readCompetencyProgress } from '../utils/progress.js';
 
 const CUSTOM_COURSE_ID = 'big-data-course';
 
@@ -15,18 +16,19 @@ export default function AssignmentsPage() {
 
   useEffect(() => {
     const submitted = JSON.parse(localStorage.getItem('blearn.submitted_assignments') || '[]');
-    if (submitted.length > 0) {
-      const updated = baseAssignments.map(item => {
-        if (submitted.includes(item.id)) {
-          return { ...item, status: 'done' };
-        }
-        return item;
-      });
-      setAssignments(updated);
-    } else {
-      setAssignments(baseAssignments);
-    }
-  }, [courseId]);
+    const competencyProgress = readCompetencyProgress();
+    const updated = baseAssignments.map(item => {
+      const score = Number(competencyProgress[item.chapterId]?.score || 0);
+      if (isCustomCourse && score >= PASSING_SCORE) {
+        return { ...item, status: 'done' };
+      }
+      if (!isCustomCourse && submitted.includes(item.id)) {
+        return { ...item, status: 'done' };
+      }
+      return item;
+    });
+    setAssignments(updated);
+  }, [courseId, isCustomCourse, baseAssignments]);
   
   const doneCount = assignments.filter(a => a.status === 'done').length;
   const progressPercent = Math.round((doneCount / assignments.length) * 100);
@@ -38,10 +40,10 @@ export default function AssignmentsPage() {
     <div className="page-stack">
       <PageHeader
         eyebrow={isCustomCourse ? 'Big Data / Bài tập' : 'Khóa học / Bài tập'}
-        title={isCustomCourse ? 'Bài tập Big Data – Question Bank' : 'Bài tập thực hành'}
+        title={isCustomCourse ? 'Bài tập Big Data' : 'Bài tập thực hành'}
         description={
           isCustomCourse
-            ? 'Các bài kiểm tra từ Question_Bank. Khi nộp bài, điểm số được gửi về hệ thống OULAD qua Kafka theo thời gian thực.'
+            ? 'Các bài kiểm tra theo từng chương. Kết quả được dùng để cập nhật tiến độ, mức thành thạo và phân tích học tập.'
             : 'Hoàn thành các bài tập để củng cố kiến thức và mở khóa gợi ý học tập tiếp theo.'
         }
       />
@@ -59,11 +61,6 @@ export default function AssignmentsPage() {
               <div>
                 <h3>{item.title}</h3>
                 <p>{item.summary}</p>
-                {isCustomCourse && item.id_site_mapping && (
-                  <small style={{ opacity: 0.5, fontSize: '11px' }}>
-                    🔗 OULAD ID: {item.id_site_mapping}
-                  </small>
-                )}
               </div>
               <span><Clock size={16} />{item.duration}</span>
               <small>{item.difficulty}</small>

@@ -3,9 +3,14 @@ import { Link } from 'react-router-dom';
 import CourseCard from '../components/CourseCard.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import { courses, recentActivities } from '../data/mockData.js';
+import { getCourseProgressPercent } from '../utils/progress.js';
 
 export default function CoursesPage() {
-  const activeCourseId = localStorage.getItem('blearn.activeCourseId') || 'machine-learning';
+  const activeCourseId = localStorage.getItem('blearn.activeCourseId') || 'big-data-course';
+  const courseCards = courses.map((course) => ({
+    ...course,
+    displayProgress: getCourseProgressPercent(course.id) ?? course.progress,
+  }));
 
   return (
     <div className="page-stack">
@@ -22,7 +27,7 @@ export default function CoursesPage() {
             <Link to={`/courses/${activeCourseId}`}>Mở khóa gần nhất <ArrowRight size={16} /></Link>
           </div>
           <div className="course-grid">
-            {courses.map((course) => <CourseCard key={course.id} course={course} />)}
+            {courseCards.map((course) => <CourseCard key={course.id} course={course} />)}
           </div>
         </div>
 

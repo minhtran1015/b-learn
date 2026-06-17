@@ -1,34 +1,98 @@
 import { CheckCircle2, Download, Play, Reply } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { readCachedMaterials, resolveStudentHash, trackStudentClick } from '../api/gateway.js';
 import { materials, customCourseMaterials } from '../data/mockData.js';
 
-// ─── Constant: ID khóa học tùy chỉnh ────────────────────────────────────────
 const CUSTOM_COURSE_ID = 'big-data-course';
+
+function MarkdownContent({ content }) {
+  const lines = String(content || '').split(/\r?\n/);
+  const nodes = [];
+  let listItems = [];
+
+  const flushList = () => {
+    if (listItems.length === 0) return;
+    nodes.push(
+      <ul key={`list-${nodes.length}`} className="lesson-markdown-list">
+        {listItems.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}
+      </ul>
+    );
+    listItems = [];
+  };
+
+  lines.forEach((line, index) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flushList();
+      return;
+    }
+
+    const heading = trimmed.match(/^(#{1,3})\s+(.+)$/);
+    if (heading) {
+      flushList();
+      const level = heading[1].length;
+      const Tag = level === 1 ? 'h2' : level === 2 ? 'h3' : 'h4';
+      nodes.push(<Tag key={`heading-${index}`}>{heading[2]}</Tag>);
+      return;
+    }
+
+    const bullet = trimmed.match(/^[-*]\s+(.+)$/);
+    if (bullet) {
+      listItems.push(bullet[1]);
+      return;
+    }
+
+    const numbered = trimmed.match(/^\d+\.\s+(.+)$/);
+    if (numbered) {
+      listItems.push(numbered[1]);
+      return;
+    }
+
+    flushList();
+    nodes.push(<p key={`paragraph-${index}`}>{trimmed}</p>);
+  });
+
+  flushList();
+  return <div className="lesson-markdown">{nodes}</div>;
+}
 
 export default function MaterialDetailPage() {
   const { courseId, materialId } = useParams();
   const { currentUser } = useAuth();
   const [studentHash, setStudentHash] = useState('');
+  const sessionStartRef = useRef(Date.now());
+  const sessionFlushedRef = useRef(false);
+  const materialRef = useRef(null);
+  const studentHashRef = useRef('');
 
   const isCustomCourse = courseId === CUSTOM_COURSE_ID;
 
-  /**
-   * activeMaterials – chọn nguồn dữ liệu phù hợp:
-   *  - Khóa tùy chỉnh → customCourseMaterials (Lecture_Bank)
-   *  - Khóa thông thường → recommendations từ cache hoặc fallback local
-   */
   const activeMaterials = useMemo(() => {
     if (isCustomCourse) {
       return customCourseMaterials;
     }
     const cached = readCachedMaterials();
-    return cached.length > 0 ? cached : [];
+    return cached.length > 0 ? cached : materials;
   }, [isCustomCourse]);
 
   const material = activeMaterials.find((item) => item.id === materialId) ?? activeMaterials[0];
+  materialRef.current = material;
+  const chapterMaterials = useMemo(() => {
+    if (!material) return [];
+    if (!isCustomCourse) return activeMaterials;
+    return activeMaterials.filter((item) => item.chapterId === material.chapterId);
+  }, [activeMaterials, isCustomCourse, material]);
+  const currentChapterIndex = Math.max(0, chapterMaterials.findIndex((item) => item.id === material?.id));
+  const chapterProgress = chapterMaterials.length > 0
+    ? Math.round(((currentChapterIndex + 1) / chapterMaterials.length) * 100)
+    : 0;
+
+  useEffect(() => {
+    sessionStartRef.current = Date.now();
+    sessionFlushedRef.current = false;
+  }, [materialId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -36,6 +100,7 @@ export default function MaterialDetailPage() {
       .then((hash) => {
         if (isMounted) {
           setStudentHash(hash);
+          studentHashRef.current = hash;
         }
       })
       .catch((error) => {
@@ -47,18 +112,31 @@ export default function MaterialDetailPage() {
     };
   }, [currentUser]);
 
-  /**
-   * handleMaterialClick – OULAD Mapping Layer
-   *
-   * Ưu tiên id_site_mapping (OULAD ID thực) → id_site → id nội bộ.
-   * Đảm bảo event gửi về /track-click luôn chứa mã OULAD hợp lệ
-   * để Kafka ingestion pipeline nhận đúng chuẩn schema.
-   */
   const handleMaterialClick = async (item) => {
     const rawId = item.id_site_mapping || item.id_site || item.id;
     const cleanedSiteId = String(rawId).replace(/\D/g, '');
-    await trackStudentClick(studentHash, cleanedSiteId);
+    await trackStudentClick(studentHashRef.current || studentHash, cleanedSiteId, item);
   };
+
+  const flushMaterialSession = async () => {
+    const activeMaterial = materialRef.current;
+    if (sessionFlushedRef.current || !activeMaterial) return;
+    sessionFlushedRef.current = true;
+    const rawId = activeMaterial.id_site_mapping || activeMaterial.id_site || activeMaterial.id;
+    const cleanedSiteId = String(rawId).replace(/\D/g, '');
+    const durationSeconds = Math.max(1, Math.ceil((Date.now() - sessionStartRef.current) / 1000));
+    await trackStudentClick(studentHashRef.current || studentHash, cleanedSiteId, {
+      ...activeMaterial,
+      duration_seconds: durationSeconds,
+      event_type: 'material_view',
+    });
+  };
+
+  useEffect(() => {
+    return () => {
+      void flushMaterialSession();
+    };
+  }, [materialId]);
 
   return (
     <div className="learning-layout">
@@ -72,17 +150,12 @@ export default function MaterialDetailPage() {
             <span className="pill">{isCustomCourse ? 'Big Data' : 'Bài học'}</span>
             <h1>{material.title}</h1>
             <p>Hiểu nội dung cốt lõi, ghi chú lại điểm quan trọng và đánh dấu hoàn thành khi đã sẵn sàng.</p>
-            {isCustomCourse && material.id_site_mapping && (
-              <small style={{ opacity: 0.55, fontSize: '11px' }}>
-                🔗 OULAD ID: {material.id_site_mapping} · {material._bank_source}
-              </small>
-            )}
           </div>
           <button
             className="button primary"
             onClick={() => {
               try {
-                void handleMaterialClick(material);
+                void flushMaterialSession();
               } catch (e) {
                 // silent
               }
@@ -112,12 +185,24 @@ export default function MaterialDetailPage() {
             )}
           </ul>
         </div>
+        {isCustomCourse && material?.contentMarkdown && (
+          <div className="card">
+            <h3>Nội dung bài học</h3>
+            <MarkdownContent content={material.contentMarkdown} />
+          </div>
+        )}
+        {isCustomCourse && !material?.contentMarkdown && material?.contentExcerpt && (
+          <div className="card">
+            <h3>Nội dung bài học</h3>
+            <MarkdownContent content={material.contentExcerpt} />
+          </div>
+        )}
       </section>
       <aside className="side-stack">
         <div className="card progress-card">
-          <div className="progress-row"><strong>Tiến độ chương</strong><strong>66%</strong></div>
-          <div className="progress-track"><span style={{ width: '66%' }} /></div>
-          <p>Đã hoàn thành 2/3 bài học bắt buộc</p>
+          <div className="progress-row"><strong>Tiến độ chương</strong><strong>{chapterProgress}%</strong></div>
+          <div className="progress-track"><span style={{ width: `${chapterProgress}%` }} /></div>
+          <p>Bài {currentChapterIndex + 1}/{chapterMaterials.length || activeMaterials.length} trong chương hiện tại</p>
         </div>
         <div className="card">
           <h2>Nội dung học tập</h2>
@@ -138,7 +223,7 @@ export default function MaterialDetailPage() {
         <div className="blue-panel soft">
           <Download />
           <h3>Tài liệu đính kèm</h3>
-          <p>Slide bài giảng PDF và dataset thực hành.</p>
+          <p>{isCustomCourse ? 'Nội dung bài giảng, ghi chú chương và tài liệu thực hành.' : 'Slide bài giảng PDF và dataset thực hành.'}</p>
         </div>
       </aside>
     </div>

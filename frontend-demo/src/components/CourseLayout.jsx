@@ -1,6 +1,8 @@
 import { BarChart3, BookOpen, ClipboardList, Compass, MessageSquare } from 'lucide-react';
-import { Navigate, NavLink, Outlet, useParams } from 'react-router-dom';
+import { Navigate, NavLink, Outlet, useLocation, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { courses } from '../data/mockData.js';
+import { getCourseProgressPercent } from '../utils/progress.js';
 
 const courseItems = [
   { suffix: '', label: 'Tổng quan', icon: Compass },
@@ -12,7 +14,20 @@ const courseItems = [
 
 export default function CourseLayout() {
   const { courseId } = useParams();
+  const location = useLocation();
   const course = courses.find((item) => item.id === courseId);
+  const [liveProgress, setLiveProgress] = useState(() => getCourseProgressPercent(courseId));
+
+  useEffect(() => {
+    const updateProgress = () => setLiveProgress(getCourseProgressPercent(courseId));
+    updateProgress();
+    window.addEventListener('blearn-progress-updated', updateProgress);
+    window.addEventListener('storage', updateProgress);
+    return () => {
+      window.removeEventListener('blearn-progress-updated', updateProgress);
+      window.removeEventListener('storage', updateProgress);
+    };
+  }, [courseId, location.pathname]);
 
   if (course) {
     localStorage.setItem('blearn.activeCourseId', course.id);
@@ -22,6 +37,8 @@ export default function CourseLayout() {
     return <Navigate to="/courses" replace />;
   }
 
+  const progressPercent = liveProgress ?? course.progress;
+
   return (
     <div className="course-workspace">
       <aside className="course-sidebar" aria-label="Điều hướng trong khóa học">
@@ -30,9 +47,9 @@ export default function CourseLayout() {
           <strong>{course.title}</strong>
           <span>{course.teacher}</span>
           <div className="progress-track">
-            <span style={{ width: `${course.progress}%` }} />
+            <span style={{ width: `${progressPercent}%` }} />
           </div>
-          <em>{course.progress}% hoàn thành</em>
+          <em>{progressPercent}% hoàn thành</em>
         </div>
 
         <nav className="course-nav-list">

@@ -1,0 +1,7 @@
+model,oof_pr_auc,test_pr_auc,mean_best_iteration
+xgb,0.796436,0.666732,1871.8
+cb,0.793117,0.663661,5453.8
+stack_linearregression,0.798131,0.647645,NaN
+lgbm,0.794976,0.632227,718.2
+linearregression,0.668673,0.618786,NaN
+rmlp,0.776736,0.590169,NaN

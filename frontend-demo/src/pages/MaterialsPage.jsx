@@ -5,15 +5,14 @@ import { useAuth } from '../auth/AuthContext.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import { ensureGatewaySession, fetchRecommendations, resolveStudentHash, trackStudentClick } from '../api/gateway.js';
 import { materials as localMaterials, customCourseMaterials } from '../data/mockData.js';
+import { resolveDemoLectureTitle } from '../data/ouladLectureTitleMap.js';
 
-// ─── Constant: ID khóa học tùy chỉnh dùng Lecture_Bank ───────────────────────
 const CUSTOM_COURSE_ID = 'big-data-course';
 
 export default function MaterialsPage() {
   const { courseId } = useParams();
   const { currentUser } = useAuth();
 
-  // Nếu đang ở khóa tùy chỉnh, dùng thẳng customCourseMaterials thay vì gọi API
   const isCustomCourse = courseId === CUSTOM_COURSE_ID;
 
   const [materials, setMaterials] = useState(() =>
@@ -26,7 +25,6 @@ export default function MaterialsPage() {
     let isMounted = true;
 
     async function loadMaterials() {
-      // Luôn resolve student hash (cần cho tracking)
       try {
         const resolvedHash = await resolveStudentHash(currentUser);
         if (isMounted) {
@@ -36,7 +34,6 @@ export default function MaterialsPage() {
         // silent
       }
 
-      // Khóa tùy chỉnh: dùng data tĩnh từ Lecture_Bank, không cần gọi API RecSys
       if (isCustomCourse) {
         if (isMounted) {
           setMaterials(customCourseMaterials);
@@ -45,7 +42,6 @@ export default function MaterialsPage() {
         return;
       }
 
-      // Khóa thông thường: thử tải gợi ý từ FastAPI Gateway
       setIsLoading(true);
       try {
         const { studentHash: sHash } = await ensureGatewaySession(currentUser);
@@ -73,22 +69,12 @@ export default function MaterialsPage() {
 
   const hasMaterials = useMemo(() => materials.length > 0, [materials]);
 
-  /**
-   * handleMaterialClick – OULAD Mapping Layer
-   *
-   * Với khóa tùy chỉnh (big-data-course), mỗi item có trường `id_site_mapping`
-   * trỏ về OULAD id_site thực. Ta ưu tiên dùng id_site_mapping thay vì id hiển thị,
-   * đảm bảo sự kiện gửi về Kafka luôn chứa mã OULAD hợp lệ.
-   */
   const handleMaterialClick = async (item) => {
-    // Ưu tiên id_site_mapping (OULAD ID thực) → id_site → id (hiển thị nội bộ)
     const rawId = item.id_site_mapping || item.id_site || item.id;
     const cleanedSiteId = String(rawId).replace(/\D/g, '');
 
-    // 1. Gửi log clickstream lên hệ thống
-    await trackStudentClick(studentHash, cleanedSiteId);
+    await trackStudentClick(studentHash, cleanedSiteId, item);
 
-    // 2. Kích hoạt gọi lại API lấy gợi ý mới ngay lập tức để UI thay đổi tức thì (nếu không phải khóa học tùy chỉnh)
     if (!isCustomCourse) {
       try {
         const payload = await fetchRecommendations(studentHash);
@@ -106,7 +92,7 @@ export default function MaterialsPage() {
         title={isCustomCourse ? 'Tài liệu Big Data & Hệ thống Phân tán' : 'Tài liệu khóa học'}
         description={
           isCustomCourse
-            ? 'Hệ thống bài giảng từ Lecture_Bank – mỗi lượt xem được theo dõi thời gian thực qua Kafka.'
+            ? 'Hệ thống bài giảng Big Data theo từng chương, đồng bộ với nội dung học tập hiện tại.'
             : 'Quản lý và truy cập tất cả tài nguyên học tập của khóa học hiện tại.'
         }
         action={<button className="button ghost"><Filter size={18} /> Bộ lọc</button>}
@@ -118,7 +104,7 @@ export default function MaterialsPage() {
         <button>Bài viết</button>
       </div>
       <section className="material-list">
-        {isLoading && <p>Đang tải tài liệu từ FastAPI Gateway...</p>}
+        {isLoading && <p>Đang tải tài liệu học tập...</p>}
         {!isLoading && !hasMaterials && <p>Chưa có tài liệu để hiển thị.</p>}
         {materials.map((item) => (
           <Link
@@ -132,7 +118,7 @@ export default function MaterialsPage() {
             <div className="material-icon">{item.type.toLowerCase().includes('pdf') ? <FileText /> : <PlaySquare />}</div>
             <div>
               <small>{item.type}</small>
-              <h3>{item.title}</h3>
+              <h3>{resolveDemoLectureTitle(item)}</h3>
               <p>{item.chapter}</p>
             </div>
             <span>{item.duration}</span>

@@ -4,8 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
-    "build": "vite build",
+    "sync:bigdata": "node scripts/sync-bigdata-content.mjs",
+    "dev": "node scripts/sync-bigdata-content.mjs && vite --host 0.0.0.0",
+    "tunnel": "ngrok http 5173",
+    "public": "node scripts/dev-tunnel.mjs",
+    "build": "node scripts/sync-bigdata-content.mjs && vite build",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {

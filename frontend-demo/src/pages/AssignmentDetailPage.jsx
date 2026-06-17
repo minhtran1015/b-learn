@@ -13,7 +13,7 @@ export default function AssignmentDetailPage() {
   const assignment = pool.find((item) => item.id === assignmentId) ?? pool[0];
 
   const description = isCustomCourse
-    ? `Bài kiểm tra trắc nghiệm từ Question_Bank bao gồm ${assignment.questionCount ?? 20} câu hỏi về chủ đề ${assignment.chapter}. Các câu hỏi bám sát nội dung bài giảng Lecture_Bank và đo lường độ thành thạo theo thang BKT.`
+    ? `Bài kiểm tra trắc nghiệm bao gồm ${assignment.questionCount ?? 20} câu hỏi về chủ đề ${assignment.chapter}. Các câu hỏi bám sát nội dung bài giảng và đo lường độ thành thạo theo thang BKT.`
     : 'Áp dụng kiến thức đã học vào một tình huống mô phỏng, tập trung vào cách suy luận và cấu trúc giải pháp.';
 
   return (
@@ -30,18 +30,12 @@ export default function AssignmentDetailPage() {
             <>
               <p>
                 Bài quiz này kiểm tra kiến thức của bạn về <strong>{assignment.chapter}</strong>.
-                Mỗi câu hỏi được chọn từ Question_Bank với độ khó từ Easy đến Hard.
+                Mỗi câu hỏi được chọn theo bộ câu hỏi của học phần với độ khó từ Easy đến Hard.
               </p>
               <p>
-                Kết quả nộp bài sẽ được ghi vào pipeline Kafka → Spark Streaming theo thời gian thực,
-                đồng thời cập nhật ngay xác suất rủi ro bỏ học trong Serving Gateway.
+                Kết quả nộp bài sẽ cập nhật tiến độ hoàn thành, mức thành thạo theo BKT
+                và báo cáo phân tích học tập của bạn.
               </p>
-              {assignment.id_site_mapping && (
-                <p style={{ opacity: 0.6, fontSize: '12px', marginTop: '8px' }}>
-                  🔗 OULAD Assessment mapping: <code>{assignment.id_site_mapping}</code>
-                  &nbsp;· Nguồn: <strong>{assignment._bank_source}</strong>
-                </p>
-              )}
             </>
           ) : (
             <>
@@ -76,7 +70,7 @@ export default function AssignmentDetailPage() {
       <aside className="assignment-aside">
         <div className="metric-mini"><Clock /><span>Thời gian</span><strong>{assignment.duration}</strong></div>
         <div className="metric-mini"><HelpCircle /><span>Số lượng</span><strong>{assignment.questionCount ?? 20} câu hỏi</strong></div>
-        <div className="passing-score">Passing Score <strong>60%</strong></div>
+        <div className="passing-score">Điểm đạt <strong>60%</strong></div>
         <Link className="button primary full" to={`/courses/${courseId}/assignments/${assignment.id}/do`}>
           Bắt đầu làm bài <ArrowRight size={20} />
         </Link>

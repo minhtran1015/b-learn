@@ -105,7 +105,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
 
   default_node_pool {
     name                        = "default"
-    node_count                  = 2 # Giữ nguyên số lượng bạn muốn mở rộng
+    node_count                  = 3 # Tăng headroom để tránh pod flapping do thiếu tài nguyên
     vm_size                     = "Standard_D8s_v3"
     temporary_name_for_rotation = "defaulttmp"
     upgrade_settings {

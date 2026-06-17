@@ -41,3 +41,20 @@ infra/tfplan
 mlflow.db
 mlflow.db-journal
 
+latex/
+
+# LaTeX auxiliary files
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.synctex.gz
+*.toc
+*.out
+
+# Streamlit examples
+streamlit_example/
+
+# Allow READMEs
+!benchmarks/README.md
+!frontend-demo/GUIDE.md

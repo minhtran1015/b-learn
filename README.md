@@ -254,6 +254,52 @@ az acr login --name acrblearnminh2026
 docker push acrblearnminh2026.azurecr.io/oulad-medallion:latest
 ```
 
+### ☸️ Triển Khai Các Manifests Kubernetes Lên AKS
+
+Sau khi chuẩn bị đầy đủ Secret (`oulad-runtime`) và đẩy Docker image lên ACR, bạn tiến hành triển khai toàn bộ các thành phần của hệ thống lên cụm AKS thông qua các Kubernetes Manifests:
+
+1. **Triển khai Cụm Kafka KRaft (Event Broker)**:
+   ```bash
+   kubectl apply -f infra/manifests/kafka-kraft.yaml
+   ```
+
+2. **Triển khai Các Dịch Vụ Quản Trị & Hạ Tầng (Redis, Nessie, MLflow)**:
+   ```bash
+   kubectl apply -f infra/manifests/management-services.yaml
+   ```
+
+3. **Triển khai API Gateway & Serving Service (FastAPI & Models serving)**:
+   ```bash
+   kubectl apply -f infra/manifests/api-gateway.yaml
+   kubectl apply -f infra/manifests/api-serving.yaml
+   ```
+
+4. **Triển khai Spark Structured Streaming (Xử lý Clickstream thời gian thực)**:
+   ```bash
+   kubectl apply -f infra/manifests/spark-streaming-job.yaml
+   ```
+
+5. **Triển khai Giao Diện Học Viên (React Frontend - LMS Simulator)**:
+   ```bash
+   kubectl apply -f infra/manifests/frontend-demo.yaml
+   ```
+
+6. **Triển khai Streamlit Dashboard (Cohort Analytics)**:
+   ```bash
+   kubectl apply -f infra/manifests/streamlit-dashboard.yaml
+   ```
+
+7. **Triển khai CronJob NRT (Inference 15 phút/lần)**:
+   ```bash
+   kubectl apply -f infra/manifests/oulad-nrt-cronjob.yaml
+   ```
+
+8. **Triển khai Cấu Hình Giám Sát Observability (Prometheus Rules & Grafana Operations Dashboard)**:
+   ```bash
+   kubectl apply -f infra/manifests/prometheus-rules-blearn-operations.yaml
+   kubectl apply -f infra/manifests/grafana-dashboard-blearn-operations.yaml
+   ```
+
 ---
 
 ## 🛠️ Thiết Lập Môi Trường & Chạy Dịch Vụ

@@ -1,4 +1,5 @@
 import lectureBank from './Lecture_Bank.json';
+import { bigDataLessonContentByLecId } from './bigDataLessonContent.js';
 
 export const user = {
   name: 'Minh Quân',
@@ -40,7 +41,7 @@ export const courses = [
   {
     id: 'big-data-course',
     title: 'Kỹ nghệ Dữ liệu lớn & Streaming',
-    teacher: 'TS. Trần Đình Quang Minh',
+    teacher: 'PGS. TS. Nguyễn Ngọc Hoá',
     level: 'Khó',
     progress: 0,
     color: 'purple',
@@ -117,6 +118,9 @@ lectureBank.Chapters.forEach((chapter) => {
       chapter: `Chương ${chapter.Order}: ${chapter.Name}`,
       lecId: lec.LecID,
       chapterId: chapter.ChapterID,
+      contentPath: lec.Content,
+      contentMarkdown: bigDataLessonContentByLecId[lec.LecID]?.body || '',
+      contentExcerpt: bigDataLessonContentByLecId[lec.LecID]?.excerpt || '',
       _bank_source: 'Lecture_Bank',
     });
   });
@@ -269,7 +273,7 @@ export const inboxMessages = [
   },
   {
     id: 'msg-4',
-    sender: 'TS. Trần Đình Quang Minh',
+    sender: 'PGS. TS. Nguyễn Ngọc Hoá',
     role: 'Giảng viên',
     subject: 'Khai giảng khóa Big Data – Lịch học và tài liệu',
     preview: 'Khóa Kỹ nghệ Dữ liệu lớn & Streaming bắt đầu tuần này. Vui lòng xem trước Chương 1.',

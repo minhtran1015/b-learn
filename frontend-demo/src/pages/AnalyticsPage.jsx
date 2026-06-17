@@ -4,84 +4,86 @@ import PageHeader from '../components/PageHeader.jsx';
 import { courses } from '../data/mockData.js';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext.jsx';
-import { ensureGatewaySession, fetchRecommendations } from '../api/gateway.js';
+import { ensureGatewaySession, gatewayUrl } from '../api/gateway.js';
+import { mergeCompetencyProgress, readCompetencyProgress } from '../utils/progress.js';
+import { customCourseAssignments, customCourseMaterials } from '../data/mockData.js';
+import { resolveDemoLectureTitle } from '../data/ouladLectureTitleMap.js';
 
-const skillScores = [
-  { label: 'Chương 1', value: 86 },
-  { label: 'Chương 2', value: 72 },
-  { label: 'Chương 3', value: 91 },
-  { label: 'Chương 4', value: 64 },
-  { label: 'Chương 5', value: 78 },
-  { label: 'Chương 6', value: 69 },
-];
+const CHAPTER_IDS = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6'];
 
-const activityLevels = Array.from({ length: 26 * 7 }, (_, index) => {
-  const week = Math.floor(index / 7);
-  const day = index % 7;
-  return ((week * 2 + day * 3 + (week % 4 === 0 ? 2 : 0)) % 5) + 1;
-});
+function chapterLabel(chapterId) {
+  return chapterId.replace('C', 'Chương ');
+}
 
-const recentSessions = [
-  { title: 'Tư duy hệ thống Level 4', score: 88, time: 22 },
-  { title: 'Tiếng Anh thương mại', score: 45, time: 15 },
-  { title: 'Phân tích dữ liệu cơ bản', score: 92, time: 45 },
-  { title: 'Thiết kế kiến trúc dữ liệu', score: 76, time: 30 },
-];
+function mapCompetencyProgress(progress, mastery = {}) {
+  const progressByChapter = progress && typeof progress === 'object' ? progress : {};
+  const masteryByChapter = mastery && typeof mastery === 'object' ? mastery : {};
 
-function RadarChart({ scores }) {
-  if (!scores || scores.length === 0) {
-    return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '250px', opacity: 0.6, fontSize: '14px' }}>Chưa có dữ liệu phân tích thành thạo.</div>;
-  }
-  const center = 150;
-  const maxRadius = 104;
-  const angleStep = (Math.PI * 2) / scores.length;
-  const pointFor = (index, radius) => {
-    const angle = angleStep * index - Math.PI / 2;
+  return CHAPTER_IDS.map((chapterId) => {
+    const item = progressByChapter[chapterId] || {};
+    const hasSubmission = Number(item.submissions || 0) > 0;
+    const masteryValue = Number(masteryByChapter[chapterId] ?? item.mastery ?? item.score ?? 0);
+    const value = hasSubmission ? Math.max(0, Math.min(100, Math.round(masteryValue <= 1 ? masteryValue * 100 : masteryValue))) : 0;
+    const scoreValue = hasSubmission ? Math.max(0, Math.min(100, Math.round(Number(item.score || 0)))) : 0;
+    const submissions = Number(item.submissions || 0);
     return {
-      x: center + Math.cos(angle) * radius,
-      y: center + Math.sin(angle) * radius,
+      label: chapterLabel(chapterId),
+      value,
+      scoreValue,
+      submissions,
+      correctCount: Number(item.correct_count || 0),
+      questionCount: Number(item.question_count || 0),
     };
-  };
-  const polygon = scores
-    .map((score, index) => {
-      const point = pointFor(index, maxRadius * (score.value / 100));
-      return `${point.x},${point.y}`;
-    })
-    .join(' ');
+  });
+}
 
-  return (
-    <div className="radar-chart">
-      <svg viewBox="0 0 300 300" role="img" aria-label="Biểu đồ mạng nhện mức độ thành thạo theo 6 chương">
-        {[0.25, 0.5, 0.75, 1].map((ratio) => (
-          <polygon
-            key={ratio}
-            points={scores.map((_, index) => {
-              const point = pointFor(index, maxRadius * ratio);
-              return `${point.x},${point.y}`;
-            }).join(' ')}
-            className="radar-ring"
-          />
-        ))}
-        {scores.map((_, index) => {
-          const edge = pointFor(index, maxRadius);
-          return <line key={index} x1={center} y1={center} x2={edge.x} y2={edge.y} className="radar-axis" />;
-        })}
-        <polygon points={polygon} className="radar-area" />
-        {scores.map((score, index) => {
-          const point = pointFor(index, maxRadius * (score.value / 100));
-          return <circle key={score.label} cx={point.x} cy={point.y} r="4.5" className="radar-point" />;
-        })}
-      </svg>
-      <div className="radar-legend">
-        {scores.map((score) => (
-          <span key={score.label}>
-            <strong>{score.value}%</strong>
-            {score.label}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
+function extractNumericId(text = '') {
+  return String(text).match(/\d+/)?.[0] || '';
+}
+
+function findAssignmentTitleByOuladId(ouladId) {
+  const assignment = customCourseAssignments.find((item) => String(item.id_site_mapping) === String(ouladId));
+  return assignment?.title || (ouladId ? `Quiz học phần #${ouladId}` : 'Bài kiểm tra');
+}
+
+function findMaterialTitleByOuladId(ouladId) {
+  const material = customCourseMaterials.find((item) => String(item.id_site_mapping) === String(ouladId));
+  return material?.title || resolveDemoLectureTitle({ id_site: ouladId, id_site_mapping: ouladId }) || 'Học liệu';
+}
+
+function normalizeRecentSession(item) {
+  const rawTitle = String(item?.title || '');
+  const rawKind = item?.kind;
+  const isAssessment = rawKind === 'assessment' || rawTitle.startsWith('Nộp bài');
+  const isMaterial = rawKind === 'material' || rawTitle.startsWith('Hoạt động #') || rawTitle.startsWith('Xem tài liệu #') || rawTitle.startsWith('Xem tài liệu:');
+  const ouladId = extractNumericId(rawTitle);
+
+  if (isAssessment) {
+    const hasReadableTitle = rawTitle.startsWith('Nộp bài:');
+    return {
+      ...item,
+      kind: 'assessment',
+      title: hasReadableTitle ? rawTitle : `Nộp bài: ${findAssignmentTitleByOuladId(ouladId)}`,
+      score: Math.max(0, Math.min(100, Math.round(Number(item?.score || 0)))),
+      time: Math.max(1, Math.round(Number(item?.time || 1))),
+    };
+  }
+
+  if (isMaterial) {
+    const hasReadableTitle = rawTitle.startsWith('Xem tài liệu:');
+    return {
+      ...item,
+      kind: 'material',
+      title: hasReadableTitle ? rawTitle : `Xem tài liệu: ${findMaterialTitleByOuladId(ouladId)}`,
+      score: null,
+      time: Math.max(1, Math.round(Number(item?.time || 1))),
+    };
+  }
+
+  return {
+    ...item,
+    time: Math.max(1, Math.round(Number(item?.time || 1))),
+  };
 }
 
 export default function AnalyticsPage() {
@@ -90,20 +92,31 @@ export default function AnalyticsPage() {
   const { currentUser, token: contextToken, currentStudentHash: contextHash } = useAuth();
   
   const [dropoutProbability, setDropoutProbability] = useState(null);
-  const [radarScores, setRadarScores] = useState([
-    { label: 'Chương 1', value: 50 },
-    { label: 'Chương 2', value: 50 },
-    { label: 'Chương 3', value: 50 },
-    { label: 'Chương 4', value: 50 },
-    { label: 'Chương 5', value: 50 },
-    { label: 'Chương 6', value: 50 },
-  ]);
+  const [radarScores, setRadarScores] = useState([]);
+  const [bktMastery, setBktMastery] = useState({});
+  const [activityLevels, setActivityLevels] = useState([]);
+  const [recentSessions, setRecentSessions] = useState([]);
+  const [activitySummary, setActivitySummary] = useState({
+    weekly_minutes: 0,
+    click_count: 0,
+    submission_count: 0,
+  });
+  const [dataSource, setDataSource] = useState({
+    mode: 'unknown',
+    event_log_count: 0,
+    features_cached: false,
+    bkt_cached: false,
+    risk_cached: false,
+  });
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     // 🔴 KHÓA CHẶT TẠI ĐÂY: Ép trạng thái loading đồng bộ lập tức khi đổi định danh
     setIsLoading(true);
     setDropoutProbability(null); // Reset trị cũ để không bị lọt dữ liệu vòng chạy trước
+    setLoadError('');
+    setRadarScores([]);
 
     async function loadStats() {
       let token = null;
@@ -125,10 +138,7 @@ export default function AnalyticsPage() {
       }
 
       try {
-        const rawBaseUrl = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:8000';
-        const API_BASE_URL = rawBaseUrl.replace(/\/$/, '');
-
-        const response = await fetch(`${API_BASE_URL}/recommendations/${currentStudentHash}`, {
+        const response = await fetch(gatewayUrl(`/recommendations/${currentStudentHash}`), {
           method: 'GET',
           headers: {
             Authorization: `Bearer ${finalToken}`,
@@ -136,28 +146,53 @@ export default function AnalyticsPage() {
         });
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch recommendations: ${response.status}`);
+          const detail = await response.text();
+          throw new Error(`Failed to fetch recommendations (${response.status}): ${detail || 'Unknown error'}`);
         }
 
         const payload = await response.json();
         if (payload.dropout_probability !== undefined) {
           setDropoutProbability(payload.dropout_probability);
         }
-        if (payload.bkt_mastery) {
-          const mapped = Object.entries(payload.bkt_mastery).map(([key, val]) => ({
-            label: key.replace('C', 'Chương '),
-            value: Math.round(val * 100)
-          }));
-          setRadarScores(mapped);
+        const mergedProgress = mergeCompetencyProgress(payload.competency_progress || {});
+        const liveBktMastery = payload.bkt_mastery || {};
+        setBktMastery(liveBktMastery);
+        setRadarScores(mapCompetencyProgress(mergedProgress, liveBktMastery));
+        if (Array.isArray(payload.activity_levels)) {
+          setActivityLevels(payload.activity_levels);
+        }
+        if (Array.isArray(payload.recent_sessions)) {
+          setRecentSessions(payload.recent_sessions.map(normalizeRecentSession));
+        }
+        if (payload.activity_summary) {
+          setActivitySummary({
+            weekly_minutes: Number(payload.activity_summary.weekly_minutes || 0),
+            click_count: Number(payload.activity_summary.click_count || 0),
+            submission_count: Number(payload.activity_summary.submission_count || 0),
+          });
+        }
+        if (payload.data_source) {
+          setDataSource({
+            mode: payload.data_source.mode || 'unknown',
+            event_log_count: Number(payload.data_source.event_log_count || 0),
+            features_cached: Boolean(payload.data_source.features_cached),
+            bkt_cached: Boolean(payload.data_source.bkt_cached),
+            risk_cached: Boolean(payload.data_source.risk_cached),
+          });
         }
       } catch (err) {
         console.error("Failed to load prediction stats:", err);
+        setRadarScores(mapCompetencyProgress(readCompetencyProgress(), bktMastery));
+        setLoadError(err?.message || 'Không tải được dữ liệu phân tích.');
       } finally {
         setIsLoading(false);
       }
     }
     if (currentUser) {
       loadStats();
+    } else {
+      setLoadError('Vui lòng đăng nhập để xem dữ liệu phân tích học tập.');
+      setIsLoading(false);
     }
   }, [currentUser, contextToken, contextHash]);
 
@@ -175,37 +210,58 @@ export default function AnalyticsPage() {
           <h2>Mức độ thành thạo & Tiến trình năng lực <Info size={18} /></h2>
           {isLoading ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '250px', fontSize: '14px', opacity: 0.8 }}>
-              Đang tính toán Live Inference từ mô hình AI...
+              Đang cập nhật phân tích học tập...
             </div>
           ) : (
-            <div className="radar-container" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px', alignItems: 'center', marginTop: '12px' }}>
-              <RadarChart scores={radarScores} />
-              <div className="progress-bars-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {radarScores.map((score) => (
-                  <div key={score.label} className="progress-bar-item">
-                    <div className="progress-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '14px' }}>
-                      <span>{score.label}</span>
-                      <strong style={{ color: score.value > 50 ? '#2ed573' : '#ff4757' }}>{score.value}%</strong>
+            radarScores.length > 0 ? (
+              <div className="radar-container progress-only">
+                <div className="progress-bars-list">
+                  {radarScores.map((score) => (
+                    <div key={score.label} className="progress-bar-item">
+                      <div className="progress-row">
+                        <span>
+                          {score.label}
+                          {score.submissions > 0 && score.questionCount > 0
+                            ? <small>Mức thành thạo {score.value}% • Điểm bài làm {score.scoreValue}% • {score.correctCount}/{score.questionCount} câu đúng</small>
+                            : <small>Chưa có bài nộp</small>}
+                        </span>
+                        <strong className={score.value > 50 ? 'is-strong' : 'is-low'}>
+                          {score.submissions > 0 ? `${score.value}%` : '--'}
+                        </strong>
+                      </div>
+                      <div className="progress-track">
+                        <span
+                          className={score.submissions > 0 && score.value > 50 ? 'is-strong' : 'is-low'}
+                          style={{ width: `${score.value}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="progress-track" style={{ height: '6px', background: '#eaeaea', borderRadius: '3px', overflow: 'hidden' }}>
-                      <span style={{ display: 'block', height: '100%', width: `${score.value}%`, background: score.value > 50 ? '#2ed573' : '#ff4757', borderRadius: '3px' }} />
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '250px', fontSize: '14px', opacity: 0.8, textAlign: 'center' }}>
+                {loadError ? `Không tải được dữ liệu phân tích. ${loadError}` : 'Chưa có dữ liệu phân tích.'}
+              </div>
+            )
           )}
         </div>
         <div className="card heatmap-card">
           <div className="card-heading">
             <div>
               <h2>Tần suất hoạt động</h2>
-              <p>Tổng thời gian tuần này: 12.5 giờ</p>
+              <p>Tổng thời gian tuần này: {(activitySummary.weekly_minutes / 60).toFixed(1)} giờ</p>
             </div>
-            <span>6 tháng gần nhất</span>
+            <span>{dataSource.mode === 'live_event_log' ? 'Dữ liệu mới nhất' : 'Dữ liệu mẫu'}</span>
           </div>
           <div className="heatmap">
-            {activityLevels.map((level, index) => <span key={index} className={`level-${level}`} />)}
+            {activityLevels.length > 0
+              ? activityLevels.map((level, index) => <span key={index} className={`level-${level}`} />)
+              : <span className="level-1" style={{ gridColumn: '1 / -1', width: '100%', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.6 }}>Chưa có tín hiệu hoạt động</span>
+            }
+          </div>
+          <div style={{ marginTop: '8px', fontSize: '12px', color: '#64748b' }}>
+            Nguồn dữ liệu: <strong>{dataSource.mode === 'live_event_log' ? 'hoạt động gần đây' : 'dữ liệu mẫu'}</strong> • Lượt ghi nhận: <strong>{dataSource.event_log_count}</strong>
           </div>
           <div className="heatmap-footer">
             <small>Ít</small>
@@ -213,12 +269,14 @@ export default function AnalyticsPage() {
             <small>Nhiều</small>
           </div>
         </div>
-        <div className="stat-wide"><Clock3 /><span>Thời gian học trung bình</span><strong>45 phút</strong><small>+12% so với tuần trước</small></div>
-        <div className="stat-wide"><Trophy /><span>Số bài kiểm tra đã xong</span><strong>128 bài</strong><small>Top 5% học viên</small></div>
+        <div className="stat-wide"><Clock3 /><span>Thời gian học tuần này</span><strong>{activitySummary.weekly_minutes} phút</strong><small>{activitySummary.click_count} lượt học được ghi nhận</small></div>
+        <div className="stat-wide"><Trophy /><span>Số bài nộp gần đây</span><strong>{activitySummary.submission_count} bài</strong><small>Dựa trên hoạt động gần đây</small></div>
         <div className="card prediction-card">
           <h2>Dự đoán nguy cơ bỏ học & Kết quả</h2>
           {isLoading || dropoutProbability === null ? (
-            <p style={{ opacity: 0.8, fontSize: '14px' }}>Đang tính toán Live Inference từ mô hình AI...</p>
+            <p style={{ opacity: 0.8, fontSize: '14px' }}>
+              {loadError || 'Đang cập nhật dự báo học tập...'}
+            </p>
           ) : (
             <>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '12px 0' }}>
@@ -247,13 +305,19 @@ export default function AnalyticsPage() {
         </div>
         <div className="card session-table">
           <h2>Chi tiết phiên học gần đây</h2>
-          {recentSessions.map((item) => (
-            <div key={item.title} className="table-row">
+          {recentSessions.length > 0 ? recentSessions.map((item, index) => (
+            <div key={`${item.title}-${index}`} className="table-row">
               <span>{item.title}</span>
-              <strong>{item.score}%</strong>
+              <strong>{item.kind === 'material' || item.score === null || item.score === undefined ? 'Xem tài liệu' : `${item.score}%`}</strong>
               <small>{item.time} phút</small>
             </div>
-          ))}
+          )) : (
+            <div className="table-row">
+              <span>Chưa có phiên học nào</span>
+              <strong>--</strong>
+              <small>0 phút</small>
+            </div>
+          )}
         </div>
       </section>
     </div>

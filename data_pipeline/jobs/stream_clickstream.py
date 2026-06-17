@@ -1,7 +1,9 @@
 import logging
 import os
 import sys
+import threading
 from pathlib import Path
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
@@ -15,6 +17,31 @@ logger = logging.getLogger(__name__)
 PIPELINE_ROOT = Path(__file__).resolve().parents[1]
 if str(PIPELINE_ROOT) not in sys.path:
     sys.path.insert(0, str(PIPELINE_ROOT))
+
+STREAM_READY = False
+
+
+class _HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path != "/health":
+            self.send_response(404)
+            self.end_headers()
+            self.wfile.write(b"not found")
+            return
+
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"ok")
+
+    def log_message(self, format, *args):
+        return
+
+
+def _start_health_server(port: int = 8081) -> None:
+    server = ThreadingHTTPServer(("0.0.0.0", port), _HealthHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    logger.info("Health server started on port %s", port)
 
 def build_streaming_spark():
     storage_account = os.getenv("AZURE_STORAGE_ACCOUNT", "stblearnminhdata2026")
@@ -76,6 +103,7 @@ def build_streaming_spark():
 
 def main():
     logger.info("Starting Spark Structured Streaming Clickstream Job with Session Windows")
+    _start_health_server()
     spark = build_streaming_spark()
     
     storage_account = os.getenv("AZURE_STORAGE_ACCOUNT", "stblearnminhdata2026")
@@ -262,7 +290,7 @@ def main():
         .trigger(processingTime="10 seconds")
         .toTable("silver_catalog.silver_db.oulad_studentassessment")
     )
-    
+
     # Wait for either to terminate
     spark.streams.awaitAnyTermination()
 

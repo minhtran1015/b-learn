@@ -1,0 +1,55 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: kube-prometheus-stack-blearn-operations
+  namespace: blearn-medallion
+  labels:
+    release: kube-prometheus-stack
+    app.kubernetes.io/instance: kube-prometheus-stack
+    app.kubernetes.io/part-of: kube-prometheus-stack
+spec:
+  groups:
+    - name: blearn.medallion.health
+      rules:
+        - alert: BLearnDeploymentUnavailable
+          expr: |
+            sum by (namespace, deployment) (
+              kube_deployment_status_replicas_available{namespace="blearn-medallion"}
+            )
+            <
+            sum by (namespace, deployment) (
+              kube_deployment_spec_replicas{namespace="blearn-medallion"}
+            )
+          for: 10m
+          labels:
+            severity: warning
+            team: blearn
+          annotations:
+            summary: "Deployment {{ $labels.deployment }} is not fully available"
+            description: "Deployment {{ $labels.deployment }} in namespace {{ $labels.namespace }} has fewer available replicas than desired."
+
+        - alert: BLearnPodNotReady
+          expr: |
+            max by (namespace, pod) (
+              kube_pod_status_ready{namespace="blearn-medallion", condition="false"}
+            ) == 1
+          for: 5m
+          labels:
+            severity: warning
+            team: blearn
+          annotations:
+            summary: "Pod {{ $labels.pod }} is not ready"
+            description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has stayed unready for more than 5 minutes."
+
+        - alert: BLearnPodRestartingTooMuch
+          expr: |
+            sum by (namespace, pod) (
+              increase(kube_pod_container_status_restarts_total{namespace="blearn-medallion"}[30m])
+            ) > 2
+          for: 15m
+          labels:
+            severity: critical
+            team: blearn
+          annotations:
+            summary: "Pod {{ $labels.pod }} is restarting repeatedly"
+            description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has restarted more than 2 times in the last 30 minutes."

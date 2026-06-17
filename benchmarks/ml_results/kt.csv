@@ -1,0 +1,5 @@
+model,rnn_type,roc_auc,rmse,logloss,train_students,test_students,train_records,test_records,train_sequences,epochs,batch_size,max_seq_len,skill_emb_dim,correct_emb_dim,vle_hidden_dim,hidden_dim,dropout,learning_rate,weight_decay
+EduPulse_BKT,BKT,0.7587,0.2620,NaN,18678,4670,135073,33707,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN
+DKT_VLE_GRU,GRU,0.84816,0.24261,0.21178,18678,4670,135073,33707,17113,15,128,100,64,16,32,128,0.20000,0.00100,0.00001
+DKT_VLE_RNN,RNN,0.84657,0.24304,0.21144,18678,4670,135073,33707,17113,15,128,100,64,16,32,128,0.20000,0.00100,0.00001
+DKT_VLE_LSTM,LSTM,0.84644,0.24262,0.21114,18678,4670,135073,33707,17113,15,128,100,64,16,32,128,0.20000,0.00100,0.00001

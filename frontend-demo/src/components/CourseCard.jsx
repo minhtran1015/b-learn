@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 
 export default function CourseCard({ course }) {
+  const progress = Number(course.displayProgress ?? course.progress ?? 0);
   return (
     <article className="course-card">
       <div className={`course-cover ${course.color}`}>
@@ -12,10 +13,10 @@ export default function CourseCard({ course }) {
         <p>GV: {course.teacher}</p>
         <div className="progress-row">
           <span>Tiến độ</span>
-          <strong>{course.progress}%</strong>
+          <strong>{progress}%</strong>
         </div>
         <div className="progress-track">
-          <span style={{ width: `${course.progress}%` }} />
+          <span style={{ width: `${progress}%` }} />
         </div>
         <Link to={`/courses/${course.id}`} className="button outline full">
           Vào học
