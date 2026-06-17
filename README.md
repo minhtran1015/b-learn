@@ -777,6 +777,64 @@ resources:
 
 ---
 
+## Cấu Trúc Dữ Liệu Đầu Vào
+
+Hệ thống hỗ trợ hai chế độ dữ liệu: `large-data` (cho pipeline chính) và `small-data` (cho kiểm thử nhanh). Nếu chưa tồn tại, hãy tạo các thư mục này tại thư mục gốc của dự án theo cấu trúc dưới đây:
+
+### 1. Dữ liệu thử nghiệm (small-data/)
+Sử dụng cho kiểm thử nhanh cục bộ:
+```
+small-data/
+├── OULAD/
+│   ├── assessments.csv
+│   ├── courses.csv
+│   ├── studentAssessment.csv
+│   ├── studentInfo.csv
+│   ├── studentRegistration.csv
+│   ├── studentVle.csv
+│   └── vle.csv
+├── EdNet/
+│   ├── KT1/
+│   ├── KT2/
+│   ├── KT3/
+│   ├── KT4/
+│   └── contents/
+│       ├── lectures.csv
+│       ├── questions.csv
+│       └── ...
+├── SED/
+│   ├── Student_log.csv
+│   └── Student_score.csv
+├── Data/
+│   ├── 01_Foundations_of_Big_Data/
+│   │   ├── Bai_01_Concepts_From_Data_to_Intelligence.md
+│   │   └── ...
+│   ├── 02_Big_Data_Ecosystems/
+│   └── ...
+├── Lecture_Bank.json
+└── Question_Bank.json
+```
+
+### 2. Dữ liệu đầy đủ (large-data/)
+Sử dụng cho chạy pipeline đầy đủ:
+```
+large-data/
+├── OULAD/                # Giải nén từ OULAD-*.zip
+│   ├── studentInfo.csv
+│   └── ...
+├── EdNet/                # Giải nén từ EdNet-*.zip
+│   └── ...
+├── SED/                  # Giải nén từ SED-*.zip
+│   └── ...
+├── Data/                 # Giải nén từ Data-*.zip
+│   ├── 01_Foundations_of_Big_Data/
+│   └── ...
+├── Lecture_Bank.json
+└── Question_Bank.json
+```
+
+---
+
 ## Thông Tin Hệ Thống Live
 
 | Thành phần | Địa chỉ / Tên |
