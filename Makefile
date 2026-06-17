@@ -161,183 +161,230 @@ airflow-start:
 airflow-destroy:
 	helm uninstall airflow -n blearn-medallion
 
-# ====================================================================
-# 🌐 AZURE INFRASTRUCTURE CONTROLS (QUẢN LÝ HẠ TẦNG CHUYÊN NGHIỆP)
-# ====================================================================
-
-# Bật nhanh cụm AKS để làm việc
+# --- Azure Infrastructure ---
 aks-start:
 	az aks start --name aks-blearn-dev --resource-group RG-BLEarn-Compute
 
-# Tắt cụm AKS ngay lập tức sau khi xong việc để đóng băng chi phí
 aks-stop:
 	az aks stop --name aks-blearn-dev --resource-group RG-BLEarn-Compute
 
-# Kiểm tra nhanh trạng thái tất cả các Pod đang chạy trên namespace
 k8s-status:
 	kubectl get jobs,pods -n blearn-medallion
 
-# ====================================================================
-# ⚡ LOCAL / DEV PIPELINE EXECUTIONS (CHẠY TEST ĐỘC LẬP TỪNG TẦNG)
-# ====================================================================
-
-# 1. Chạy tầng Bronze: Nạp dữ liệu thô OULAD lên Cloud Iceberg
+# --- Local / Dev Pipeline ---
 bronze-run:
 	python -m data_pipeline.ingestion.ingest --manifest-path full_data_manifest.json --output-root abfss://bronze@stblearnminhdata2026.dfs.core.windows.net/iceberg_warehouse/full/ ingest --namespace full
 
-# 2. Chạy tầng Silver: Xử lý làm sạch, băm bảo mật SHA256 dữ liệu
 silver-run:
 	python -m data_pipeline.jobs.silver_transform
 
-# 3. Chạy tầng Gold - Phân hệ Mô hình Rủi ro (LightGBM)
 gold-lgbm-run:
 	python -m data_pipeline.jobs.gold_transform_and_train
 
-# 4. Chạy tầng Gold - Phân hệ Đo lường Kiến thức (pyBKT tuần tự)
 gold-bkt-run:
 	python -m data_pipeline.jobs.gold_bkt_pipeline
 
-# 5. Chạy tầng Gold - Phân hệ Hệ gợi ý Tài liệu (LightGCN PyTorch)
 gold-recsys-run:
 	python -m data_pipeline.jobs.gold_recsys_pipeline
 
-# 6. Chạy tầng Gold -> Serving Layer: Xuất Parquet phẳng
 serving-export-run:
 	python -m data_pipeline.jobs.export_to_serving
 
-# Chạy Dashboard Streamlit cục bộ
 streamlit-local-run:
 	streamlit run dashboard/app.py
 
-# Chạy Serving API FastAPI cục bộ
 api-local-run:
 	uvicorn dashboard.api_server:app --reload
 
-# Cài đặt thư viện cho React Frontend Dashboard
 react-local-install:
 	cd frontend-dashboard && npm install
 
-# Chạy React Frontend Dashboard cục bộ (Development)
 react-local-run:
 	cd frontend-dashboard && npm run dev
 
-# Biên dịch React Frontend Dashboard cho production
 react-local-build:
 	cd frontend-dashboard && npm run build
 
-# Triển khai FastAPI API Serving lên AKS
 k8s-deploy-api:
 	kubectl apply -f infra/manifests/api-serving.yaml
 
-# Triển khai các dịch vụ quản trị (Redis, MLflow, Nessie) lên AKS
 deploy-ops:
 	kubectl apply -f infra/manifests/management-services.yaml
 
-# Theo dõi IP LoadBalancer của API Serving
 k8s-api-status:
 	kubectl get svc blearn-api-service -n blearn-medallion
 
-
-# ====================================================================
-# 🔄 KUBERNETES ONE-SHOT TEST JOBS (KÍCH HOẠT CHẠY TRÊN AKS)
-# ====================================================================
-
-# Kích hoạt test job BKT trên cụm Cloud
+# --- K8s One-Shot Test Jobs ---
 k8s-test-bkt:
 	kubectl delete job oulad-gold-bkt-test -n blearn-medallion --ignore-not-found=true
 	kubectl apply -f infra/manifests/oulad-bkt-test.yaml
-	@echo "Chờ 5s để Pod khởi tạo rồi theo dõi log..."
+	@echo "Waiting for pod initialization..."
 	sleep 5
 	kubectl logs -f $$(kubectl get pods -n blearn-medallion -l job-name=oulad-gold-bkt-test -o jsonpath='{.items[0].metadata.name}') -n blearn-medallion
 
-# Kích hoạt serving export job trên cụm Cloud
 k8s-serving-export:
 	kubectl delete job oulad-serving-export-job -n blearn-medallion --ignore-not-found=true
 	kubectl apply -f infra/manifests/oulad-serving-export-job.yaml
-	@echo "Chờ 5s để Pod khởi tạo rồi theo dõi log..."
+	@echo "Waiting for pod initialization..."
 	sleep 5
 	kubectl logs -f job/oulad-serving-export-job -n blearn-medallion
 
-# Triển khai Streamlit Dashboard lên AKS
 k8s-deploy-streamlit:
 	kubectl apply -f infra/manifests/streamlit-dashboard.yaml
 
-# Theo dõi IP LoadBalancer của Streamlit
 k8s-streamlit-status:
 	kubectl get svc blearn-streamlit-service -n blearn-medallion
 
-# Xóa toàn bộ các job test tạm thời để làm sạch cụm
 k8s-clean-test:
 	kubectl delete jobs --all -n blearn-medallion
 
-# ====================================================================
-# 🚀 END-TO-END AUTOMATION FLOW (LUỒNG CHẠY LIÊN HOÀN TOÀN DIỆN)
-# ====================================================================
-
-# Chạy toàn bộ chu trình Medallion cục bộ từ Bronze -> Silver -> Toàn bộ các mô hình Gold
+# --- End-to-End Automation Flow ---
 pipeline-full-local: bronze-run silver-run gold-lgbm-run gold-bkt-run
-	@echo "🎉 [SUCCESS] Toàn bộ hệ thống định hình dữ liệu lớn đã hoàn thành cục bộ!"
+	@echo "Full pipeline finished locally."
 
-# ====================================================================
-# ⚡ NRT INFERENCE (NEAR-REAL-TIME MICRO-BATCH — MỖI 15 PHÚT)
-# ====================================================================
-
-# Chạy NRT Inference thủ công cục bộ (test nhanh)
+# --- NRT Inference ---
 nrt-inference-run:
 	python -m data_pipeline.jobs.nrt_gold_inference
 
-# Triển khai K8s CronJob NRT lên AKS (mỗi 15 phút tự động)
 k8s-deploy-nrt:
 	kubectl apply -f infra/manifests/oulad-nrt-cronjob.yaml
-	@echo "✅ NRT CronJob deployed: chạy mỗi 15 phút tự động."
+	@echo "NRT CronJob deployed."
 	kubectl get cronjob oulad-nrt-inference-cronjob -n blearn-medallion
 
-# Kích hoạt NRT Job ngay lập tức (manual trigger để test)
 k8s-nrt-trigger-once:
 	kubectl create job --from=cronjob/oulad-nrt-inference-cronjob nrt-manual-$$(date +%s) -n blearn-medallion
-	@echo "⚡ NRT job triggered manually. Check logs:"
-	@echo "  kubectl get jobs -n blearn-medallion | grep nrt-manual"
+	@echo "NRT job triggered manually."
 
-# ====================================================================
-# 🛡️ FAILOVER: K8s NATIVE CRONJOBS (DỰ PHÒNG KHI AIRFLOW LỖI)
-# ====================================================================
-# Kiến trúc Active-Passive: Airflow là Primary, K8s CronJobs là Passive.
-# Khi Airflow xảy ra sự cố, chạy 'make k8s-activate-failover-schedule'
-# để kích hoạt lịch K8s thay thế. Chạy 'deactivate' khi Airflow phục hồi.
-
-# Kích hoạt toàn bộ lịch Failover K8s (khi Airflow lỗi)
+# --- K8s CronJob Failover (Active-Passive) ---
 k8s-activate-failover-schedule:
-	@echo "🚨 [FAILOVER] Activating K8s Native CronJob schedules..."
+	@echo "Activating K8s Native CronJob schedules..."
 	kubectl apply -f infra/manifests/oulad-bronze-cronjob.yaml
 	kubectl apply -f infra/manifests/oulad-silver-cronjob.yaml
 	kubectl apply -f infra/manifests/oulad-nrt-cronjob.yaml
-	@echo "✅ [FAILOVER] Lịch dự phòng đã kích hoạt:"
-	@echo "   • oulad-bronze-cronjob    → 02:00 UTC hàng ngày"
-	@echo "   • oulad-silver-gold-cronjob → 03:00 UTC hàng ngày"
-	@echo "   • oulad-nrt-cronjob       → mỗi 15 phút"
 	kubectl get cronjobs -n blearn-medallion
 
-# Tắt lịch Failover K8s (khi Airflow đã phục hồi)
 k8s-deactivate-failover-schedule:
-	@echo "✅ [FAILOVER] Deactivating K8s CronJobs (Airflow back online)..."
+	@echo "Deactivating K8s CronJobs..."
 	kubectl delete cronjob oulad-bronze-cronjob -n blearn-medallion --ignore-not-found=true
 	kubectl delete cronjob oulad-silver-gold-cronjob -n blearn-medallion --ignore-not-found=true
-	@echo "   NRT CronJob giữ nguyên — chạy song song với Airflow là an toàn."
 	kubectl get cronjobs -n blearn-medallion
 
-# Kiểm tra trạng thái tất cả CronJobs và Jobs đang chạy
 k8s-failover-status:
-	@echo "📊 CronJob status:"
+	@echo "CronJob status:"
 	kubectl get cronjobs -n blearn-medallion
-	@echo "\n📋 Recent Jobs:"
+	@echo "\nRecent Jobs:"
 	kubectl get jobs -n blearn-medallion --sort-by=.metadata.creationTimestamp | tail -10
 
-# ====================================================================
-# 🏗️ AIRFLOW HA: NÂNG CẤP LÊN KUBERNETES EXECUTOR + 2 SCHEDULERS
-# ====================================================================
+# --- Kafka topic management ---
+kafka-topics-list:
+	kubectl exec kafka-stream-0 -n blearn-medallion -- /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list
 
-# Nâng cấp Airflow lên cấu hình HA (KubernetesExecutor + 2 Schedulers)
-# Yêu cầu: Helm đã cài sẵn và đang có kết nối tới AKS cluster
+kafka-consume-stream:
+	kubectl exec kafka-stream-0 -n blearn-medallion -- /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --topic learning-events --partitions 1 --replication-factor 1 --if-not-exists 2>/dev/null || true
+	kubectl exec -it kafka-stream-0 -n blearn-medallion -- /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic learning-events --from-beginning
+
+kafka-produce-test:
+	kubectl exec -i kafka-stream-0 -n blearn-medallion -- /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic learning-events <<< '{"student_id_hash":"test_portfolio_student_hash","id_site":"1001","date":0,"sum_click":5}'
+
+# --- Apache Iceberg maintenance ---
+k8s-iceberg-compact:
+	kubectl exec -i deployment/blearn-streamlit-ui -n blearn-medallion -- python3 -c " \
+		from data_pipeline.ingestion.ingest import build_spark; \
+		import os; \
+		account = os.getenv('AZURE_STORAGE_ACCOUNT', 'stblearnminhdata2026'); \
+		root = f'abfss://gold@{account}.dfs.core.windows.net/iceberg_warehouse/gold/'; \
+		spark = build_spark('Iceberg_Compaction_Utility', root, iceberg_catalogs={'bronze_catalog': 'bronze'}); \
+		spark.sql('ALTER TABLE bronze_catalog.full_db.oulad_studentvle EXECUTE optimize WHERE date IS NOT NULL'); \
+		spark.stop();"
+
+# --- GreenOps Control ---
+streaming-resume:
+	kubectl scale statefulset kafka-stream -n blearn-medallion --replicas=1
+	kubectl scale deployment spark-streaming-job -n blearn-medallion --replicas=1
+	kubectl scale deployment blearn-api-gateway -n blearn-medallion --replicas=1
+	kubectl scale deployment kube-prometheus-stack-grafana -n blearn-medallion --replicas=1
+	kubectl scale deployment -l release=kube-prometheus-stack -n blearn-medallion --replicas=1
+	kubectl scale statefulset prometheus-kube-prometheus-stack-prometheus -n blearn-medallion --replicas=1
+
+streaming-suspend:
+	kubectl scale statefulset kafka-stream -n blearn-medallion --replicas=0
+	kubectl scale deployment spark-streaming-job -n blearn-medallion --replicas=0
+	kubectl scale deployment blearn-api-gateway -n blearn-medallion --replicas=0
+	kubectl scale deployment kube-prometheus-stack-grafana -n blearn-medallion --replicas=0
+	kubectl scale deployment -l release=kube-prometheus-stack -n blearn-medallion --replicas=0
+	kubectl scale statefulset prometheus-kube-prometheus-stack-prometheus -n blearn-medallion --replicas=0
+
+streaming-load-test:
+	$(PYTHON) -m data_pipeline.utils.traffic_generator
+
+cluster-stop:
+	az aks stop --name aks-blearn-dev --resource-group RG-BLEarn-Compute
+
+cluster-start:
+	az aks start --name aks-blearn-dev --resource-group RG-BLEarn-Compute
+
+# --- Live Demo & Testing ---
+demo-wait-ready:
+	@kubectl wait --for=condition=ready pod -l app=api-gateway -n blearn-medallion --timeout=300s
+	@kubectl wait --for=condition=ready pod -l app=frontend-demo -n blearn-medallion --timeout=300s
+	@kubectl wait --for=condition=ready pod -l app=kafka -n blearn-medallion --timeout=300s
+	@kubectl wait --for=condition=ready pod -l app=spark-streaming -n blearn-medallion --timeout=300s
+	@kubectl wait --for=condition=ready pod -l app=redis -n blearn-medallion --timeout=300s
+	@kubectl wait --for=condition=ready pod -l app=mlflow -n blearn-medallion --timeout=300s
+	@kubectl wait --for=condition=ready pod -l app=nessie -n blearn-medallion --timeout=300s
+
+demo-prep:
+	az aks start --name aks-blearn-dev --resource-group RG-BLEarn-Compute
+	kubectl scale deployment blearn-api-gateway -n blearn-medallion --replicas=1
+	kubectl scale deployment blearn-frontend-demo -n blearn-medallion --replicas=1
+	kubectl scale statefulset kafka-stream -n blearn-medallion --replicas=1
+	kubectl scale deployment spark-streaming-job -n blearn-medallion --replicas=1
+	@$(MAKE) demo-wait-ready
+
+demo-connect:
+	-pkill -f "port-forward" || true
+	@$(MAKE) demo-wait-ready
+	@nohup kubectl port-forward deployment/blearn-api-gateway 8000:8000 -n blearn-medallion >/dev/null 2>&1 &
+	@nohup kubectl port-forward deployment/blearn-frontend-demo 8080:80 -n blearn-medallion >/dev/null 2>&1 &
+	@nohup kubectl port-forward service/kafka-service 9092:29092 -n blearn-medallion >/dev/null 2>&1 &
+	@nohup kubectl port-forward service/redis-service 6379:6379 -n blearn-medallion >/dev/null 2>&1 &
+	@nohup kubectl port-forward service/mlflow-service 5005:5000 -n blearn-medallion >/dev/null 2>&1 &
+	@nohup kubectl port-forward service/nessie-service 19120:19120 -n blearn-medallion >/dev/null 2>&1 &
+	@echo "Tunnels established."
+
+demo-smoke-test:
+	kubectl exec -it kafka-stream-0 -n blearn-medallion -- /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic learning-events --from-beginning | grep assessment_submission
+
+demo-reset:
+	@token=$$(curl -s -X POST http://localhost:8000/login -H "Content-Type: application/json" -d '{"username": "demo-admin", "role": "admin"}' | python3 -c "import sys, json; print(json.load(sys.stdin).get('access_token',''))"); \
+	if [ -n "$$token" ]; then \
+	    res=$$(curl -s -X POST http://localhost:8000/reset-assessment-shifts -H "Authorization: Bearer $$token"); \
+	    echo "Reset shifts: $$res"; \
+	else \
+	    echo "Failed to retrieve admin token."; \
+	    exit 1; \
+	fi
+
+demo-reset-deep:
+	-kubectl scale deployment/spark-streaming-job --replicas=0 -n blearn-medallion
+	-kubectl exec -n blearn-medallion deployment/blearn-streamlit-ui -- python3 -c "from data_pipeline.ingestion.ingest import build_spark; spark = build_spark('Reset', 'abfss://gold@$(AZURE_STORAGE_ACCOUNT).dfs.core.windows.net/iceberg_warehouse/gold/', iceberg_catalogs={'silver_catalog': 'silver', 'gold_catalog': 'gold'}); spark.sql('TRUNCATE TABLE silver_catalog.silver_db.oulad_studentassessment'); spark.sql('TRUNCATE TABLE gold_catalog.gold_db.oulad_at_risk_predictions'); spark.stop()"
+	-az storage fs directory delete --account-name $(AZURE_STORAGE_ACCOUNT) --file-system bronze --name checkpoints --yes 2>/dev/null || true
+	-az storage fs directory delete --account-name $(AZURE_STORAGE_ACCOUNT) --file-system silver --name checkpoints --yes 2>/dev/null || true
+	-az storage fs directory delete --account-name $(AZURE_STORAGE_ACCOUNT) --file-system gold --name checkpoints --yes 2>/dev/null || true
+	-az storage fs directory delete --account-name $(AZURE_STORAGE_ACCOUNT) --file-system gold --name iceberg_warehouse/checkpoints --yes 2>/dev/null || true
+	-kubectl scale deployment/spark-streaming-job --replicas=1 -n blearn-medallion
+	@token=$$(curl -s -X POST http://localhost:8000/login -H "Content-Type: application/json" -d '{"username": "demo-admin", "role": "admin"}' | python3 -c "import sys, json; print(json.load(sys.stdin).get('access_token',''))"); \
+	if [ -n "$$token" ]; then \
+	    res=$$(curl -s -X POST http://localhost:8000/reset-assessment-shifts -H "Authorization: Bearer $$token"); \
+	    echo "Reset shifts: $$res"; \
+	else \
+	    echo "Failed to retrieve admin token."; \
+	fi
+
+demo-status:
+	kubectl get pods -n blearn-medallion
+	@echo ""
+	kubectl top pods -n blearn-medallion
 airflow-upgrade-ha:
 	@echo "🔧 Upgrading Airflow to HA (KubernetesExecutor + 2 Schedulers)..."
 	helm upgrade blearn-airflow apache-airflow/airflow \
